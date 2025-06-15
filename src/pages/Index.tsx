@@ -6,6 +6,13 @@ import Dashboard from '@/components/Modules/Dashboard';
 import ProjectRegistration from '@/components/Modules/ProjectRegistration';
 import PortfolioTracking from '@/components/Modules/PortfolioTracking';
 import ProjectBoard from '@/components/Modules/ProjectBoard';
+import Sales from '@/pages/Sales';
+import Specifiers from '@/pages/Specifiers';
+import Contracts from '@/pages/Contracts';
+import EnvironmentReview from '@/pages/EnvironmentReview';
+import Deliveries from '@/pages/Deliveries';
+import Assembly from '@/pages/Assembly';
+import TechnicalAssistance from '@/pages/TechnicalAssistance';
 import { Toaster } from '@/components/ui/toaster';
 
 const Index = () => {
@@ -32,6 +39,20 @@ const Index = () => {
         return <PortfolioTracking />;
       case 'painel-projetos':
         return <ProjectBoard />;
+      case 'vendas':
+        return <Sales />;
+      case 'especificadores':
+        return <Specifiers />;
+      case 'contratos':
+        return <Contracts />;
+      case 'revisao-ambientes':
+        return <EnvironmentReview />;
+      case 'entregas':
+        return <Deliveries />;
+      case 'montagem':
+        return <Assembly />;
+      case 'assistencias':
+        return <TechnicalAssistance />;
       case 'dashboard':
       default:
         return <Dashboard />;
