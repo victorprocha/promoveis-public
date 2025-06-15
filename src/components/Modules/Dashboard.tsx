@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   BarChart3, 
@@ -12,6 +11,9 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import NewProjectDialog from '@/components/Dialogs/NewProjectDialog';
+import NewClientDialog from '@/components/Dialogs/NewClientDialog';
+import AgendaDialog from '@/components/Dialogs/AgendaDialog';
 
 const Dashboard: React.FC = () => {
   const stats = [
@@ -198,24 +200,72 @@ const Dashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {quickActions.map((action, index) => (
+              <NewProjectDialog>
                 <Button
-                  key={index}
                   variant="outline"
                   className="w-full justify-start h-auto p-4"
-                  onClick={action.action}
                 >
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-blue-100 rounded-lg">
-                      <action.icon className="h-4 w-4 text-blue-600" />
+                      <FolderOpen className="h-4 w-4 text-blue-600" />
                     </div>
                     <div className="text-left">
-                      <div className="font-medium text-gray-900">{action.title}</div>
-                      <div className="text-sm text-gray-500">{action.description}</div>
+                      <div className="font-medium text-gray-900">Novo Projeto</div>
+                      <div className="text-sm text-gray-500">Cadastrar um novo projeto</div>
                     </div>
                   </div>
                 </Button>
-              ))}
+              </NewProjectDialog>
+
+              <Button
+                variant="outline"
+                className="w-full justify-start h-auto p-4"
+                onClick={() => console.log('Acompanhar carteira')}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <ClipboardList className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div className="text-left">
+                    <div className="font-medium text-gray-900">Acompanhar Carteira</div>
+                    <div className="text-sm text-gray-500">Visualizar status dos projetos</div>
+                  </div>
+                </div>
+              </Button>
+
+              <NewClientDialog>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start h-auto p-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Users className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-medium text-gray-900">Novo Cliente</div>
+                      <div className="text-sm text-gray-500">Cadastrar cliente</div>
+                    </div>
+                  </div>
+                </Button>
+              </NewClientDialog>
+
+              <AgendaDialog>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start h-auto p-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Calendar className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-medium text-gray-900">Agenda</div>
+                      <div className="text-sm text-gray-500">Verificar compromissos</div>
+                    </div>
+                  </div>
+                </Button>
+              </AgendaDialog>
             </div>
           </CardContent>
         </Card>

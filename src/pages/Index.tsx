@@ -6,6 +6,7 @@ import Dashboard from '@/components/Modules/Dashboard';
 import ProjectRegistration from '@/components/Modules/ProjectRegistration';
 import PortfolioTracking from '@/components/Modules/PortfolioTracking';
 import ProjectBoard from '@/components/Modules/ProjectBoard';
+import { Toaster } from '@/components/ui/toaster';
 
 const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -49,6 +50,8 @@ const Index = () => {
       <main className="lg:ml-64 pt-16 min-h-screen">
         {renderModule()}
       </main>
+      
+      <Toaster />
     </div>
   );
 };

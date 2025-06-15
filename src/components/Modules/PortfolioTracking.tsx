@@ -1,15 +1,9 @@
-
 import React, { useState } from 'react';
-import { Search, FileX, ChevronDown } from 'lucide-react';
+import { Search, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import FilterDialog from '@/components/Dialogs/FilterDialog';
 
 const PortfolioTracking: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -27,6 +21,16 @@ const PortfolioTracking: React.FC = () => {
     setStore('');
   };
 
+  const handleSearch = () => {
+    console.log('Executando busca com filtros:', {
+      searchTerm,
+      situation,
+      creationPeriod,
+      responsible,
+      store
+    });
+  };
+
   return (
     <div className="p-6">
       {/* Page Header */}
@@ -38,14 +42,14 @@ const PortfolioTracking: React.FC = () => {
         </div>
         <div className="flex items-center gap-3">
           <div className="p-2 bg-blue-100 rounded-lg">
-            <FileX className="h-6 w-6 text-blue-600" />
+            <FileText className="h-6 w-6 text-blue-600" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Acompanhamento de Carteira</h1>
         </div>
       </div>
 
       {/* Filters Section */}
-      <div className="bg-white rounded-lg border p-6 mb-6">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
           {/* Search Field */}
           <div className="lg:col-span-2">
@@ -145,7 +149,7 @@ const PortfolioTracking: React.FC = () => {
         {/* Empty State */}
         <div className="flex flex-col items-center justify-center py-16 px-6">
           <div className="p-4 bg-gray-100 rounded-full mb-4">
-            <FileX className="h-12 w-12 text-gray-400" />
+            <FileText className="h-12 w-12 text-gray-400" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
             Nenhum registro encontrado
@@ -201,7 +205,7 @@ const PortfolioTracking: React.FC = () => {
               <p className="text-2xl font-bold text-gray-900">0</p>
             </div>
             <div className="p-2 bg-blue-100 rounded-lg">
-              <FileX className="h-6 w-6 text-blue-600" />
+              <FileText className="h-6 w-6 text-blue-600" />
             </div>
           </div>
         </div>
@@ -213,7 +217,7 @@ const PortfolioTracking: React.FC = () => {
               <p className="text-2xl font-bold text-blue-600">0</p>
             </div>
             <div className="p-2 bg-blue-100 rounded-lg">
-              <FileX className="h-6 w-6 text-blue-600" />
+              <FileText className="h-6 w-6 text-blue-600" />
             </div>
           </div>
         </div>
@@ -225,7 +229,7 @@ const PortfolioTracking: React.FC = () => {
               <p className="text-2xl font-bold text-green-600">0</p>
             </div>
             <div className="p-2 bg-green-100 rounded-lg">
-              <FileX className="h-6 w-6 text-green-600" />
+              <FileText className="h-6 w-6 text-green-600" />
             </div>
           </div>
         </div>
@@ -237,7 +241,7 @@ const PortfolioTracking: React.FC = () => {
               <p className="text-2xl font-bold text-purple-600">R$ 0,00</p>
             </div>
             <div className="p-2 bg-purple-100 rounded-lg">
-              <FileX className="h-6 w-6 text-purple-600" />
+              <FileText className="h-6 w-6 text-purple-600" />
             </div>
           </div>
         </div>

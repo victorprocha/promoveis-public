@@ -1,129 +1,91 @@
-
 import React, { useState } from 'react';
-import { Search, Filter, Plus, MoreVertical, Edit, Eye, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Filter, Plus, MoreVertical, Edit, Eye, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-
-interface Project {
-  id: string;
-  name: string;
-  createdAt: string;
-  client: string;
-  consultant: string;
-  specifier: string;
-  environments: number;
-  budgets: number;
-  status: 'active' | 'pending' | 'completed';
-}
-
-const mockProjects: Project[] = [
-  {
-    id: '1',
-    name: 'Projeto Residencial Silva',
-    createdAt: '2024-01-15',
-    client: 'João Silva',
-    consultant: 'Enzo Vargas Santos',
-    specifier: 'Maria Costa',
-    environments: 5,
-    budgets: 3,
-    status: 'active'
-  },
-  {
-    id: '2',
-    name: 'Apartamento Moderno Centro',
-    createdAt: '2024-01-12',
-    client: 'Ana Souza',
-    consultant: 'Carlos Lima',
-    specifier: 'Pedro Santos',
-    environments: 3,
-    budgets: 2,
-    status: 'pending'
-  },
-  {
-    id: '3',
-    name: 'Casa de Campo Petrópolis',
-    createdAt: '2024-01-10',
-    client: 'Roberto Oliveira',
-    consultant: 'Enzo Vargas Santos',
-    specifier: 'Lucia Ferreira',
-    environments: 8,
-    budgets: 5,
-    status: 'completed'
-  },
-  {
-    id: '4',
-    name: 'Escritório Empresarial',
-    createdAt: '2024-01-08',
-    client: 'Tech Solutions Ltda',
-    consultant: 'Mariana Rosa',
-    specifier: 'João Pedro',
-    environments: 4,
-    budgets: 2,
-    status: 'active'
-  },
-  {
-    id: '5',
-    name: 'Loft Industrial São Paulo',
-    createdAt: '2024-01-05',
-    client: 'Design Studio',
-    consultant: 'Carlos Lima',
-    specifier: 'Ana Maria',
-    environments: 2,
-    budgets: 3,
-    status: 'pending'
-  },
-];
+import NewProjectDialog from '@/components/Dialogs/NewProjectDialog';
+import FilterDialog from '@/components/Dialogs/FilterDialog';
 
 const ProjectRegistration: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
 
-  const filteredProjects = mockProjects.filter(project =>
-    project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.consultant.toLowerCase().includes(searchTerm.toLowerCase())
+  const projectsData = [
+    {
+      id: '1',
+      name: 'Projeto Residencial Silva',
+      client: 'João Silva',
+      status: 'Normal',
+      priority: 'Alta',
+      consultant: 'Maria Santos',
+      creationDate: '15/01/2024',
+    },
+    {
+      id: '2',
+      name: 'Apartamento Moderno Centro',
+      client: 'Ana Souza',
+      status: 'Pendente',
+      priority: 'Média',
+      consultant: 'Carlos Lima',
+      creationDate: '12/01/2024',
+    },
+    {
+      id: '3',
+      name: 'Casa de Campo Petrópolis',
+      client: 'Roberto Oliveira',
+      status: 'Atrasado',
+      priority: 'Baixa',
+      consultant: 'Ana Costa',
+      creationDate: '10/01/2024',
+    },
+    {
+      id: '4',
+      name: 'Escritório Comercial ABC',
+      client: 'Luciana Pereira',
+      status: 'Finalizado',
+      priority: 'Urgente',
+      consultant: 'João Silva',
+      creationDate: '05/01/2024',
+    },
+  ];
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const projectsPerPage = 5;
+  const totalPages = Math.ceil(projectsData.length / projectsPerPage);
+  const startIndex = (currentPage - 1) * projectsPerPage;
+  const endIndex = startIndex + projectsPerPage;
+  const currentProjects = projectsData.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleSelectProject = (projectId: string) => {
+    setSelectedProjects((prev) =>
+      prev.includes(projectId)
+        ? prev.filter((id) => id !== projectId)
+        : [...prev, projectId]
+    );
+  };
+
+  const isAllSelected = currentProjects.every((project) =>
+    selectedProjects.includes(project.id)
   );
 
-  const totalPages = Math.ceil(filteredProjects.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentProjects = filteredProjects.slice(startIndex, endIndex);
-
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedProjects(currentProjects.map(p => p.id));
+  const handleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedProjects(
+        selectedProjects.filter((id) => !currentProjects.map((p) => p.id).includes(id))
+      );
     } else {
-      setSelectedProjects([]);
+      const newSelected = [...selectedProjects];
+      currentProjects.forEach((project) => {
+        if (!newSelected.includes(project.id)) {
+          newSelected.push(project.id);
+        }
+      });
+      setSelectedProjects(newSelected);
     }
-  };
-
-  const handleSelectProject = (projectId: string, checked: boolean) => {
-    if (checked) {
-      setSelectedProjects(prev => [...prev, projectId]);
-    } else {
-      setSelectedProjects(prev => prev.filter(id => id !== projectId));
-    }
-  };
-
-  const getStatusBadge = (status: Project['status']) => {
-    const statusConfig = {
-      active: { label: 'Ativo', variant: 'default' as const },
-      pending: { label: 'Pendente', variant: 'secondary' as const },
-      completed: { label: 'Concluído', variant: 'destructive' as const },
-    };
-    
-    return statusConfig[status];
   };
 
   return (
@@ -135,171 +97,172 @@ const ProjectRegistration: React.FC = () => {
           <span>/</span>
           <span className="text-gray-900 font-medium">Cadastro de Projetos</span>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900">Cadastro de Projetos</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900">Projetos</h1>
+          <div className="text-sm text-gray-500">
+            Total de {projectsData.length} projetos
+          </div>
+        </div>
       </div>
 
       {/* Actions Bar */}
-      <div className="flex flex-col lg:flex-row gap-4 mb-6 p-4 bg-white rounded-lg border">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Pesquisar projetos, clientes, consultores..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setSearchTerm('')}>
-            LIMPAR FILTROS
-          </Button>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4 flex-1">
+            <div className="flex-1 max-w-md relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Pesquisar"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Button variant="outline" onClick={() => setSearchTerm('')}>
+              LIMPAR FILTROS
+            </Button>
+          </div>
           
-          <Button className="bg-[#28A745] hover:bg-[#218838] text-white">
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Projeto
-          </Button>
-          
-          <Button variant="outline" size="icon">
-            <Filter className="h-4 w-4 text-[#FFC107]" />
-          </Button>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
-                <MoreVertical className="h-4 w-4" />
+          <div className="flex items-center gap-2">
+            <NewProjectDialog>
+              <Button className="bg-[#28A745] hover:bg-[#218838] text-white">
+                <Plus className="h-4 w-4 mr-2" />
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>Exportar para Excel</DropdownMenuItem>
-              <DropdownMenuItem>Exportar para PDF</DropdownMenuItem>
-              <DropdownMenuItem>Configurar Colunas</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </NewProjectDialog>
+            
+            <FilterDialog>
+              <Button variant="outline" size="icon" className="text-[#FFC107] border-[#FFC107] hover:bg-[#FFC107] hover:text-white">
+                <Filter className="h-4 w-4" />
+              </Button>
+            </FilterDialog>
+            
+            <Button variant="outline" size="icon">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Projects Table */}
-      <div className="bg-white rounded-lg border overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-gray-50">
-              <TableHead className="w-12">
-                <Checkbox
-                  checked={selectedProjects.length === currentProjects.length && currentProjects.length > 0}
-                  onCheckedChange={handleSelectAll}
-                />
-              </TableHead>
-              <TableHead className="font-semibold">Projeto</TableHead>
-              <TableHead className="font-semibold">Data de Criação</TableHead>
-              <TableHead className="font-semibold">Cliente</TableHead>
-              <TableHead className="font-semibold">Consultor</TableHead>
-              <TableHead className="font-semibold">Especificador</TableHead>
-              <TableHead className="font-semibold text-center">Ambientes</TableHead>
-              <TableHead className="font-semibold text-center">Orçamentos</TableHead>
-              <TableHead className="font-semibold">Status</TableHead>
-              <TableHead className="font-semibold text-center">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {currentProjects.map((project) => {
-              const statusConfig = getStatusBadge(project.status);
-              return (
-                <TableRow key={project.id} className="hover:bg-gray-50">
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedProjects.includes(project.id)}
-                      onCheckedChange={(checked) => handleSelectProject(project.id, checked as boolean)}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <a href="#" className="text-[#007BFF] hover:underline font-medium">
-                      {project.name}
-                    </a>
-                  </TableCell>
-                  <TableCell className="text-gray-600">
-                    {new Date(project.createdAt).toLocaleDateString('pt-BR')}
-                  </TableCell>
-                  <TableCell className="text-gray-900">{project.client}</TableCell>
-                  <TableCell className="text-gray-900">{project.consultant}</TableCell>
-                  <TableCell className="text-gray-900">{project.specifier}</TableCell>
-                  <TableCell className="text-center">
-                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">
-                      {project.environments}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm">
-                      {project.budgets}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex justify-center gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Eye className="h-4 w-4 text-blue-600" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Edit className="h-4 w-4 text-green-600" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Trash2 className="h-4 w-4 text-red-600" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <Checkbox checked={isAllSelected} onCheckedChange={handleSelectAll} />
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Projeto
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Cliente
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Prioridade
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Consultor
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Criação
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Ações
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {currentProjects.map((project) => (
+              <tr key={project.id}>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <Checkbox
+                    checked={selectedProjects.includes(project.id)}
+                    onCheckedChange={() => handleSelectProject(project.id)}
+                  />
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">{project.name}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-500">{project.client}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      project.status === 'Finalizado'
+                        ? 'bg-green-100 text-green-800'
+                        : project.status === 'Em Andamento'
+                        ? 'bg-blue-100 text-blue-800'
+                        : project.status === 'Pendente'
+                        ? 'bg-orange-100 text-orange-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}
+                  >
+                    {project.status}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">{project.priority}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-500">{project.consultant}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-500">{project.creationDate}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right">
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="icon">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon">
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon">
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-        {/* Pagination */}
-        <div className="flex items-center justify-between px-4 py-3 border-t">
-          <div className="text-sm text-gray-500">
-            Mostrando {startIndex + 1} até {Math.min(endIndex, filteredProjects.length)} de {filteredProjects.length} resultados
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Anterior
-            </Button>
-            
-            <div className="flex items-center gap-1">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <Button
-                  key={page}
-                  variant={currentPage === page ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCurrentPage(page)}
-                  className="min-w-[32px]"
-                >
-                  {page}
-                </Button>
-              ))}
-            </div>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
-            >
-              Próximo
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+      {/* Pagination */}
+      <div className="flex items-center justify-between mt-6">
+        <div className="text-sm text-gray-500">
+          Página {currentPage} de {totalPages}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            disabled={currentPage === 1}
+            onClick={() => handlePageChange(currentPage - 1)}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            disabled={currentPage === totalPages}
+            onClick={() => handlePageChange(currentPage + 1)}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     </div>
   );
 };
+
+import {
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 
 export default ProjectRegistration;

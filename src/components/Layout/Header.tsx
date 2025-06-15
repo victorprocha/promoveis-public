@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Bell, MessageCircle, Plus, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import NewProjectDialog from '@/components/Dialogs/NewProjectDialog';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -37,10 +37,12 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
       </div>
 
       <div className="flex items-center gap-4">
-        <Button className="bg-[#28A745] hover:bg-[#218838] text-white font-medium px-4 py-2 rounded-md">
-          <Plus className="h-4 w-4 mr-2" />
-          NOVO
-        </Button>
+        <NewProjectDialog>
+          <Button className="bg-[#28A745] hover:bg-[#218838] text-white font-medium px-4 py-2 rounded-md">
+            <Plus className="h-4 w-4 mr-2" />
+            NOVO
+          </Button>
+        </NewProjectDialog>
 
         <div className="flex items-center gap-2">
           <Button
