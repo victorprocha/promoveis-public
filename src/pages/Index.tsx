@@ -33,18 +33,29 @@ const Index = () => {
 
   const renderModule = () => {
     switch (activeModule) {
+      // Quick Access
       case 'projetos':
         return <ProjectRegistration />;
       case 'carteira':
+      case 'acompanhamento-carteira':
         return <PortfolioTracking />;
       case 'painel-projetos':
+      case 'painel-projetos-enterprise':
         return <ProjectBoard />;
+      
+      // Comercial
       case 'vendas':
         return <Sales />;
+      case 'clientes':
+        return <div className="p-6"><h1 className="text-2xl font-bold">Clientes</h1></div>;
       case 'especificadores':
         return <Specifiers />;
+      case 'projetos-comercial':
+        return <ProjectRegistration />;
       case 'contratos':
         return <Contracts />;
+      
+      // Pós-Venda
       case 'revisao-ambientes':
         return <EnvironmentReview />;
       case 'entregas':
@@ -52,7 +63,45 @@ const Index = () => {
       case 'montagem':
         return <Assembly />;
       case 'assistencias':
+      case 'assistencias-relatorio':
         return <TechnicalAssistance />;
+      case 'previsao-embarque':
+        return <div className="p-6"><h1 className="text-2xl font-bold">Previsão de Embarque</h1></div>;
+      
+      // Agendas
+      case 'agendamentos':
+        return <div className="p-6"><h1 className="text-2xl font-bold">Agendamentos</h1></div>;
+      case 'compromissos':
+        return <div className="p-6"><h1 className="text-2xl font-bold">Compromissos</h1></div>;
+      case 'historicos':
+        return <div className="p-6"><h1 className="text-2xl font-bold">Históricos</h1></div>;
+      case 'permissoes-acesso':
+        return <div className="p-6"><h1 className="text-2xl font-bold">Permissões de Acesso</h1></div>;
+      
+      // Estatísticas
+      case 'vendas-stats':
+        return <div className="p-6"><h1 className="text-2xl font-bold">Estatísticas de Vendas</h1></div>;
+      case 'projetos-stats':
+        return <div className="p-6"><h1 className="text-2xl font-bold">Estatísticas de Projetos</h1></div>;
+      case 'financeiro-stats':
+        return <div className="p-6"><h1 className="text-2xl font-bold">Estatísticas Financeiras</h1></div>;
+      
+      // Enterprise
+      case 'cadastro-produtos':
+        return <div className="p-6"><h1 className="text-2xl font-bold">Cadastro de Produtos</h1></div>;
+      
+      // Sistema
+      case 'usuarios':
+        return <div className="p-6"><h1 className="text-2xl font-bold">Usuários</h1></div>;
+      case 'colaborador':
+        return <div className="p-6"><h1 className="text-2xl font-bold">Colaborador</h1></div>;
+      
+      // Treinamentos
+      case 'comercial-treinamento':
+        return <div className="p-6"><h1 className="text-2xl font-bold">Treinamento Comercial</h1></div>;
+      case 'treinamento-comercial':
+        return <div className="p-6"><h1 className="text-2xl font-bold">Treinamento Comercial</h1></div>;
+      
       case 'dashboard':
       default:
         return <Dashboard />;

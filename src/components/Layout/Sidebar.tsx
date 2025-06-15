@@ -29,16 +29,22 @@ interface SidebarProps {
   onModuleChange: (module: string) => void;
 }
 
+interface SubmenuItem {
+  id: string;
+  label: string;
+}
+
+interface SubmenuCategory {
+  title: string;
+  items: SubmenuItem[];
+}
+
 interface MenuItem {
   id: string;
   label: string;
   icon: any;
   hasSubmenu?: boolean;
-  submenu?: MenuItem[];
-}
-
-interface SubmenuState {
-  [key: string]: boolean;
+  submenuCategories?: SubmenuCategory[];
 }
 
 interface FlyoutPosition {
@@ -47,9 +53,8 @@ interface FlyoutPosition {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange }) => {
-  const [openSubmenus, setOpenSubmenus] = useState<SubmenuState>({});
-  const [flyoutPosition, setFlyoutPosition] = useState<FlyoutPosition>({ top: 0, left: 0 });
   const [activeFlyout, setActiveFlyout] = useState<string | null>(null);
+  const [flyoutPosition, setFlyoutPosition] = useState<FlyoutPosition>({ top: 0, left: 0 });
   const sidebarRef = useRef<HTMLDivElement>(null);
   const flyoutRef = useRef<HTMLDivElement>(null);
 
@@ -65,20 +70,30 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
       label: 'Comercial',
       icon: ShoppingCart,
       hasSubmenu: true,
-      submenu: [
-        { id: 'vendas', label: 'Vendas', icon: ShoppingCart },
-        { id: 'clientes', label: 'Clientes', icon: Users },
-        { id: 'especificadores', label: 'Especificadores', icon: User },
-        { id: 'projetos-comercial', label: 'Projetos', icon: FolderOpen },
-        { id: 'contratos', label: 'Contratos', icon: FileText },
+      submenuCategories: [
         {
-          id: 'relatorios-comercial',
-          label: 'Relatórios',
-          icon: FileText,
-          hasSubmenu: true,
-          submenu: [
-            { id: 'acompanhamento-carteira', label: 'Acompanhamento de Carteira', icon: BarChart3 }
-          ]
+          title: 'VENDAS',
+          items: [{ id: 'vendas', label: 'Vendas' }]
+        },
+        {
+          title: 'CLIENTES',
+          items: [{ id: 'clientes', label: 'Clientes' }]
+        },
+        {
+          title: 'ESPECIFICADORES',
+          items: [{ id: 'especificadores', label: 'Especificadores' }]
+        },
+        {
+          title: 'PROJETOS',
+          items: [{ id: 'projetos-comercial', label: 'Projetos' }]
+        },
+        {
+          title: 'CONTRATOS',
+          items: [{ id: 'contratos', label: 'Contratos' }]
+        },
+        {
+          title: 'RELATÓRIOS',
+          items: [{ id: 'acompanhamento-carteira', label: 'Acompanhamento de Carteira' }]
         }
       ]
     },
@@ -87,43 +102,27 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
       label: 'Pós-Venda',
       icon: Truck,
       hasSubmenu: true,
-      submenu: [
+      submenuCategories: [
         {
-          id: 'revisoes',
-          label: 'Revisões',
-          icon: Search,
-          hasSubmenu: true,
-          submenu: [
-            { id: 'revisao-ambientes', label: 'Revisão de Ambientes', icon: Building }
+          title: 'REVISÕES',
+          items: [{ id: 'revisao-ambientes', label: 'Revisão de Ambientes' }]
+        },
+        {
+          title: 'ENTREGA E MONTAGEM',
+          items: [
+            { id: 'entregas', label: 'Entregas' },
+            { id: 'montagem', label: 'Montagem' }
           ]
         },
         {
-          id: 'entrega-montagem',
-          label: 'Entrega e Montagem',
-          icon: Package,
-          hasSubmenu: true,
-          submenu: [
-            { id: 'entregas', label: 'Entregas', icon: Truck },
-            { id: 'montagem', label: 'Montagem', icon: Wrench }
-          ]
+          title: 'ASSISTÊNCIA TÉCNICA',
+          items: [{ id: 'assistencias', label: 'Assistências' }]
         },
         {
-          id: 'assistencia-tecnica',
-          label: 'Assistência Técnica',
-          icon: Wrench,
-          hasSubmenu: true,
-          submenu: [
-            { id: 'assistencias', label: 'Assistências', icon: Wrench }
-          ]
-        },
-        {
-          id: 'relatorios-pos-venda',
-          label: 'Relatórios',
-          icon: FileText,
-          hasSubmenu: true,
-          submenu: [
-            { id: 'previsao-embarque', label: 'Previsão de Embarque', icon: Truck },
-            { id: 'assistencias-relatorio', label: 'Assistências', icon: Wrench }
+          title: 'RELATÓRIOS',
+          items: [
+            { id: 'previsao-embarque', label: 'Previsão de Embarque' },
+            { id: 'assistencias-relatorio', label: 'Assistências' }
           ]
         }
       ]
@@ -133,18 +132,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
       label: 'Agendas',
       icon: Calendar,
       hasSubmenu: true,
-      submenu: [
-        { id: 'agendamentos', label: 'Agendamentos', icon: Calendar },
-        { id: 'compromissos', label: 'Compromissos', icon: Clock },
-        { id: 'historicos', label: 'Históricos', icon: FileText },
+      submenuCategories: [
         {
-          id: 'configuracoes-agenda',
-          label: 'Configurações',
-          icon: Settings,
-          hasSubmenu: true,
-          submenu: [
-            { id: 'permissoes-acesso', label: 'Permissões de Acesso', icon: Users }
-          ]
+          title: 'AGENDAMENTOS',
+          items: [{ id: 'agendamentos', label: 'Agendamentos' }]
+        },
+        {
+          title: 'COMPROMISSOS',
+          items: [{ id: 'compromissos', label: 'Compromissos' }]
+        },
+        {
+          title: 'HISTÓRICOS',
+          items: [{ id: 'historicos', label: 'Históricos' }]
+        },
+        {
+          title: 'CONFIGURAÇÕES',
+          items: [{ id: 'permissoes-acesso', label: 'Permissões de Acesso' }]
         }
       ]
     },
@@ -153,10 +156,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
       label: 'Estatísticas',
       icon: TrendingUp,
       hasSubmenu: true,
-      submenu: [
-        { id: 'vendas-stats', label: 'Vendas', icon: ShoppingCart },
-        { id: 'projetos-stats', label: 'Projetos', icon: FolderOpen },
-        { id: 'financeiro-stats', label: 'Financeiro', icon: BarChart3 }
+      submenuCategories: [
+        {
+          title: 'GERAL',
+          items: [
+            { id: 'vendas-stats', label: 'Vendas' },
+            { id: 'projetos-stats', label: 'Projetos' },
+            { id: 'financeiro-stats', label: 'Financeiro' }
+          ]
+        }
       ]
     },
     {
@@ -164,9 +172,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
       label: 'Enterprise',
       icon: Building,
       hasSubmenu: true,
-      submenu: [
-        { id: 'cadastro-produtos', label: 'Cadastro de Produtos', icon: Package },
-        { id: 'painel-projetos-enterprise', label: 'Painel de Projetos', icon: Kanban }
+      submenuCategories: [
+        {
+          title: 'CADASTROS',
+          items: [{ id: 'cadastro-produtos', label: 'Cadastro de Produtos' }]
+        },
+        {
+          title: 'GERENCIAMENTO',
+          items: [{ id: 'painel-projetos-enterprise', label: 'Painel de Projetos' }]
+        }
       ]
     },
     {
@@ -174,9 +188,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
       label: 'Sistema',
       icon: Settings,
       hasSubmenu: true,
-      submenu: [
-        { id: 'usuarios', label: 'Usuários', icon: Users },
-        { id: 'colaborador', label: 'Colaborador', icon: User }
+      submenuCategories: [
+        {
+          title: 'ACESSO',
+          items: [{ id: 'usuarios', label: 'Usuários' }]
+        },
+        {
+          title: 'EQUIPE',
+          items: [{ id: 'colaborador', label: 'Colaborador' }]
+        }
       ]
     },
     {
@@ -184,14 +204,37 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
       label: 'Treinamentos',
       icon: GraduationCap,
       hasSubmenu: true,
-      submenu: [
-        { id: 'comercial-treinamento', label: 'Comercial', icon: ShoppingCart },
-        { id: 'treinamento-comercial', label: 'Treinamento Comercial', icon: GraduationCap }
+      submenuCategories: [
+        {
+          title: 'TREINAMENTOS',
+          items: [
+            { id: 'comercial-treinamento', label: 'Comercial' },
+            { id: 'treinamento-comercial', label: 'Treinamento Comercial' }
+          ]
+        }
       ]
     }
   ];
 
-  const handleItemClick = (item: MenuItem, event: React.MouseEvent, level: number = 0) => {
+  // Check if current module belongs to a main navigation item
+  const getActiveMainItem = () => {
+    for (const item of navigationItems) {
+      if (item.submenuCategories) {
+        for (const category of item.submenuCategories) {
+          for (const subItem of category.items) {
+            if (subItem.id === activeModule) {
+              return item.id;
+            }
+          }
+        }
+      }
+    }
+    return null;
+  };
+
+  const activeMainItem = getActiveMainItem();
+
+  const handleItemClick = (item: MenuItem, event: React.MouseEvent) => {
     event.stopPropagation();
     
     if (item.hasSubmenu) {
@@ -200,24 +243,27 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
       
       setFlyoutPosition({
         top: rect.top - (sidebarRect?.top || 0),
-        left: level === 0 ? 256 : rect.right - (sidebarRect?.left || 0)
+        left: 256
       });
-      setActiveFlyout(item.id);
+      
+      if (activeFlyout === item.id) {
+        setActiveFlyout(null);
+      } else {
+        setActiveFlyout(item.id);
+      }
     } else {
-      // Navigate to the selected module
       onModuleChange(item.id);
       setActiveFlyout(null);
-      setOpenSubmenus({});
     }
   };
 
-  const handleSubmenuItemClick = (item: MenuItem, event: React.MouseEvent) => {
-    handleItemClick(item, event, 1);
+  const handleSubmenuItemClick = (itemId: string) => {
+    onModuleChange(itemId);
+    setActiveFlyout(null);
   };
 
   const closeFlyouts = () => {
     setActiveFlyout(null);
-    setOpenSubmenus({});
   };
 
   useEffect(() => {
@@ -238,34 +284,43 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
     };
   }, []);
 
-  const renderFlyout = (items: MenuItem[], parentId: string) => {
-    if (activeFlyout !== parentId) return null;
+  const renderFlyout = () => {
+    if (!activeFlyout) return null;
+
+    const activeItem = navigationItems.find(item => item.id === activeFlyout);
+    if (!activeItem?.submenuCategories) return null;
 
     return (
       <div
         ref={flyoutRef}
-        className="fixed bg-[#1E2226] border-l border-[#3A4F64] shadow-lg z-50 min-w-[200px] max-h-[400px] overflow-y-auto custom-scrollbar"
+        className="fixed bg-[#1E2226] border-l border-[#3A4F64] shadow-xl z-50 min-w-[600px] max-h-[500px] overflow-y-auto custom-scrollbar flyout-enter"
         style={{
           top: `${flyoutPosition.top + 64}px`,
           left: `${flyoutPosition.left}px`,
         }}
       >
-        {items.map((item) => {
-          const Icon = item.icon;
-          return (
-            <button
-              key={item.id}
-              onClick={(e) => handleSubmenuItemClick(item, e)}
-              className="w-full flex items-center justify-between px-4 py-3 text-sm text-gray-200 hover:bg-[#2A3F54] hover:text-white transition-colors border-b border-[#333] last:border-b-0"
-            >
-              <div className="flex items-center gap-3">
-                <Icon className="h-4 w-4" />
-                {item.label}
+        <div className="p-6">
+          <div className="grid grid-cols-3 gap-8">
+            {activeItem.submenuCategories.map((category, categoryIndex) => (
+              <div key={categoryIndex} className="space-y-3">
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                  {category.title}
+                </h3>
+                <div className="space-y-2">
+                  {category.items.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => handleSubmenuItemClick(item.id)}
+                      className="block w-full text-left text-sm text-gray-200 hover:text-white hover:bg-[#2A3F54] rounded px-3 py-2 transition-colors"
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-              {item.hasSubmenu && <ChevronRight className="h-3 w-3" />}
-            </button>
-          );
-        })}
+            ))}
+          </div>
+        </div>
       </div>
     );
   };
@@ -345,17 +400,25 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
           <nav className="space-y-1">
             {navigationItems.map((item) => {
               const Icon = item.icon;
+              const isActive = activeMainItem === item.id;
+              
               return (
                 <div key={item.id}>
                   <button
                     onClick={(e) => handleItemClick(item, e)}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded-md text-sm text-gray-300 hover:bg-[#3A4F64] hover:text-white transition-colors"
+                    className={`
+                      w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors
+                      ${isActive 
+                        ? 'bg-[#007BFF] text-white' 
+                        : 'text-gray-300 hover:bg-[#3A4F64] hover:text-white'
+                      }
+                    `}
                   >
                     <div className="flex items-center gap-3">
                       <Icon className="h-4 w-4" />
                       {item.label}
                     </div>
-                    <ChevronRight className="h-3 w-3" />
+                    {item.hasSubmenu && <ChevronRight className="h-3 w-3" />}
                   </button>
                 </div>
               );
@@ -364,17 +427,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
         </div>
       </aside>
 
-      {/* Render flyouts */}
-      {activeFlyout && navigationItems.map((item) => 
-        item.submenu && renderFlyout(item.submenu, item.id)
-      )}
-
-      {/* Render nested flyouts */}
-      {activeFlyout && navigationItems.map((parentItem) =>
-        parentItem.submenu?.map((subItem) =>
-          subItem.submenu && activeFlyout === subItem.id && renderFlyout(subItem.submenu, subItem.id)
-        )
-      )}
+      {/* Render flyout */}
+      {renderFlyout()}
     </>
   );
 };
