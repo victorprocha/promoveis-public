@@ -5,6 +5,7 @@ import Sidebar from '@/components/Layout/Sidebar';
 import Dashboard from '@/components/Modules/Dashboard';
 import ProjectRegistration from '@/components/Modules/ProjectRegistration';
 import PortfolioTracking from '@/components/Modules/PortfolioTracking';
+import ProjectBoard from '@/components/Modules/ProjectBoard';
 
 const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -28,6 +29,8 @@ const Index = () => {
         return <ProjectRegistration />;
       case 'carteira':
         return <PortfolioTracking />;
+      case 'painel-projetos':
+        return <ProjectBoard />;
       case 'dashboard':
       default:
         return <Dashboard />;
