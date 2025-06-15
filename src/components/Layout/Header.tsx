@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Bell, MessageCircle, Plus, Menu } from 'lucide-react';
+import { Bell, MessageCircle, Plus, Menu, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -10,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useNavigate } from 'react-router-dom';
 import NewProjectDialog from '@/components/Dialogs/NewProjectDialog';
 
 interface HeaderProps {
@@ -17,6 +19,12 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    navigate('/login');
+  };
+
   return (
     <header className="h-16 bg-[#2A3F54] border-b border-[#1A2332] flex items-center justify-between px-4 fixed top-0 left-0 right-0 z-40">
       <div className="flex items-center gap-4">
@@ -91,7 +99,11 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
               <DropdownMenuItem>Configurações</DropdownMenuItem>
               <DropdownMenuItem>Alterar Senha</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-600">
+              <DropdownMenuItem 
+                className="text-red-600"
+                onClick={handleLogout}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
                 Sair
               </DropdownMenuItem>
             </DropdownMenuContent>
