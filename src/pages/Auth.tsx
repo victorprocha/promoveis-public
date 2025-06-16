@@ -1,0 +1,209 @@
+
+import React, { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
+
+const Auth = () => {
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { signIn, signUp, user } = useAuth();
+  const navigate = useNavigate();
+
+  // Login form state
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+
+  // Signup form state
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
+  const [signupFullName, setSignupFullName] = useState('');
+  const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
+
+  useEffect(() => {
+    if (user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    const { error } = await signIn(loginEmail, loginPassword);
+    
+    if (!error) {
+      navigate('/');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (signupPassword !== signupConfirmPassword) {
+      return;
+    }
+
+    setIsLoading(true);
+
+    const { error } = await signUp(signupEmail, signupPassword, signupFullName);
+    
+    setIsLoading(false);
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[#ECF0F5] px-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-[#2A3F54]">
+            FOCCO<span className="text-[#007BFF]">LOJAS</span>
+          </h1>
+          <p className="text-gray-600 mt-2">Sistema de Gestão</p>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Acesso ao Sistema</CardTitle>
+            <CardDescription>
+              Entre com sua conta ou crie uma nova
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="login" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="login">Entrar</TabsTrigger>
+                <TabsTrigger value="signup">Cadastrar</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="login">
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div>
+                    <Label htmlFor="login-email">E-mail</Label>
+                    <Input
+                      id="login-email"
+                      type="email"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      placeholder="seu@email.com"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="login-password">Senha</Label>
+                    <div className="relative">
+                      <Input
+                        id="login-password"
+                        type={showPassword ? "text" : "password"}
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        placeholder="Digite sua senha"
+                        className="pr-10"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full bg-[#007BFF] hover:bg-[#0056b3]"
+                  >
+                    {isLoading ? "Entrando..." : "Entrar"}
+                  </Button>
+                </form>
+              </TabsContent>
+
+              <TabsContent value="signup">
+                <form onSubmit={handleSignup} className="space-y-4">
+                  <div>
+                    <Label htmlFor="signup-name">Nome Completo</Label>
+                    <Input
+                      id="signup-name"
+                      type="text"
+                      value={signupFullName}
+                      onChange={(e) => setSignupFullName(e.target.value)}
+                      placeholder="Seu nome completo"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="signup-email">E-mail</Label>
+                    <Input
+                      id="signup-email"
+                      type="email"
+                      value={signupEmail}
+                      onChange={(e) => setSignupEmail(e.target.value)}
+                      placeholder="seu@email.com"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="signup-password">Senha</Label>
+                    <div className="relative">
+                      <Input
+                        id="signup-password"
+                        type={showPassword ? "text" : "password"}
+                        value={signupPassword}
+                        onChange={(e) => setSignupPassword(e.target.value)}
+                        placeholder="Crie uma senha"
+                        className="pr-10"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="signup-confirm-password">Confirmar Senha</Label>
+                    <Input
+                      id="signup-confirm-password"
+                      type={showPassword ? "text" : "password"}
+                      value={signupConfirmPassword}
+                      onChange={(e) => setSignupConfirmPassword(e.target.value)}
+                      placeholder="Confirme sua senha"
+                      required
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={isLoading || signupPassword !== signupConfirmPassword}
+                    className="w-full bg-[#28A745] hover:bg-[#218838]"
+                  >
+                    {isLoading ? "Cadastrando..." : "Cadastrar"}
+                  </Button>
+                </form>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default Auth;

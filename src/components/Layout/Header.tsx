@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Bell, MessageCircle, Plus, Menu, LogOut } from 'lucide-react';
+import { Bell, MessageCircle, Plus, Menu, LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import NewProjectDialog from '@/components/Dialogs/NewProjectDialog';
 
 interface HeaderProps {
@@ -20,9 +21,15 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
 
-  const handleLogout = () => {
-    navigate('/login');
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/auth');
+  };
+
+  const getInitials = (email: string) => {
+    return email.substring(0, 2).toUpperCase();
   };
 
   return (
@@ -45,6 +52,14 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
       </div>
 
       <div className="flex items-center gap-4">
+        <Button
+          onClick={() => navigate('/notes')}
+          className="bg-[#28A745] hover:bg-[#218838] text-white font-medium px-4 py-2 rounded-md"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          NOTAS
+        </Button>
+
         <NewProjectDialog>
           <Button className="bg-[#28A745] hover:bg-[#218838] text-white font-medium px-4 py-2 rounded-md">
             <Plus className="h-4 w-4 mr-2" />
@@ -80,14 +95,14 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
               <Button variant="ghost" className="text-white hover:bg-[#3A4F64] px-2">
                 <div className="flex items-center gap-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src="/placeholder.svg" />
+                    <AvatarImage src="" />
                     <AvatarFallback className="bg-[#007BFF] text-white">
-                      EV
+                      {user?.email ? getInitials(user.email) : <User className="h-4 w-4" />}
                     </AvatarFallback>
                   </Avatar>
                   <div className="text-left hidden md:block">
-                    <div className="text-sm font-medium">Enzo Vargas Santos</div>
-                    <div className="text-xs text-gray-300">Loja Principal</div>
+                    <div className="text-sm font-medium">{user?.email}</div>
+                    <div className="text-xs text-gray-300">FoccoLojas</div>
                   </div>
                 </div>
               </Button>
@@ -95,9 +110,11 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate('/notes')}>
+                Minhas Notas
+              </DropdownMenuItem>
               <DropdownMenuItem>Perfil</DropdownMenuItem>
               <DropdownMenuItem>Configurações</DropdownMenuItem>
-              <DropdownMenuItem>Alterar Senha</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
                 className="text-red-600"
