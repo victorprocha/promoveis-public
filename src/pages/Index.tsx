@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Layout/Header';
 import Sidebar from '@/components/Layout/Sidebar';
 import Dashboard from '@/components/Modules/Dashboard';
@@ -14,11 +15,25 @@ import EnvironmentReview from '@/pages/EnvironmentReview';
 import Deliveries from '@/pages/Deliveries';
 import Assembly from '@/pages/Assembly';
 import TechnicalAssistance from '@/pages/TechnicalAssistance';
+import Auth from '@/pages/Auth';
 import { Toaster } from '@/components/ui/toaster';
 
 const Index = () => {
+  const { user, loading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeModule, setActiveModule] = useState('dashboard');
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#ECF0F5]">
+        <div className="text-lg">Carregando...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Auth />;
+  }
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -34,8 +49,13 @@ const Index = () => {
 
   const renderModule = () => {
     switch (activeModule) {
+      // Dashboard
+      case 'dashboard':
+        return <Dashboard />;
+      
       // Quick Access
       case 'projetos':
+      case 'novo-projeto':
         return <ProjectRegistration />;
       case 'carteira':
       case 'acompanhamento-carteira':
@@ -46,25 +66,32 @@ const Index = () => {
       
       // Comercial
       case 'vendas':
+      case 'nova-venda':
         return <Sales />;
       case 'clientes':
+      case 'adicionar-cliente':
         return <Clients />;
       case 'especificadores':
+      case 'novo-especificador':
         return <Specifiers />;
       case 'projetos-comercial':
         return <ProjectRegistration />;
       case 'contratos':
+      case 'novo-contrato':
         return <Contracts />;
       
       // Pós-Venda
       case 'revisao-ambientes':
         return <EnvironmentReview />;
       case 'entregas':
+      case 'nova-entrega':
         return <Deliveries />;
       case 'montagem':
+      case 'nova-montagem':
         return <Assembly />;
       case 'assistencias':
       case 'assistencias-relatorio':
+      case 'nova-assistencia':
         return <TechnicalAssistance />;
       case 'previsao-embarque':
         return <div className="p-6"><h1 className="text-2xl font-bold">Previsão de Embarque</h1></div>;
@@ -103,7 +130,6 @@ const Index = () => {
       case 'treinamento-comercial':
         return <div className="p-6"><h1 className="text-2xl font-bold">Treinamento Comercial</h1></div>;
       
-      case 'dashboard':
       default:
         return <Dashboard />;
     }

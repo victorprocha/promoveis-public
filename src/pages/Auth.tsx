@@ -7,14 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
 
 const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, signUp, user } = useAuth();
-  const navigate = useNavigate();
+  const { signIn, signUp } = useAuth();
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
@@ -26,21 +23,11 @@ const Auth = () => {
   const [signupFullName, setSignupFullName] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
 
-  useEffect(() => {
-    if (user) {
-      navigate('/');
-    }
-  }, [user, navigate]);
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    const { error } = await signIn(loginEmail, loginPassword);
-    
-    if (!error) {
-      navigate('/');
-    }
+    await signIn(loginEmail, loginPassword);
     
     setIsLoading(false);
   };
@@ -54,7 +41,7 @@ const Auth = () => {
 
     setIsLoading(true);
 
-    const { error } = await signUp(signupEmail, signupPassword, signupFullName);
+    await signUp(signupEmail, signupPassword, signupFullName);
     
     setIsLoading(false);
   };
@@ -64,7 +51,8 @@ const Auth = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-[#2A3F54]">
-            FOCCO<span className="text-[#007BFF]">LOJAS</span>
+            <span className="text-[#007BFF]">PRO</span>
+            <span className="text-white bg-[#007BFF] px-1 rounded">MÓVEIS</span>
           </h1>
           <p className="text-gray-600 mt-2">Sistema de Gestão</p>
         </div>

@@ -1,131 +1,62 @@
 
 import React from 'react';
-import { Bell, MessageCircle, Plus, Menu, LogOut, User } from 'lucide-react';
+import { Menu, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { useNavigate } from 'react-router-dom';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
-import NewProjectDialog from '@/components/Dialogs/NewProjectDialog';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
-  const navigate = useNavigate();
   const { user, signOut } = useAuth();
 
-  const handleLogout = async () => {
+  const handleSignOut = async () => {
     await signOut();
-    navigate('/auth');
-  };
-
-  const getInitials = (email: string) => {
-    return email.substring(0, 2).toUpperCase();
   };
 
   return (
-    <header className="h-16 bg-[#2A3F54] border-b border-[#1A2332] flex items-center justify-between px-4 fixed top-0 left-0 right-0 z-40">
+    <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 z-50">
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
           size="icon"
           onClick={onToggleSidebar}
-          className="text-white hover:bg-[#3A4F64] lg:hidden"
+          className="lg:hidden"
         >
           <Menu className="h-5 w-5" />
         </Button>
         
-        <div className="flex items-center gap-2">
-          <div className="text-2xl font-bold text-white">
-            FOCCO<span className="text-[#007BFF]">LOJAS</span>
-          </div>
+        <div className="flex items-center">
+          <h1 className="text-xl font-bold text-[#2A3F54]">
+            <span className="text-[#007BFF]">PRO</span>
+            <span className="text-white bg-[#007BFF] px-1 rounded">MÓVEIS</span>
+          </h1>
         </div>
       </div>
 
       <div className="flex items-center gap-4">
-        <Button
-          onClick={() => navigate('/notes')}
-          className="bg-[#28A745] hover:bg-[#218838] text-white font-medium px-4 py-2 rounded-md"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          NOTAS
-        </Button>
-
-        <NewProjectDialog>
-          <Button className="bg-[#28A745] hover:bg-[#218838] text-white font-medium px-4 py-2 rounded-md">
-            <Plus className="h-4 w-4 mr-2" />
-            NOVO
-          </Button>
-        </NewProjectDialog>
-
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-white hover:bg-[#3A4F64] relative"
-          >
-            <MessageCircle className="h-5 w-5" />
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-              2
-            </span>
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-white hover:bg-[#3A4F64] relative"
-          >
-            <Bell className="h-5 w-5" />
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-              5
-            </span>
-          </Button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="text-white hover:bg-[#3A4F64] px-2">
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src="" />
-                    <AvatarFallback className="bg-[#007BFF] text-white">
-                      {user?.email ? getInitials(user.email) : <User className="h-4 w-4" />}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="text-left hidden md:block">
-                    <div className="text-sm font-medium">{user?.email}</div>
-                    <div className="text-xs text-gray-300">FoccoLojas</div>
-                  </div>
-                </div>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate('/notes')}>
-                Minhas Notas
-              </DropdownMenuItem>
-              <DropdownMenuItem>Perfil</DropdownMenuItem>
-              <DropdownMenuItem>Configurações</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                className="text-red-600"
-                onClick={handleLogout}
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Sair
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <span className="text-sm text-gray-600 hidden sm:block">
+          Sistema de Gestão
+        </span>
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <User className="h-5 w-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem className="font-medium">
+              {user?.email}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleSignOut}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Sair
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );
