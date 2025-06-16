@@ -7,6 +7,7 @@ import ProjectRegistration from '@/components/Modules/ProjectRegistration';
 import PortfolioTracking from '@/components/Modules/PortfolioTracking';
 import ProjectBoard from '@/components/Modules/ProjectBoard';
 import Sales from '@/pages/Sales';
+import Clients from '@/pages/Clients';
 import Specifiers from '@/pages/Specifiers';
 import Contracts from '@/pages/Contracts';
 import EnvironmentReview from '@/pages/EnvironmentReview';
@@ -47,7 +48,7 @@ const Index = () => {
       case 'vendas':
         return <Sales />;
       case 'clientes':
-        return <div className="p-6"><h1 className="text-2xl font-bold">Clientes</h1></div>;
+        return <Clients />;
       case 'especificadores':
         return <Specifiers />;
       case 'projetos-comercial':
