@@ -16,6 +16,9 @@ import Deliveries from '@/pages/Deliveries';
 import Assembly from '@/pages/Assembly';
 import TechnicalAssistance from '@/pages/TechnicalAssistance';
 import Auth from '@/pages/Auth';
+import ProjectForm from '@/components/Forms/ProjectForm';
+import SaleForm from '@/components/Forms/SaleForm';
+import ClientForm from '@/components/Forms/ClientForm';
 import { Toaster } from '@/components/ui/toaster';
 
 const Index = () => {
@@ -56,7 +59,7 @@ const Index = () => {
       // Quick Access
       case 'projetos':
       case 'novo-projeto':
-        return <ProjectRegistration />;
+        return <ProjectForm />;
       case 'carteira':
       case 'acompanhamento-carteira':
         return <PortfolioTracking />;
@@ -67,10 +70,11 @@ const Index = () => {
       // Comercial
       case 'vendas':
       case 'nova-venda':
-        return <Sales />;
+        return <SaleForm />;
       case 'clientes':
-      case 'adicionar-cliente':
         return <Clients />;
+      case 'adicionar-cliente':
+        return <ClientForm />;
       case 'especificadores':
       case 'novo-especificador':
         return <Specifiers />;
