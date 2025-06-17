@@ -9,51 +9,30 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      clients: {
+      notes: {
         Row: {
-          address: string | null
-          city: string | null
-          company: string | null
+          content: string | null
           created_at: string
-          email: string | null
           id: string
-          name: string
-          notes: string | null
-          phone: string | null
-          state: string | null
+          title: string
           updated_at: string
           user_id: string
-          zip_code: string | null
         }
         Insert: {
-          address?: string | null
-          city?: string | null
-          company?: string | null
+          content?: string | null
           created_at?: string
-          email?: string | null
           id?: string
-          name: string
-          notes?: string | null
-          phone?: string | null
-          state?: string | null
+          title: string
           updated_at?: string
           user_id: string
-          zip_code?: string | null
         }
         Update: {
-          address?: string | null
-          city?: string | null
-          company?: string | null
+          content?: string | null
           created_at?: string
-          email?: string | null
           id?: string
-          name?: string
-          notes?: string | null
-          phone?: string | null
-          state?: string | null
+          title?: string
           updated_at?: string
           user_id?: string
-          zip_code?: string | null
         }
         Relationships: []
       }
@@ -81,96 +60,6 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string
-        }
-        Relationships: []
-      }
-      projects: {
-        Row: {
-          budget: number | null
-          client_email: string | null
-          client_name: string
-          client_phone: string | null
-          created_at: string
-          deadline: string | null
-          description: string | null
-          id: string
-          name: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          budget?: number | null
-          client_email?: string | null
-          client_name: string
-          client_phone?: string | null
-          created_at?: string
-          deadline?: string | null
-          description?: string | null
-          id?: string
-          name: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          budget?: number | null
-          client_email?: string | null
-          client_name?: string
-          client_phone?: string | null
-          created_at?: string
-          deadline?: string | null
-          description?: string | null
-          id?: string
-          name?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      sales: {
-        Row: {
-          client_email: string | null
-          client_name: string
-          client_phone: string | null
-          created_at: string
-          id: string
-          notes: string | null
-          product_description: string
-          quantity: number | null
-          sale_date: string
-          total_amount: number | null
-          unit_price: number | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          client_email?: string | null
-          client_name: string
-          client_phone?: string | null
-          created_at?: string
-          id?: string
-          notes?: string | null
-          product_description: string
-          quantity?: number | null
-          sale_date: string
-          total_amount?: number | null
-          unit_price?: number | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          client_email?: string | null
-          client_name?: string
-          client_phone?: string | null
-          created_at?: string
-          id?: string
-          notes?: string | null
-          product_description?: string
-          quantity?: number | null
-          sale_date?: string
-          total_amount?: number | null
-          unit_price?: number | null
-          updated_at?: string
-          user_id?: string
         }
         Relationships: []
       }

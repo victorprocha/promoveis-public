@@ -1,181 +1,294 @@
-
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, Users, ShoppingCart, Package } from 'lucide-react';
+import { 
+  BarChart3, 
+  Users, 
+  FileText, 
+  TrendingUp, 
+  Calendar,
+  FolderOpen,
+  ClipboardList,
+  DollarSign
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import NewProjectDialog from '@/components/Dialogs/NewProjectDialog';
+import NewClientDialog from '@/components/Dialogs/NewClientDialog';
+import AgendaDialog from '@/components/Dialogs/AgendaDialog';
 
-const Dashboard = () => {
-  // Sample data for charts
-  const monthlyPerformanceData = [
-    { month: 'Jan', vendas: 45, projetos: 12, entregas: 8 },
-    { month: 'Fev', vendas: 52, projetos: 15, entregas: 10 },
-    { month: 'Mar', vendas: 48, projetos: 18, entregas: 12 },
-    { month: 'Abr', vendas: 61, projetos: 22, entregas: 15 },
-    { month: 'Mai', vendas: 55, projetos: 20, entregas: 18 },
-    { month: 'Jun', vendas: 67, projetos: 25, entregas: 20 },
-  ];
-
-  const salesByCategory = [
-    { name: 'Móveis Planejados', value: 35, color: '#007BFF' },
-    { name: 'Decoração', value: 25, color: '#28A745' },
-    { name: 'Iluminação', value: 20, color: '#FFC107' },
-    { name: 'Acessórios', value: 20, color: '#DC3545' },
+const Dashboard: React.FC = () => {
+  const stats = [
+    {
+      title: 'Projetos Ativos',
+      value: '24',
+      change: '+12%',
+      trend: 'up',
+      icon: FolderOpen,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-100'
+    },
+    {
+      title: 'Novos Clientes',
+      value: '8',
+      change: '+5%',
+      trend: 'up',
+      icon: Users,
+      color: 'text-green-600',
+      bgColor: 'bg-green-100'
+    },
+    {
+      title: 'Orçamentos Pendentes',
+      value: '15',
+      change: '-8%',
+      trend: 'down',
+      icon: FileText,
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-100'
+    },
+    {
+      title: 'Faturamento Mensal',
+      value: 'R$ 45.280',
+      change: '+18%',
+      trend: 'up',
+      icon: DollarSign,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-100'
+    }
   ];
 
   const recentProjects = [
-    { name: 'Projeto Residencial Silva', status: 'Em Andamento', progress: 75 },
-    { name: 'Escritório Comercial ABC', status: 'Finalizado', progress: 100 },
-    { name: 'Apartamento Jardins', status: 'Planejamento', progress: 25 },
-    { name: 'Casa Condomínio XYZ', status: 'Em Andamento', progress: 60 },
+    {
+      id: '1',
+      name: 'Projeto Residencial Silva',
+      client: 'João Silva',
+      status: 'Em Andamento',
+      value: 'R$ 15.280',
+      date: '15/01/2024'
+    },
+    {
+      id: '2',
+      name: 'Apartamento Moderno Centro',
+      client: 'Ana Souza',
+      status: 'Orçamento',
+      value: 'R$ 8.540',
+      date: '12/01/2024'
+    },
+    {
+      id: '3',
+      name: 'Casa de Campo Petrópolis',
+      client: 'Roberto Oliveira',
+      status: 'Finalizado',
+      value: 'R$ 32.150',
+      date: '10/01/2024'
+    }
+  ];
+
+  const quickActions = [
+    {
+      title: 'Novo Projeto',
+      description: 'Cadastrar um novo projeto',
+      icon: FolderOpen,
+      action: () => console.log('Novo projeto')
+    },
+    {
+      title: 'Acompanhar Carteira',
+      description: 'Visualizar status dos projetos',
+      icon: ClipboardList,
+      action: () => console.log('Acompanhar carteira')
+    },
+    {
+      title: 'Novo Cliente',
+      description: 'Cadastrar cliente',
+      icon: Users,
+      action: () => console.log('Novo cliente')
+    },
+    {
+      title: 'Agenda',
+      description: 'Verificar compromissos',
+      icon: Calendar,
+      action: () => console.log('Agenda')
+    }
   ];
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#ECF0F5]">
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <h1 className="text-xl font-semibold text-[#2A3F54]">Dashboard</h1>
-        <p className="text-gray-600 text-sm mt-1">Visão geral do sistema</p>
+    <div className="p-6">
+      {/* Page Header */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+          <span>Sistema</span>
+          <span>/</span>
+          <span className="text-gray-900 font-medium">Dashboard</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900">Painel de Controle</h1>
+          <div className="text-sm text-gray-500">
+            Última atualização: {new Date().toLocaleString('pt-BR')}
+          </div>
+        </div>
       </div>
 
-      <div className="flex-1 p-6 space-y-6">
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Vendas do Mês</CardTitle>
-              <ShoppingCart className="h-4 w-4 text-[#007BFF]" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">67</div>
-              <p className="text-xs text-green-600">+12% em relação ao mês anterior</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Projetos Ativos</CardTitle>
-              <Package className="h-4 w-4 text-[#28A745]" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">25</div>
-              <p className="text-xs text-green-600">+8% em relação ao mês anterior</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Clientes Ativos</CardTitle>
-              <Users className="h-4 w-4 text-[#FFC107]" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">142</div>
-              <p className="text-xs text-green-600">+5% em relação ao mês anterior</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Entregas do Mês</CardTitle>
-              <TrendingUp className="h-4 w-4 text-[#DC3545]" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">20</div>
-              <p className="text-xs text-green-600">+15% em relação ao mês anterior</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Performance Mensal */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Performance Mensal</CardTitle>
-              <CardDescription>Vendas, projetos e entregas por mês</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={monthlyPerformanceData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="vendas" stroke="#007BFF" strokeWidth={2} />
-                  <Line type="monotone" dataKey="projetos" stroke="#28A745" strokeWidth={2} />
-                  <Line type="monotone" dataKey="entregas" stroke="#FFC107" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Vendas por Categoria */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Vendas por Categoria</CardTitle>
-              <CardDescription>Distribuição das vendas por tipo de produto</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={salesByCategory}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {salesByCategory.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="grid grid-cols-2 gap-2 mt-4">
-                {salesByCategory.map((item, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <span className="text-xs">{item.name}</span>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {stats.map((stat, index) => (
+          <Card key={index} className="relative overflow-hidden">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">{stat.title}</p>
+                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                  <div className={`flex items-center gap-1 mt-1 ${
+                    stat.trend === 'up' ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    <TrendingUp className={`h-4 w-4 ${
+                      stat.trend === 'down' ? 'rotate-180' : ''
+                    }`} />
+                    <span className="text-sm font-medium">{stat.change}</span>
                   </div>
-                ))}
+                </div>
+                <div className={`p-3 rounded-lg ${stat.bgColor}`}>
+                  <stat.icon className={`h-6 w-6 ${stat.color}`} />
+                </div>
               </div>
             </CardContent>
           </Card>
-        </div>
+        ))}
+      </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Projects */}
-        <Card>
+        <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Projetos Recentes</CardTitle>
-            <CardDescription>Últimos projetos em andamento</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Projetos Recentes
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentProjects.map((project, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              {recentProjects.map((project) => (
+                <div key={project.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex-1">
-                    <h4 className="font-medium text-sm">{project.name}</h4>
-                    <p className="text-xs text-gray-600">{project.status}</p>
+                    <h4 className="font-medium text-gray-900">{project.name}</h4>
+                    <p className="text-sm text-gray-500">{project.client}</p>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-24 bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-[#007BFF] h-2 rounded-full" 
-                        style={{ width: `${project.progress}%` }}
-                      />
+                  <div className="text-right">
+                    <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                      project.status === 'Finalizado' ? 'bg-green-100 text-green-800' :
+                      project.status === 'Em Andamento' ? 'bg-blue-100 text-blue-800' :
+                      'bg-orange-100 text-orange-800'
+                    }`}>
+                      {project.status}
                     </div>
-                    <span className="text-xs font-medium w-10 text-right">{project.progress}%</span>
+                    <p className="text-sm font-medium text-gray-900 mt-1">{project.value}</p>
+                    <p className="text-xs text-gray-500">{project.date}</p>
                   </div>
                 </div>
               ))}
             </div>
+            <Button variant="outline" className="w-full mt-4">
+              Ver Todos os Projetos
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Quick Actions */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Ações Rápidas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <NewProjectDialog>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start h-auto p-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <FolderOpen className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-medium text-gray-900">Novo Projeto</div>
+                      <div className="text-sm text-gray-500">Cadastrar um novo projeto</div>
+                    </div>
+                  </div>
+                </Button>
+              </NewProjectDialog>
+
+              <Button
+                variant="outline"
+                className="w-full justify-start h-auto p-4"
+                onClick={() => console.log('Acompanhar carteira')}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <ClipboardList className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div className="text-left">
+                    <div className="font-medium text-gray-900">Acompanhar Carteira</div>
+                    <div className="text-sm text-gray-500">Visualizar status dos projetos</div>
+                  </div>
+                </div>
+              </Button>
+
+              <NewClientDialog>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start h-auto p-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Users className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-medium text-gray-900">Novo Cliente</div>
+                      <div className="text-sm text-gray-500">Cadastrar cliente</div>
+                    </div>
+                  </div>
+                </Button>
+              </NewClientDialog>
+
+              <AgendaDialog>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start h-auto p-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Calendar className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-medium text-gray-900">Agenda</div>
+                      <div className="text-sm text-gray-500">Verificar compromissos</div>
+                    </div>
+                  </div>
+                </Button>
+              </AgendaDialog>
+            </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Performance Chart Placeholder */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            Performance Mensal
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+            <div className="text-center">
+              <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">Gráfico de performance será exibido aqui</p>
+              <p className="text-sm text-gray-400 mt-1">Integração com biblioteca de gráficos em desenvolvimento</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
