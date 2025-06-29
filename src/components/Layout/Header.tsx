@@ -45,13 +45,6 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
       </div>
 
       <div className="flex items-center gap-4">
-        <Button
-          className="bg-[#28A745] hover:bg-[#218838] text-white font-medium px-4 py-2 rounded-md"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          NOTAS
-        </Button>
-
         <NewProjectDialog>
           <Button className="bg-[#28A745] hover:bg-[#218838] text-white font-medium px-4 py-2 rounded-md">
             <Plus className="h-4 w-4 mr-2" />

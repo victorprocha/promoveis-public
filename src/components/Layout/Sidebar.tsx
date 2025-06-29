@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   FolderOpen, 
@@ -19,7 +18,8 @@ import {
   Truck,
   FileText,
   User,
-  Clock
+  Clock,
+  Home
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -59,6 +59,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
   const flyoutRef = useRef<HTMLDivElement>(null);
 
   const quickAccessItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'projetos', label: 'Projetos', icon: FolderOpen },
     { id: 'carteira', label: 'Acompanhamento de Carteira', icon: BarChart3 },
     { id: 'painel-projetos', label: 'Painel de Projetos', icon: Kanban },
