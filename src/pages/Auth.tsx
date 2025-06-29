@@ -6,15 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
@@ -26,37 +25,43 @@ const Auth = () => {
   const [signupFullName, setSignupFullName] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
 
-  useEffect(() => {
-    if (user) {
-      navigate('/');
-    }
-  }, [user, navigate]);
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    const { error } = await signIn(loginEmail, loginPassword);
-    
-    if (!error) {
+    // Simulação de login
+    setTimeout(() => {
+      toast({
+        title: "Login realizado com sucesso!",
+        description: "Bem-vindo ao FoccoLojas",
+      });
       navigate('/');
-    }
-    
-    setIsLoading(false);
+      setIsLoading(false);
+    }, 1000);
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (signupPassword !== signupConfirmPassword) {
+      toast({
+        title: "Erro",
+        description: "As senhas não coincidem.",
+        variant: "destructive",
+      });
       return;
     }
 
     setIsLoading(true);
 
-    const { error } = await signUp(signupEmail, signupPassword, signupFullName);
-    
-    setIsLoading(false);
+    // Simulação de cadastro
+    setTimeout(() => {
+      toast({
+        title: "Cadastro realizado!",
+        description: "Sua conta foi criada com sucesso.",
+      });
+      setIsLoading(false);
+    }, 1000);
   };
 
   return (
