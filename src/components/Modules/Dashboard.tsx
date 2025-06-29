@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { 
   BarChart3, 
@@ -11,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import NewProjectDialog from '@/components/Dialogs/NewProjectDialog';
 import NewClientDialog from '@/components/Dialogs/NewClientDialog';
 import AgendaDialog from '@/components/Dialogs/AgendaDialog';
@@ -82,31 +84,22 @@ const Dashboard: React.FC = () => {
     }
   ];
 
-  const quickActions = [
-    {
-      title: 'Novo Projeto',
-      description: 'Cadastrar um novo projeto',
-      icon: FolderOpen,
-      action: () => console.log('Novo projeto')
-    },
-    {
-      title: 'Acompanhar Carteira',
-      description: 'Visualizar status dos projetos',
-      icon: ClipboardList,
-      action: () => console.log('Acompanhar carteira')
-    },
-    {
-      title: 'Novo Cliente',
-      description: 'Cadastrar cliente',
-      icon: Users,
-      action: () => console.log('Novo cliente')
-    },
-    {
-      title: 'Agenda',
-      description: 'Verificar compromissos',
-      icon: Calendar,
-      action: () => console.log('Agenda')
-    }
+  // Dados para o gráfico de performance mensal
+  const monthlyData = [
+    { mes: 'Jan', vendas: 45000, projetos: 12, clientes: 8 },
+    { mes: 'Fev', vendas: 38000, projetos: 15, clientes: 12 },
+    { mes: 'Mar', vendas: 52000, projetos: 18, clientes: 15 },
+    { mes: 'Abr', vendas: 48000, projetos: 16, clientes: 11 },
+    { mes: 'Mai', vendas: 61000, projetos: 22, clientes: 18 },
+    { mes: 'Jun', vendas: 55000, projetos: 20, clientes: 14 },
+  ];
+
+  // Dados para gráfico de pizza (distribuição de projetos por status)
+  const projectStatusData = [
+    { name: 'Em Andamento', value: 35, color: '#007BFF' },
+    { name: 'Finalizado', value: 28, color: '#28A745' },
+    { name: 'Orçamento', value: 20, color: '#FFC107' },
+    { name: 'Cancelado', value: 17, color: '#DC3545' },
   ];
 
   return (
@@ -153,7 +146,7 @@ const Dashboard: React.FC = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Recent Projects */}
         <Card className="lg:col-span-2">
           <CardHeader>
@@ -271,24 +264,68 @@ const Dashboard: React.FC = () => {
         </Card>
       </div>
 
-      {/* Performance Chart Placeholder */}
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
-            Performance Mensal
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-            <div className="text-center">
-              <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">Gráfico de performance será exibido aqui</p>
-              <p className="text-sm text-gray-400 mt-1">Integração com biblioteca de gráficos em desenvolvimento</p>
+      {/* Performance Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Performance Mensal */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Performance Mensal
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="mes" />
+                  <YAxis />
+                  <Tooltip 
+                    formatter={(value, name) => [
+                      name === 'vendas' ? `R$ ${value.toLocaleString()}` : value,
+                      name === 'vendas' ? 'Vendas' :
+                      name === 'projetos' ? 'Projetos' : 'Clientes'
+                    ]}
+                  />
+                  <Bar dataKey="vendas" fill="#007BFF" />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        {/* Distribuição de Projetos */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Status dos Projetos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={projectStatusData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    dataKey="value"
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {projectStatusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
