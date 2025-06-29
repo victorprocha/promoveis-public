@@ -1,7 +1,15 @@
 
 import React from 'react';
-import { MoreHorizontal, Edit, Eye, Trash2 } from 'lucide-react';
+import { Edit, Eye, Trash2, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,135 +20,110 @@ import {
 interface Column {
   key: string;
   header: string;
-  sortable?: boolean;
-  clickable?: boolean;
 }
 
-interface DataTableProps {
+interface InteractiveDataTableProps {
   columns: Column[];
-  data: Record<string, any>[];
-  emptyMessage?: string;
+  data: any[];
+  emptyMessage: string;
   onEdit?: (item: any) => void;
   onView?: (item: any) => void;
   onDelete?: (item: any) => void;
-  onRowClick?: (item: any) => void;
-  renderCustomActions?: (item: any) => React.ReactNode;
 }
 
-const InteractiveDataTable: React.FC<DataTableProps> = ({
+const InteractiveDataTable: React.FC<InteractiveDataTableProps> = ({
   columns,
   data,
-  emptyMessage = "Nenhum item encontrado",
+  emptyMessage,
   onEdit,
   onView,
-  onDelete,
-  onRowClick,
-  renderCustomActions
+  onDelete
 }) => {
-  const handleRowClick = (item: any, event: React.MouseEvent) => {
-    // Não disparar se o clique foi em um botão ou dropdown
-    if ((event.target as HTMLElement).closest('button, [role="menuitem"]')) {
-      return;
-    }
-    
-    if (onRowClick) {
-      onRowClick(item);
-    }
-  };
-
   if (data.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-        <div className="text-gray-400 text-lg mb-2">📄</div>
-        <p className="text-gray-600">{emptyMessage}</p>
+      <div className="flex items-center justify-center py-16">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl flex items-center justify-center mx-auto mb-4">
+            <Eye className="h-8 w-8 text-slate-400" />
+          </div>
+          <p className="text-slate-500 text-lg font-medium">{emptyMessage}</p>
+          <p className="text-slate-400 text-sm mt-1">Adicione novos itens para começar</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              {columns.map((column) => (
-                <th
-                  key={column.key}
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  {column.header}
-                </th>
-              ))}
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Ações
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {data.map((item, index) => (
-              <tr 
-                key={index} 
-                className={`hover:bg-gray-50 ${onRowClick ? 'cursor-pointer' : ''}`}
-                onClick={(e) => handleRowClick(item, e)}
-              >
-                {columns.map((column) => (
-                  <td key={column.key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {column.clickable && onRowClick ? (
-                      <button 
-                        className="text-[#007BFF] hover:text-[#0056b3] hover:underline font-medium text-left"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onRowClick(item);
-                        }}
-                      >
-                        {item[column.key]}
-                      </button>
-                    ) : (
-                      item[column.key]
-                    )}
-                  </td>
-                ))}
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  {renderCustomActions ? (
-                    renderCustomActions(item)
-                  ) : (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {onView && (
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onView(item); }}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            Visualizar
-                          </DropdownMenuItem>
-                        )}
-                        {onEdit && (
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(item); }}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Editar
-                          </DropdownMenuItem>
-                        )}
-                        {onDelete && (
-                          <DropdownMenuItem 
-                            onClick={(e) => { e.stopPropagation(); onDelete(item); }}
-                            className="text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Excluir
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                </td>
-              </tr>
+    <div className="overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+            {columns.map((column) => (
+              <TableHead key={column.key} className="font-semibold text-slate-700 py-4">
+                {column.header}
+              </TableHead>
             ))}
-          </tbody>
-        </table>
-      </div>
+            <TableHead className="w-12"></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {data.map((item, index) => (
+            <TableRow key={index} className="hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-transparent transition-all duration-200 border-b border-slate-100">
+              {columns.map((column) => (
+                <TableCell 
+                  key={column.key} 
+                  className="py-4 text-slate-600 font-medium cursor-pointer"
+                  onClick={() => onView && onView(item)}
+                >
+                  {item[column.key]}
+                </TableCell>
+              ))}
+              <TableCell>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all duration-200"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-white/95 backdrop-blur-sm border-slate-200/50 shadow-xl rounded-xl">
+                    {onView && (
+                      <DropdownMenuItem 
+                        onClick={() => onView(item)}
+                        className="hover:bg-blue-50 text-blue-600 cursor-pointer"
+                      >
+                        <Eye className="mr-2 h-4 w-4" />
+                        Visualizar
+                      </DropdownMenuItem>
+                    )}
+                    {onEdit && (
+                      <DropdownMenuItem 
+                        onClick={() => onEdit(item)}
+                        className="hover:bg-emerald-50 text-emerald-600 cursor-pointer"
+                      >
+                        <Edit className="mr-2 h-4 w-4" />
+                        Editar
+                      </DropdownMenuItem>
+                    )}
+                    {onDelete && (
+                      <DropdownMenuItem 
+                        onClick={() => onDelete(item)}
+                        className="hover:bg-red-50 text-red-600 cursor-pointer"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Excluir
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 };
