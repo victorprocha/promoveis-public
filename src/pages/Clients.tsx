@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Search, Filter, Plus, MoreVertical, FolderOpen, Info, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,83 +25,40 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Skeleton } from '@/components/ui/skeleton';
 import NewClientDialog from '@/components/Dialogs/NewClientDialog';
-import { useToast } from '@/hooks/use-toast';
-
-interface Client {
-  id: string;
-  name: string;
-  birthFoundation: string;
-  type: 'Pessoa Física' | 'Pessoa Jurídica';
-  phone: string;
-  email: string;
-  consultant: string;
-}
+import { useClients } from '@/hooks/useClients';
+import { ClientFilters } from '@/types/client';
 
 const Clients = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [itemsPerPage, setItemsPerPage] = useState('30');
-  const { toast } = useToast();
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Mock data for clients
-  const [clients] = useState<Client[]>([
-    {
-      id: '1',
-      name: 'João Silva Santos',
-      birthFoundation: '15/03/1985',
-      type: 'Pessoa Física',
-      phone: '(11) 99999-9999',
-      email: 'joao.silva@email.com',
-      consultant: 'Maria Oliveira'
-    },
-    {
-      id: '2',
-      name: 'Empresa ABC Ltda',
-      birthFoundation: '10/05/2010',
-      type: 'Pessoa Jurídica',
-      phone: '(11) 3333-4444',
-      email: 'contato@empresaabc.com.br',
-      consultant: 'Carlos Santos'
-    },
-    {
-      id: '3',
-      name: 'Ana Paula Ferreira',
-      birthFoundation: '22/08/1992',
-      type: 'Pessoa Física',
-      phone: '(11) 88888-7777',
-      email: 'ana.paula@email.com',
-      consultant: 'Roberto Lima'
-    },
-    {
-      id: '4',
-      name: 'Tecnologia XYZ S.A.',
-      birthFoundation: '03/12/2015',
-      type: 'Pessoa Jurídica',
-      phone: '(11) 2222-3333',
-      email: 'contato@tecnologiaxyz.com.br',
-      consultant: 'Maria Oliveira'
-    },
-    {
-      id: '5',
-      name: 'Pedro Henrique Costa',
-      birthFoundation: '07/11/1978',
-      type: 'Pessoa Física',
-      phone: '(11) 77777-6666',
-      email: 'pedro.costa@email.com',
-      consultant: 'Fernanda Souza'
-    }
-  ]);
+  // Criar filtros para o hook
+  const filters = useMemo<ClientFilters>(() => ({
+    search: searchTerm || undefined,
+    page: currentPage,
+    limit: parseInt(itemsPerPage)
+  }), [searchTerm, currentPage, itemsPerPage]);
 
-  const filteredClients = clients.filter(client =>
-    client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.consultant.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const { data, loading, error, fetchClients, deleteClient } = useClients(filters);
+
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+    setCurrentPage(1); // Reset para primeira página ao pesquisar
+  };
+
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setSelectedClients([]);
+    setCurrentPage(1);
+  };
 
   const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedClients(filteredClients.map(client => client.id));
+    if (checked && data?.data) {
+      setSelectedClients(data.data.map(client => client.id));
     } else {
       setSelectedClients([]);
     }
@@ -115,28 +72,79 @@ const Clients = () => {
     }
   };
 
-  const handleClearFilters = () => {
-    setSearchTerm('');
-    setSelectedClients([]);
-    toast({
-      title: "Filtros limpos",
-      description: "Todos os filtros foram removidos.",
-    });
+  const handleDeleteClient = async (clientId: string, clientName: string) => {
+    if (window.confirm(`Tem certeza que deseja excluir o cliente "${clientName}"?`)) {
+      try {
+        await deleteClient(clientId);
+      } catch (error) {
+        // Error já é tratado no hook
+      }
+    }
   };
 
-  const handleClientClick = (clientName: string) => {
-    toast({
-      title: "Visualizar cliente",
-      description: `Abrindo detalhes de ${clientName}`,
-    });
+  const handleNextPage = () => {
+    if (data && currentPage < data.totalPages) {
+      setCurrentPage(prev => prev + 1);
+    }
   };
 
-  const handleInfoClick = (clientName: string) => {
-    toast({
-      title: "Informações do cliente",
-      description: `Exibindo informações rápidas de ${clientName}`,
-    });
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(prev => prev - 1);
+    }
   };
+
+  // Loading skeleton
+  if (loading === 'loading' && !data) {
+    return (
+      <div className="flex-1 flex flex-col h-full bg-[#ECF0F5]">
+        <div className="bg-white border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <FolderOpen className="h-6 w-6 text-[#2A3F54]" />
+              <h1 className="text-xl font-semibold text-[#2A3F54]">Clientes</h1>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex-1 p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex items-center space-x-4 mb-4">
+                <Skeleton className="h-4 w-4" />
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-36" />
+                <Skeleton className="h-4 w-40" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex-1 flex flex-col h-full bg-[#ECF0F5]">
+        <div className="bg-white border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <FolderOpen className="h-6 w-6 text-[#2A3F54]" />
+            <h1 className="text-xl font-semibold text-[#2A3F54]">Clientes</h1>
+          </div>
+        </div>
+        
+        <div className="flex-1 p-6 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">Erro ao carregar clientes: {error}</p>
+            <Button onClick={() => fetchClients()}>Tentar Novamente</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[#ECF0F5]">
@@ -154,7 +162,7 @@ const Clients = () => {
               <Input
                 placeholder="Pesquisar"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearch(e.target.value)}
                 className="pl-10 w-64"
               />
             </div>
@@ -208,98 +216,153 @@ const Clients = () => {
       {/* Table Content */}
       <div className="flex-1 p-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-gray-50">
-                <TableHead className="w-12">
-                  <Checkbox
-                    checked={selectedClients.length === filteredClients.length && filteredClients.length > 0}
-                    onCheckedChange={handleSelectAll}
-                  />
-                </TableHead>
-                <TableHead className="w-12"></TableHead>
-                <TableHead className="font-semibold">Nome</TableHead>
-                <TableHead className="font-semibold">Nasc./Fund.</TableHead>
-                <TableHead className="font-semibold">Tipo de Cliente</TableHead>
-                <TableHead className="font-semibold">Telefone</TableHead>
-                <TableHead className="font-semibold">E-mail</TableHead>
-                <TableHead className="font-semibold">Consultor</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredClients.map((client) => (
-                <TableRow key={client.id} className="hover:bg-gray-50">
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedClients.includes(client.id)}
-                      onCheckedChange={(checked) => handleSelectClient(client.id, checked as boolean)}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 text-[#007BFF]"
-                      onClick={() => handleInfoClick(client.name)}
-                    >
-                      <Info className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                  <TableCell>
-                    <button
-                      onClick={() => handleClientClick(client.name)}
-                      className="text-[#007BFF] hover:text-[#0056b3] hover:underline font-medium"
-                    >
-                      {client.name}
-                    </button>
-                  </TableCell>
-                  <TableCell className="text-gray-600">{client.birthFoundation}</TableCell>
-                  <TableCell className="text-gray-600">{client.type}</TableCell>
-                  <TableCell className="text-gray-600">{client.phone}</TableCell>
-                  <TableCell className="text-gray-600">{client.email}</TableCell>
-                  <TableCell className="text-gray-600">{client.consultant}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          
-          {/* Pagination */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
-            <div className="text-sm text-gray-500">
-              {selectedClients.length > 0 && (
-                <span className="font-medium">
-                  {selectedClients.length} cliente(s) selecionado(s)
-                </span>
-              )}
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">Linhas por página:</span>
-                <Select value={itemsPerPage} onValueChange={setItemsPerPage}>
-                  <SelectTrigger className="w-20">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="20">20</SelectItem>
-                    <SelectItem value="30">30</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                    <SelectItem value="100">100</SelectItem>
-                  </SelectContent>
-                </Select>
+          {loading === 'loading' ? (
+            <div className="p-6">
+              <div className="animate-pulse">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center space-x-4 mb-4">
+                    <Skeleton className="h-4 w-4" />
+                    <Skeleton className="h-4 w-48" />
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-36" />
+                    <Skeleton className="h-4 w-40" />
+                  </div>
+                ))}
               </div>
+            </div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50">
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={selectedClients.length === (data?.data.length || 0) && (data?.data.length || 0) > 0}
+                        onCheckedChange={handleSelectAll}
+                      />
+                    </TableHead>
+                    <TableHead className="w-12"></TableHead>
+                    <TableHead className="font-semibold">Nome</TableHead>
+                    <TableHead className="font-semibold">Nasc./Fund.</TableHead>
+                    <TableHead className="font-semibold">Tipo de Cliente</TableHead>
+                    <TableHead className="font-semibold">Telefone</TableHead>
+                    <TableHead className="font-semibold">E-mail</TableHead>
+                    <TableHead className="font-semibold">Consultor</TableHead>
+                    <TableHead className="w-12"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data?.data.map((client) => (
+                    <TableRow key={client.id} className="hover:bg-gray-50">
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedClients.includes(client.id)}
+                          onCheckedChange={(checked) => handleSelectClient(client.id, checked as boolean)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-[#007BFF]"
+                        >
+                          <Info className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                      <TableCell>
+                        <button className="text-[#007BFF] hover:text-[#0056b3] hover:underline font-medium">
+                          {client.name}
+                        </button>
+                      </TableCell>
+                      <TableCell className="text-gray-600">{client.birthFoundation}</TableCell>
+                      <TableCell className="text-gray-600">{client.type}</TableCell>
+                      <TableCell className="text-gray-600">{client.phone}</TableCell>
+                      <TableCell className="text-gray-600">{client.email}</TableCell>
+                      <TableCell className="text-gray-600">{client.consultantName}</TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-6 w-6">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>Editar</DropdownMenuItem>
+                            <DropdownMenuItem>Visualizar</DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-red-600"
+                              onClick={() => handleDeleteClient(client.id, client.name)}
+                            >
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
               
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="icon" className="h-8 w-8">
-                  <span className="text-lg">‹</span>
-                </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8">
-                  <span className="text-lg">›</span>
-                </Button>
+              {/* Pagination */}
+              <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
+                <div className="text-sm text-gray-500">
+                  {selectedClients.length > 0 && (
+                    <span className="font-medium">
+                      {selectedClients.length} cliente(s) selecionado(s)
+                    </span>
+                  )}
+                  {data && (
+                    <span className="ml-4">
+                      Mostrando {((currentPage - 1) * parseInt(itemsPerPage)) + 1} - {Math.min(currentPage * parseInt(itemsPerPage), data.total)} de {data.total} clientes
+                    </span>
+                  )}
+                </div>
+                
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">Linhas por página:</span>
+                    <Select value={itemsPerPage} onValueChange={setItemsPerPage}>
+                      <SelectTrigger className="w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="20">20</SelectItem>
+                        <SelectItem value="30">30</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="h-8 w-8"
+                      onClick={handlePrevPage}
+                      disabled={currentPage === 1}
+                    >
+                      <span className="text-lg">‹</span>
+                    </Button>
+                    <span className="text-sm text-gray-600">
+                      {currentPage} / {data?.totalPages || 1}
+                    </span>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="h-8 w-8"
+                      onClick={handleNextPage}
+                      disabled={!data || currentPage >= data.totalPages}
+                    >
+                      <span className="text-lg">›</span>
+                    </Button>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
         </div>
       </div>
       
