@@ -4,16 +4,7 @@ import { ArrowRight, Camera, CheckSquare } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
-
-interface Project {
-  id: string;
-  title: string;
-  client: string;
-  projectNumber: string;
-  status: 'Normal' | 'Pendente' | 'Atrasado';
-  itemsCount: string;
-  columnId: string;
-}
+import { Project } from '@/types/project';
 
 interface ProjectCardProps {
   project: Project;
@@ -30,6 +21,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, isDragging = false }
     isDragging: isSortableDragging,
   } = useSortable({
     id: project.id,
+    data: {
+      type: 'project',
+      project
+    }
   });
 
   const style = {
