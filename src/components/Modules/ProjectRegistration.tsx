@@ -9,9 +9,10 @@ import FilterDialog from '@/components/Dialogs/FilterDialog';
 
 interface ProjectRegistrationProps {
   onNewProject?: () => void;
+  onViewProject?: (projectId: string) => void;
 }
 
-const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onNewProject }) => {
+const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onNewProject, onViewProject }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
 
@@ -96,6 +97,12 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onNewProject 
   const handleNewProjectClick = () => {
     if (onNewProject) {
       onNewProject();
+    }
+  };
+
+  const handleProjectClick = (projectId: string) => {
+    if (onViewProject) {
+      onViewProject(projectId);
     }
   };
 
@@ -197,7 +204,12 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onNewProject 
                   />
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{project.name}</div>
+                  <button 
+                    className="text-sm text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                    onClick={() => handleProjectClick(project.id)}
+                  >
+                    {project.name}
+                  </button>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-500">{project.client}</div>
@@ -228,7 +240,7 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onNewProject 
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right">
                   <div className="flex gap-2">
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" onClick={() => handleProjectClick(project.id)}>
                       <Eye className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon">

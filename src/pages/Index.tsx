@@ -4,6 +4,7 @@ import Header from '@/components/Layout/Header';
 import Sidebar from '@/components/Layout/Sidebar';
 import Dashboard from '@/components/Modules/Dashboard';
 import ProjectRegistration from '@/pages/ProjectRegistration';
+import ProjectDetails from '@/pages/ProjectDetails';
 import ProjectList from '@/components/Modules/ProjectRegistration';
 import PortfolioTracking from '@/components/Modules/PortfolioTracking';
 import ProjectBoard from '@/components/Modules/ProjectBoard';
@@ -21,6 +22,8 @@ const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeModule, setActiveModule] = useState('dashboard');
   const [showProjectRegistration, setShowProjectRegistration] = useState(false);
+  const [showProjectDetails, setShowProjectDetails] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -29,6 +32,8 @@ const Index = () => {
   const handleModuleChange = (module: string) => {
     setActiveModule(module);
     setShowProjectRegistration(false);
+    setShowProjectDetails(false);
+    setSelectedProjectId(null);
     // Close sidebar on mobile when selecting a module
     if (window.innerWidth < 1024) {
       setSidebarOpen(false);
@@ -37,10 +42,22 @@ const Index = () => {
 
   const handleNewProject = () => {
     setShowProjectRegistration(true);
+    setShowProjectDetails(false);
   };
 
   const handleBackFromProjectRegistration = () => {
     setShowProjectRegistration(false);
+  };
+
+  const handleViewProject = (projectId: string) => {
+    setSelectedProjectId(projectId);
+    setShowProjectDetails(true);
+    setShowProjectRegistration(false);
+  };
+
+  const handleBackFromProjectDetails = () => {
+    setShowProjectDetails(false);
+    setSelectedProjectId(null);
   };
 
   const renderModule = () => {
@@ -48,10 +65,14 @@ const Index = () => {
       return <ProjectRegistration onBack={handleBackFromProjectRegistration} />;
     }
 
+    if (showProjectDetails) {
+      return <ProjectDetails projectId={selectedProjectId} onBack={handleBackFromProjectDetails} />;
+    }
+
     switch (activeModule) {
       // Quick Access
       case 'projetos':
-        return <ProjectList onNewProject={handleNewProject} />;
+        return <ProjectList onNewProject={handleNewProject} onViewProject={handleViewProject} />;
       case 'carteira':
       case 'acompanhamento-carteira':
         return <PortfolioTracking />;
@@ -67,7 +88,7 @@ const Index = () => {
       case 'especificadores':
         return <Specifiers />;
       case 'projetos-comercial':
-        return <ProjectList onNewProject={handleNewProject} />;
+        return <ProjectList onNewProject={handleNewProject} onViewProject={handleViewProject} />;
       case 'contratos':
         return <Contracts />;
       
