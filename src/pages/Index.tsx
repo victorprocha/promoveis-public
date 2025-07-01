@@ -16,6 +16,8 @@ import EnvironmentReview from '@/pages/EnvironmentReview';
 import Deliveries from '@/pages/Deliveries';
 import Assembly from '@/pages/Assembly';
 import TechnicalAssistance from '@/pages/TechnicalAssistance';
+import Colaboradores from '@/pages/Colaboradores';
+import NovoColaborador from '@/pages/NovoColaborador';
 import { Toaster } from '@/components/ui/toaster';
 
 const Index = () => {
@@ -24,6 +26,7 @@ const Index = () => {
   const [showProjectRegistration, setShowProjectRegistration] = useState(false);
   const [showProjectDetails, setShowProjectDetails] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [showNovoColaborador, setShowNovoColaborador] = useState(false);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -34,6 +37,7 @@ const Index = () => {
     setShowProjectRegistration(false);
     setShowProjectDetails(false);
     setSelectedProjectId(null);
+    setShowNovoColaborador(false);
     // Close sidebar on mobile when selecting a module
     if (window.innerWidth < 1024) {
       setSidebarOpen(false);
@@ -60,6 +64,14 @@ const Index = () => {
     setSelectedProjectId(null);
   };
 
+  const handleNewColaborador = () => {
+    setShowNovoColaborador(true);
+  };
+
+  const handleBackFromNovoColaborador = () => {
+    setShowNovoColaborador(false);
+  };
+
   const renderModule = () => {
     if (showProjectRegistration) {
       return <ProjectRegistration onBack={handleBackFromProjectRegistration} />;
@@ -67,6 +79,10 @@ const Index = () => {
 
     if (showProjectDetails) {
       return <ProjectDetails projectId={selectedProjectId} onBack={handleBackFromProjectDetails} />;
+    }
+
+    if (showNovoColaborador) {
+      return <NovoColaborador onBack={handleBackFromNovoColaborador} />;
     }
 
     switch (activeModule) {
@@ -131,7 +147,7 @@ const Index = () => {
       case 'usuarios':
         return <div className="p-6"><h1 className="text-2xl font-bold">Usuários</h1></div>;
       case 'colaborador':
-        return <div className="p-6"><h1 className="text-2xl font-bold">Colaborador</h1></div>;
+        return <Colaboradores onNewColaborador={handleNewColaborador} />;
       
       // Treinamentos
       case 'comercial-treinamento':
