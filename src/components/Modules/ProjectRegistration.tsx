@@ -1,12 +1,17 @@
+
 import React, { useState } from 'react';
-import { Search, Filter, Plus, MoreVertical, Edit, Eye, Trash2 } from 'lucide-react';
+import { Search, Filter, Plus, MoreVertical, Edit, Eye, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import NewProjectDialog from '@/components/Dialogs/NewProjectDialog';
 import FilterDialog from '@/components/Dialogs/FilterDialog';
 
-const ProjectRegistration: React.FC = () => {
+interface ProjectRegistrationProps {
+  onNewProject?: () => void;
+}
+
+const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onNewProject }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
 
@@ -88,6 +93,12 @@ const ProjectRegistration: React.FC = () => {
     }
   };
 
+  const handleNewProjectClick = () => {
+    if (onNewProject) {
+      onNewProject();
+    }
+  };
+
   return (
     <div className="p-6">
       {/* Page Header */}
@@ -124,11 +135,13 @@ const ProjectRegistration: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-2">
-            <NewProjectDialog>
-              <Button className="bg-[#28A745] hover:bg-[#218838] text-white">
-                <Plus className="h-4 w-4 mr-2" />
-              </Button>
-            </NewProjectDialog>
+            <Button 
+              className="bg-[#28A745] hover:bg-[#218838] text-white"
+              onClick={handleNewProjectClick}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Projeto
+            </Button>
             
             <FilterDialog>
               <Button variant="outline" size="icon" className="text-[#FFC107] border-[#FFC107] hover:bg-[#FFC107] hover:text-white">
@@ -259,10 +272,5 @@ const ProjectRegistration: React.FC = () => {
     </div>
   );
 };
-
-import {
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react';
 
 export default ProjectRegistration;

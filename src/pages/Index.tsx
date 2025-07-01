@@ -1,8 +1,10 @@
+
 import React, { useState } from 'react';
 import Header from '@/components/Layout/Header';
 import Sidebar from '@/components/Layout/Sidebar';
 import Dashboard from '@/components/Modules/Dashboard';
 import ProjectRegistration from '@/pages/ProjectRegistration';
+import ProjectList from '@/components/Modules/ProjectRegistration';
 import PortfolioTracking from '@/components/Modules/PortfolioTracking';
 import ProjectBoard from '@/components/Modules/ProjectBoard';
 import Sales from '@/pages/Sales';
@@ -49,7 +51,7 @@ const Index = () => {
     switch (activeModule) {
       // Quick Access
       case 'projetos':
-        return <ProjectRegistration />;
+        return <ProjectList onNewProject={handleNewProject} />;
       case 'carteira':
       case 'acompanhamento-carteira':
         return <PortfolioTracking />;
@@ -65,7 +67,7 @@ const Index = () => {
       case 'especificadores':
         return <Specifiers />;
       case 'projetos-comercial':
-        return <ProjectRegistration />;
+        return <ProjectList onNewProject={handleNewProject} />;
       case 'contratos':
         return <Contracts />;
       
