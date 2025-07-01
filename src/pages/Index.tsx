@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import Header from '@/components/Layout/Header';
 import Sidebar from '@/components/Layout/Sidebar';
 import Dashboard from '@/components/Modules/Dashboard';
-import ProjectRegistration from '@/components/Modules/ProjectRegistration';
+import ProjectRegistration from '@/pages/ProjectRegistration';
 import PortfolioTracking from '@/components/Modules/PortfolioTracking';
 import ProjectBoard from '@/components/Modules/ProjectBoard';
 import Sales from '@/pages/Sales';
@@ -19,6 +18,7 @@ import { Toaster } from '@/components/ui/toaster';
 const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeModule, setActiveModule] = useState('dashboard');
+  const [showProjectRegistration, setShowProjectRegistration] = useState(false);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -26,13 +26,26 @@ const Index = () => {
 
   const handleModuleChange = (module: string) => {
     setActiveModule(module);
+    setShowProjectRegistration(false);
     // Close sidebar on mobile when selecting a module
     if (window.innerWidth < 1024) {
       setSidebarOpen(false);
     }
   };
 
+  const handleNewProject = () => {
+    setShowProjectRegistration(true);
+  };
+
+  const handleBackFromProjectRegistration = () => {
+    setShowProjectRegistration(false);
+  };
+
   const renderModule = () => {
+    if (showProjectRegistration) {
+      return <ProjectRegistration onBack={handleBackFromProjectRegistration} />;
+    }
+
     switch (activeModule) {
       // Quick Access
       case 'projetos':
@@ -42,7 +55,7 @@ const Index = () => {
         return <PortfolioTracking />;
       case 'painel-projetos':
       case 'painel-projetos-enterprise':
-        return <ProjectBoard />;
+        return <ProjectBoard onNewProject={handleNewProject} />;
       
       // Comercial
       case 'vendas':
