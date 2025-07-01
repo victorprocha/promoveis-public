@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Search, Filter, Plus, MoreVertical, FolderOpen, Info, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -35,6 +34,7 @@ const Clients = () => {
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [itemsPerPage, setItemsPerPage] = useState('30');
   const [currentPage, setCurrentPage] = useState(1);
+  const [showNewClientDialog, setShowNewClientDialog] = useState(false);
 
   // Criar filtros para o hook
   const filters = useMemo<ClientFilters>(() => ({
@@ -175,14 +175,13 @@ const Clients = () => {
               LIMPAR FILTROS
             </Button>
             
-            <NewClientDialog>
-              <Button
-                size="icon"
-                className="bg-[#007BFF] hover:bg-[#0056b3] text-white rounded-full w-10 h-10"
-              >
-                <Plus className="h-5 w-5" />
-              </Button>
-            </NewClientDialog>
+            <Button
+              size="icon"
+              className="bg-[#007BFF] hover:bg-[#0056b3] text-white rounded-full w-10 h-10"
+              onClick={() => setShowNewClientDialog(true)}
+            >
+              <Plus className="h-5 w-5" />
+            </Button>
             
             <Button
               variant="outline"
@@ -375,6 +374,11 @@ const Clients = () => {
           <MessageCircle className="h-6 w-6" />
         </Button>
       </div>
+      
+      <NewClientDialog 
+        open={showNewClientDialog} 
+        onOpenChange={setShowNewClientDialog}
+      />
     </div>
   );
 };

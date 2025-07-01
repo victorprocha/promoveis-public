@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   BarChart3, 
   Users, 
@@ -20,6 +19,8 @@ import NewClientDialog from '@/components/Dialogs/NewClientDialog';
 import AgendaDialog from '@/components/Dialogs/AgendaDialog';
 
 const Dashboard: React.FC = () => {
+  const [showNewClientDialog, setShowNewClientDialog] = useState(false);
+  
   const stats = [
     {
       title: 'Projetos Ativos',
@@ -257,22 +258,21 @@ const Dashboard: React.FC = () => {
                 </div>
               </Button>
 
-              <NewClientDialog>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start h-auto p-4 border-slate-200/60 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-emerald-100 transition-all duration-200"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-xl shadow-sm">
-                      <Users className="h-4 w-4 text-emerald-600" />
-                    </div>
-                    <div className="text-left">
-                      <div className="font-semibold text-slate-800">Novo Cliente</div>
-                      <div className="text-sm text-slate-500">Cadastrar cliente</div>
-                    </div>
+              <Button
+                variant="outline"
+                className="w-full justify-start h-auto p-4 border-slate-200/60 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-emerald-100 transition-all duration-200"
+                onClick={() => setShowNewClientDialog(true)}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-xl shadow-sm">
+                    <Users className="h-4 w-4 text-emerald-600" />
                   </div>
-                </Button>
-              </NewClientDialog>
+                  <div className="text-left">
+                    <div className="font-semibold text-slate-800">Novo Cliente</div>
+                    <div className="text-sm text-slate-500">Cadastrar cliente</div>
+                  </div>
+                </div>
+              </Button>
 
               <AgendaDialog>
                 <Button
@@ -402,6 +402,11 @@ const Dashboard: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      <NewClientDialog 
+        open={showNewClientDialog} 
+        onOpenChange={setShowNewClientDialog}
+      />
     </div>
   );
 };
