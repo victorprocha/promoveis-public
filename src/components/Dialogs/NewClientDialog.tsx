@@ -5,30 +5,25 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 
 interface NewClientDialogProps {
-  children: React.ReactNode;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-const NewClientDialog: React.FC<NewClientDialogProps> = ({ children }) => {
-  const [open, setOpen] = useState(false);
+const NewClientDialog: React.FC<NewClientDialogProps> = ({ open, onOpenChange }) => {
   const [formData, setFormData] = useState({
-    name: '',
+    tipoPessoa: 'pessoa-fisica',
+    nome: '',
     email: '',
-    phone: '',
-    company: '',
-    address: '',
-    city: '',
-    state: '',
-    clientType: 'pessoa-fisica'
+    telefone: ''
   });
   const { toast } = useToast();
 
@@ -42,130 +37,173 @@ const NewClientDialog: React.FC<NewClientDialogProps> = ({ children }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validação dos campos obrigatórios
+    if (!formData.nome.trim()) {
+      toast({
+        title: "Erro de validação",
+        description: "O campo Nome é obrigatório.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.tipoPessoa) {
+      toast({
+        title: "Erro de validação",
+        description: "Selecione o tipo de pessoa.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     console.log('Criando novo cliente:', formData);
     
     toast({
       title: "Cliente cadastrado com sucesso!",
-      description: `O cliente "${formData.name}" foi cadastrado.`,
+      description: `O cliente "${formData.nome}" foi cadastrado.`,
     });
 
+    // Reset form and close dialog
     setFormData({
-      name: '',
+      tipoPessoa: 'pessoa-fisica',
+      nome: '',
       email: '',
-      phone: '',
-      company: '',
-      address: '',
-      city: '',
-      state: '',
-      clientType: 'pessoa-fisica'
+      telefone: ''
     });
-    setOpen(false);
+    onOpenChange(false);
+  };
+
+  const handleCancel = () => {
+    const hasChanges = formData.nome || formData.email || formData.telefone || formData.tipoPessoa !== 'pessoa-fisica';
+    
+    if (hasChanges) {
+      if (window.confirm('Deseja descartar as alterações?')) {
+        setFormData({
+          tipoPessoa: 'pessoa-fisica',
+          nome: '',
+          email: '',
+          telefone: ''
+        });
+        onOpenChange(false);
+      }
+    } else {
+      onOpenChange(false);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>Novo Cliente</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="clientType">Tipo de Cliente</Label>
-            <Select value={formData.clientType} onValueChange={(value) => handleInputChange('clientType', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pessoa-fisica">Pessoa Física</SelectItem>
-                <SelectItem value="pessoa-juridica">Pessoa Jurídica</SelectItem>
-              </SelectContent>
-            </Select>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="space-y-4">
+          <div className="text-sm text-gray-500">
+            <span className="text-blue-600 hover:underline cursor-pointer" onClick={() => onOpenChange(false)}>
+              Clientes
+            </span>
+            {' > '}
+            <span>Novo Cliente</span>
           </div>
+          <DialogTitle className="text-2xl font-bold text-gray-800">
+            Dados do Cliente
+          </DialogTitle>
+        </DialogHeader>
 
-          <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-4">
+            <div className="space-y-3">
+              <Label className="text-base font-medium text-gray-700">
+                Tipo de Pessoa <span className="text-red-500">*</span>
+              </Label>
+              <RadioGroup
+                value={formData.tipoPessoa}
+                onValueChange={(value) => handleInputChange('tipoPessoa', value)}
+                className="flex gap-6"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem 
+                    value="pessoa-fisica" 
+                    id="pessoa-fisica"
+                    className="border-gray-300 text-blue-600 data-[state=checked]:border-blue-600"
+                  />
+                  <Label htmlFor="pessoa-fisica" className="text-gray-700 cursor-pointer">
+                    Pessoa Física
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem 
+                    value="pessoa-juridica" 
+                    id="pessoa-juridica"
+                    className="border-gray-300 text-blue-600 data-[state=checked]:border-blue-600"
+                  />
+                  <Label htmlFor="pessoa-juridica" className="text-gray-700 cursor-pointer">
+                    Pessoa Jurídica
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="name">Nome Completo *</Label>
+              <Label htmlFor="nome" className="text-base font-medium text-gray-700">
+                Nome <span className="text-red-500">*</span>
+              </Label>
               <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                placeholder="Nome completo do cliente"
+                id="nome"
+                type="text"
+                value={formData.nome}
+                onChange={(e) => handleInputChange('nome', e.target.value)}
+                placeholder="Digite o nome completo"
+                className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-md"
                 required
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
+              <Label htmlFor="email" className="text-base font-medium text-gray-700">
+                E-mail
+              </Label>
               <Input
                 id="email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
-                placeholder="email@exemplo.com"
+                placeholder="exemplo@email.com"
+                className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-md"
               />
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-700 border-b border-gray-200 pb-2">
+                Contato
+              </h3>
+              <div className="space-y-2">
+                <Label htmlFor="telefone" className="text-base font-medium text-gray-700">
+                  Telefone
+                </Label>
+                <Input
+                  id="telefone"
+                  type="tel"
+                  value={formData.telefone}
+                  onChange={(e) => handleInputChange('telefone', e.target.value)}
+                  placeholder="(11) 99999-9999"
+                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-md"
+                />
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="phone">Telefone</Label>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => handleInputChange('phone', e.target.value)}
-                placeholder="(11) 99999-9999"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="company">Empresa</Label>
-              <Input
-                id="company"
-                value={formData.company}
-                onChange={(e) => handleInputChange('company', e.target.value)}
-                placeholder="Nome da empresa"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="address">Endereço</Label>
-            <Input
-              id="address"
-              value={formData.address}
-              onChange={(e) => handleInputChange('address', e.target.value)}
-              placeholder="Endereço completo"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="city">Cidade</Label>
-              <Input
-                id="city"
-                value={formData.city}
-                onChange={(e) => handleInputChange('city', e.target.value)}
-                placeholder="Cidade"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="state">Estado</Label>
-              <Input
-                id="state"
-                value={formData.state}
-                onChange={(e) => handleInputChange('state', e.target.value)}
-                placeholder="Estado"
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Cancelar
+          <DialogFooter className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+            <Button 
+              type="button" 
+              variant="ghost" 
+              onClick={handleCancel}
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            >
+              CANCELAR
             </Button>
-            <Button type="submit" className="bg-[#007BFF] hover:bg-[#0056b3]">
-              Cadastrar Cliente
+            <Button 
+              type="submit" 
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md"
+            >
+              CONFIRMAR
             </Button>
           </DialogFooter>
         </form>

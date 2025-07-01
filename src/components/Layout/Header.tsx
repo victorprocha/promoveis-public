@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { Bell, MessageCircle, Plus, Menu, LogOut, User } from 'lucide-react';
+import React, { useState } from 'react';
+import { Bell, MessageCircle, Plus, Menu, LogOut, User, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -12,7 +12,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useNavigate } from 'react-router-dom';
-import NewProjectDialog from '@/components/Dialogs/NewProjectDialog';
+import NewClientDialog from '@/components/Dialogs/NewClientDialog';
+import NewProjectWithClientDialog from '@/components/Dialogs/NewProjectWithClientDialog';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -20,6 +21,8 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const navigate = useNavigate();
+  const [showNewClientDialog, setShowNewClientDialog] = useState(false);
+  const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
 
   const handleLogout = () => {
     navigate('/auth');
@@ -48,12 +51,29 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
       </div>
 
       <div className="flex items-center gap-3">
-        <NewProjectDialog>
-          <Button className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-medium px-6 py-2.5 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
-            <Plus className="h-4 w-4 mr-2" />
-            NOVO
-          </Button>
-        </NewProjectDialog>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-medium px-6 py-2.5 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
+              <Plus className="h-4 w-4 mr-2" />
+              NOVO
+              <ChevronDown className="h-4 w-4 ml-2" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48 bg-white/95 backdrop-blur-sm border-slate-200/50 shadow-xl">
+            <DropdownMenuItem 
+              className="hover:bg-slate-100/80 cursor-pointer"
+              onClick={() => setShowNewClientDialog(true)}
+            >
+              Cliente
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              className="hover:bg-slate-100/80 cursor-pointer"
+              onClick={() => setShowNewProjectDialog(true)}
+            >
+              Projeto
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <div className="flex items-center gap-2">
           <Button
@@ -112,6 +132,16 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           </DropdownMenu>
         </div>
       </div>
+
+      <NewClientDialog 
+        open={showNewClientDialog} 
+        onOpenChange={setShowNewClientDialog}
+      />
+      
+      <NewProjectWithClientDialog 
+        open={showNewProjectDialog} 
+        onOpenChange={setShowNewProjectDialog}
+      />
     </header>
   );
 };
