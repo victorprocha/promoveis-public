@@ -29,7 +29,11 @@ import NewClientDialog from '@/components/Dialogs/NewClientDialog';
 import { useClients } from '@/hooks/useClients';
 import { ClientFilters } from '@/types/client';
 
-const Clients = () => {
+interface ClientsProps {
+  onViewClient?: (clientId: string) => void;
+}
+
+const Clients: React.FC<ClientsProps> = ({ onViewClient }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [itemsPerPage, setItemsPerPage] = useState('30');
@@ -235,12 +239,6 @@ const Clients = () => {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50">
-                    <TableHead className="w-12">
-                      <Checkbox
-                        checked={selectedClients.length === (data?.data.length || 0) && (data?.data.length || 0) > 0}
-                        onCheckedChange={handleSelectAll}
-                      />
-                    </TableHead>
                     <TableHead className="w-12"></TableHead>
                     <TableHead className="font-semibold">Nome</TableHead>
                     <TableHead className="font-semibold">Nasc./Fund.</TableHead>
@@ -255,12 +253,6 @@ const Clients = () => {
                   {data?.data.map((client) => (
                     <TableRow key={client.id} className="hover:bg-gray-50">
                       <TableCell>
-                        <Checkbox
-                          checked={selectedClients.includes(client.id)}
-                          onCheckedChange={(checked) => handleSelectClient(client.id, checked as boolean)}
-                        />
-                      </TableCell>
-                      <TableCell>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -270,7 +262,10 @@ const Clients = () => {
                         </Button>
                       </TableCell>
                       <TableCell>
-                        <button className="text-[#007BFF] hover:text-[#0056b3] hover:underline font-medium">
+                        <button 
+                          className="text-[#007BFF] hover:text-[#0056b3] hover:underline font-medium"
+                          onClick={() => onViewClient?.(client.id)}
+                        >
                           {client.name}
                         </button>
                       </TableCell>

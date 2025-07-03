@@ -42,10 +42,10 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
         
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg">
-            <span className="text-white font-bold text-sm">F</span>
+            <span className="text-white font-bold text-sm">P</span>
           </div>
           <div className="text-xl font-bold bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
-            FOCCO<span className="text-blue-400">LOJAS</span>
+            PROM<span className="text-blue-400">ÓVEIS</span>
           </div>
         </div>
       </div>
@@ -110,7 +110,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
                   </Avatar>
                   <div className="text-left hidden md:block">
                     <div className="text-sm font-medium">Usuário</div>
-                    <div className="text-xs text-blue-200">FoccoLojas</div>
+                    <div className="text-xs text-blue-200">Promóveis</div>
                   </div>
                 </div>
               </Button>

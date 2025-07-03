@@ -18,6 +18,7 @@ import Assembly from '@/pages/Assembly';
 import TechnicalAssistance from '@/pages/TechnicalAssistance';
 import Colaboradores from '@/pages/Colaboradores';
 import NovoColaborador from '@/pages/NovoColaborador';
+import ClientDetails from '@/pages/ClientDetails';
 import { Toaster } from '@/components/ui/toaster';
 
 const Index = () => {
@@ -27,6 +28,8 @@ const Index = () => {
   const [showProjectDetails, setShowProjectDetails] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [showNovoColaborador, setShowNovoColaborador] = useState(false);
+  const [showClientDetails, setShowClientDetails] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -38,6 +41,8 @@ const Index = () => {
     setShowProjectDetails(false);
     setSelectedProjectId(null);
     setShowNovoColaborador(false);
+    setShowClientDetails(false);
+    setSelectedClientId(null);
     // Close sidebar on mobile when selecting a module
     if (window.innerWidth < 1024) {
       setSidebarOpen(false);
@@ -72,6 +77,16 @@ const Index = () => {
     setShowNovoColaborador(false);
   };
 
+  const handleViewClient = (clientId: string) => {
+    setSelectedClientId(clientId);
+    setShowClientDetails(true);
+  };
+
+  const handleBackFromClientDetails = () => {
+    setShowClientDetails(false);
+    setSelectedClientId(null);
+  };
+
   const renderModule = () => {
     if (showProjectRegistration) {
       return <ProjectRegistration onBack={handleBackFromProjectRegistration} />;
@@ -83,6 +98,10 @@ const Index = () => {
 
     if (showNovoColaborador) {
       return <NovoColaborador onBack={handleBackFromNovoColaborador} />;
+    }
+
+    if (showClientDetails) {
+      return <ClientDetails clientId={selectedClientId} onBack={handleBackFromClientDetails} />;
     }
 
     switch (activeModule) {
@@ -100,7 +119,7 @@ const Index = () => {
       case 'vendas':
         return <Sales />;
       case 'clientes':
-        return <Clients />;
+        return <Clients onViewClient={handleViewClient} />;
       case 'especificadores':
         return <Specifiers />;
       case 'projetos-comercial':
