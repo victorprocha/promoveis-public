@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -18,20 +18,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useClients } from '@/hooks/useClients';
+import { Skeleton } from '@/components/ui/skeleton';
 import NewClientDialog from './NewClientDialog';
-
-interface Client {
-  id: string;
-  nome: string;
-  nomeFantasia?: string;
-  cpfcnpj: string;
-  nomeConjuge?: string;
-}
 
 interface ClientSelectionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onClientSelect: (client: Client) => void;
+  onClientSelect: (client: any) => void;
 }
 
 const ClientSelectionDialog: React.FC<ClientSelectionDialogProps> = ({ 
@@ -43,41 +37,22 @@ const ClientSelectionDialog: React.FC<ClientSelectionDialogProps> = ({
   const [showNewClientDialog, setShowNewClientDialog] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   
-  // Mock data - em produção seria vindo de uma API
-  const [clients] = useState<Client[]>([
-    {
-      id: '1',
-      nome: 'João Silva Santos',
-      nomeFantasia: 'Silva Ltda',
-      cpfcnpj: '123.456.789-00',
-      nomeConjuge: 'Maria Silva'
-    },
-    {
-      id: '2',
-      nome: 'Empresa ABC Ltda',
-      nomeFantasia: 'ABC Corp',
-      cpfcnpj: '12.345.678/0001-90',
-      nomeConjuge: ''
-    },
-    {
-      id: '3',
-      nome: 'Pedro Oliveira',
-      nomeFantasia: '',
-      cpfcnpj: '987.654.321-00',
-      nomeConjuge: 'Ana Oliveira'
-    }
-  ]);
+  const { data: clientsData, loading, fetchClients } = useClients({
+    search: searchTerm,
+    page: currentPage,
+    limit: 5
+  });
 
-  const itemsPerPage = 5;
-  const totalItems = clients.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-  const currentClients = clients.slice(startIndex, endIndex);
+  // Recarregar quando abrir o dialog ou mudar os filtros
+  useEffect(() => {
+    if (open) {
+      fetchClients();
+    }
+  }, [open, searchTerm, currentPage, fetchClients]);
 
   const handleSearch = () => {
-    console.log('Pesquisando por:', searchTerm);
-    // Aqui seria feita a chamada para a API
+    setCurrentPage(1);
+    fetchClients();
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -86,15 +61,19 @@ const ClientSelectionDialog: React.FC<ClientSelectionDialogProps> = ({
     }
   };
 
-  const handleClientSelect = (client: Client) => {
+  const handleClientSelect = (client: any) => {
     onClientSelect(client);
     onOpenChange(false);
   };
 
   const handleNewClientCreated = () => {
     setShowNewClientDialog(false);
-    // Aqui seria atualizada a lista de clientes
+    fetchClients(); // Recarregar lista após criar cliente
   };
+
+  const totalPages = clientsData?.totalPages || 1;
+  const total = clientsData?.total || 0;
+  const clients = clientsData?.data || [];
 
   return (
     <>
@@ -129,34 +108,51 @@ const ClientSelectionDialog: React.FC<ClientSelectionDialogProps> = ({
                 <TableHeader>
                   <TableRow className="bg-gray-50">
                     <TableHead className="font-semibold text-gray-700">Nome</TableHead>
-                    <TableHead className="font-semibold text-gray-700">Nome Fantasia</TableHead>
-                    <TableHead className="font-semibold text-gray-700">CPF/CNPJ</TableHead>
-                    <TableHead className="font-semibold text-gray-700">Nome do Cônjuge</TableHead>
+                    <TableHead className="font-semibold text-gray-700">E-mail</TableHead>
+                    <TableHead className="font-semibold text-gray-700">Telefone</TableHead>
+                    <TableHead className="font-semibold text-gray-700">Tipo</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {currentClients.map((client) => (
-                    <TableRow 
-                      key={client.id} 
-                      className="hover:bg-gray-50 cursor-pointer"
-                      onClick={() => handleClientSelect(client)}
-                    >
-                      <TableCell>
-                        <button className="text-blue-600 hover:text-blue-800 hover:underline font-medium text-left">
-                          {client.nome}
-                        </button>
-                      </TableCell>
-                      <TableCell className="text-gray-600">
-                        {client.nomeFantasia || '-'}
-                      </TableCell>
-                      <TableCell className="text-gray-600">
-                        {client.cpfcnpj}
-                      </TableCell>
-                      <TableCell className="text-gray-600">
-                        {client.nomeConjuge || '-'}
+                  {loading === 'loading' ? (
+                    [...Array(5)].map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                      </TableRow>
+                    ))
+                  ) : clients.length > 0 ? (
+                    clients.map((client) => (
+                      <TableRow 
+                        key={client.id} 
+                        className="hover:bg-gray-50 cursor-pointer"
+                        onClick={() => handleClientSelect(client)}
+                      >
+                        <TableCell>
+                          <button className="text-blue-600 hover:text-blue-800 hover:underline font-medium text-left">
+                            {client.name}
+                          </button>
+                        </TableCell>
+                        <TableCell className="text-gray-600">
+                          {client.email || '-'}
+                        </TableCell>
+                        <TableCell className="text-gray-600">
+                          {client.phone || '-'}
+                        </TableCell>
+                        <TableCell className="text-gray-600">
+                          {client.type}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                        {searchTerm ? 'Nenhum cliente encontrado para esta pesquisa.' : 'Nenhum cliente cadastrado.'}
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -183,7 +179,7 @@ const ClientSelectionDialog: React.FC<ClientSelectionDialogProps> = ({
             <div className="flex items-center gap-4">
               {/* Contador */}
               <span className="text-sm text-gray-600">
-                {startIndex + 1}-{endIndex} de {totalItems}
+                {clients.length > 0 ? `${((currentPage - 1) * 5) + 1}-${Math.min(currentPage * 5, total)} de ${total}` : '0 de 0'}
               </span>
 
               {/* Paginação */}
@@ -193,7 +189,7 @@ const ClientSelectionDialog: React.FC<ClientSelectionDialogProps> = ({
                   size="icon"
                   className="h-8 w-8"
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
+                  disabled={currentPage === 1 || loading === 'loading'}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -202,7 +198,7 @@ const ClientSelectionDialog: React.FC<ClientSelectionDialogProps> = ({
                   size="icon"
                   className="h-8 w-8"
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
+                  disabled={currentPage === totalPages || loading === 'loading'}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -211,8 +207,9 @@ const ClientSelectionDialog: React.FC<ClientSelectionDialogProps> = ({
               <Button 
                 onClick={handleSearch}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6"
+                disabled={loading === 'loading'}
               >
-                PESQUISAR
+                {loading === 'loading' ? 'PESQUISANDO...' : 'PESQUISAR'}
               </Button>
             </div>
           </DialogFooter>

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { useClients } from '@/hooks/useClients';
+import { projectService } from '@/services/projectService';
 import ClientSelectionDialog from './ClientSelectionDialog';
 
 interface Client {
@@ -34,11 +36,13 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
     description: '',
     consultant: '',
     environments: '',
-    priority: 'normal'
+    priority: 'Normal'
   });
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [selectedClient, setSelectedClient] = useState<any>(null);
   const [showClientSelection, setShowClientSelection] = useState(false);
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { data: clientsData } = useClients();
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -47,11 +51,12 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
     }));
   };
 
-  const handleClientSelect = (client: Client) => {
+  const handleClientSelect = (client: any) => {
     setSelectedClient(client);
+    setShowClientSelection(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.projectName.trim()) {
@@ -71,32 +76,48 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
       });
       return;
     }
-    
-    console.log('Criando novo projeto:', { 
-      ...formData, 
-      cliente: selectedClient 
-    });
-    
-    toast({
-      title: "Projeto criado com sucesso!",
-      description: `O projeto "${formData.projectName}" foi criado para o cliente ${selectedClient.nome}.`,
-    });
 
-    // Reset form and close dialog
-    setFormData({
-      projectName: '',
-      description: '',
-      consultant: '',
-      environments: '',
-      priority: 'normal'
-    });
-    setSelectedClient(null);
-    onOpenChange(false);
+    setLoading(true);
+    
+    try {
+      await projectService.createProject({
+        title: formData.projectName,
+        clientId: selectedClient.id,
+        description: formData.description,
+        priority: formData.priority as any,
+        consultant: formData.consultant,
+        environments: formData.environments
+      });
+
+      toast({
+        title: "Projeto criado com sucesso!",
+        description: `O projeto "${formData.projectName}" foi criado para o cliente ${selectedClient.name}.`,
+      });
+
+      // Reset form and close dialog
+      setFormData({
+        projectName: '',
+        description: '',
+        consultant: '',
+        environments: '',
+        priority: 'Normal'
+      });
+      setSelectedClient(null);
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({
+        title: "Erro ao criar projeto",
+        description: error.message || "Ocorreu um erro ao criar o projeto. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCancel = () => {
     const hasChanges = formData.projectName || formData.description || formData.consultant || 
-                      formData.environments || selectedClient || formData.priority !== 'normal';
+                      formData.environments || selectedClient || formData.priority !== 'Normal';
     
     if (hasChanges) {
       if (window.confirm('Deseja descartar as alterações?')) {
@@ -105,7 +126,7 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
           description: '',
           consultant: '',
           environments: '',
-          priority: 'normal'
+          priority: 'Normal'
         });
         setSelectedClient(null);
         onOpenChange(false);
@@ -141,8 +162,8 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
               {selectedClient ? (
                 <div className="flex items-center justify-between p-3 border border-gray-300 rounded-md bg-gray-50">
                   <div>
-                    <p className="font-medium text-gray-800">{selectedClient.nome}</p>
-                    <p className="text-sm text-gray-600">{selectedClient.cpfcnpj}</p>
+                    <p className="font-medium text-gray-800">{selectedClient.name}</p>
+                    <p className="text-sm text-gray-600">{selectedClient.email || 'Email não informado'}</p>
                   </div>
                   <Button
                     type="button"
@@ -230,10 +251,10 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
                   <SelectValue placeholder="Selecione a prioridade" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="baixa">Baixa</SelectItem>
-                  <SelectItem value="normal">Normal</SelectItem>
-                  <SelectItem value="alta">Alta</SelectItem>
-                  <SelectItem value="urgente">Urgente</SelectItem>
+                  <SelectItem value="Baixa">Baixa</SelectItem>
+                  <SelectItem value="Normal">Normal</SelectItem>
+                  <SelectItem value="Alta">Alta</SelectItem>
+                  <SelectItem value="Urgente">Urgente</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -244,14 +265,16 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
                 variant="ghost" 
                 onClick={handleCancel}
                 className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                disabled={loading}
               >
                 CANCELAR
               </Button>
               <Button 
                 type="submit" 
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md"
+                disabled={loading}
               >
-                CONFIRMAR
+                {loading ? 'CRIANDO...' : 'CONFIRMAR'}
               </Button>
             </DialogFooter>
           </form>

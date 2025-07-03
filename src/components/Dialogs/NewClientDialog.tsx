@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
+import { useClients } from '@/hooks/useClients';
 
 interface NewClientDialogProps {
   open: boolean;
@@ -23,9 +24,16 @@ const NewClientDialog: React.FC<NewClientDialogProps> = ({ open, onOpenChange })
     tipoPessoa: 'pessoa-fisica',
     nome: '',
     email: '',
-    telefone: ''
+    telefone: '',
+    empresa: '',
+    endereco: '',
+    cidade: '',
+    estado: '',
+    cep: ''
   });
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { createClient } = useClients();
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -34,7 +42,7 @@ const NewClientDialog: React.FC<NewClientDialogProps> = ({ open, onOpenChange })
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validação dos campos obrigatórios
@@ -55,26 +63,47 @@ const NewClientDialog: React.FC<NewClientDialogProps> = ({ open, onOpenChange })
       });
       return;
     }
-    
-    console.log('Criando novo cliente:', formData);
-    
-    toast({
-      title: "Cliente cadastrado com sucesso!",
-      description: `O cliente "${formData.nome}" foi cadastrado.`,
-    });
 
-    // Reset form and close dialog
-    setFormData({
-      tipoPessoa: 'pessoa-fisica',
-      nome: '',
-      email: '',
-      telefone: ''
-    });
-    onOpenChange(false);
+    setLoading(true);
+    
+    try {
+      await createClient({
+        name: formData.nome,
+        email: formData.email,
+        phone: formData.telefone,
+        type: formData.tipoPessoa === 'pessoa-fisica' ? 'Pessoa Física' : 'Pessoa Jurídica',
+        company: formData.empresa,
+        address: formData.endereco,
+        city: formData.cidade,
+        state: formData.estado,
+        zipCode: formData.cep,
+        consultantId: '' // Será preenchido automaticamente no service
+      });
+
+      // Reset form and close dialog
+      setFormData({
+        tipoPessoa: 'pessoa-fisica',
+        nome: '',
+        email: '',
+        telefone: '',
+        empresa: '',
+        endereco: '',
+        cidade: '',
+        estado: '',
+        cep: ''
+      });
+      onOpenChange(false);
+    } catch (error) {
+      // Erro já tratado pelo hook useClients
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCancel = () => {
-    const hasChanges = formData.nome || formData.email || formData.telefone || formData.tipoPessoa !== 'pessoa-fisica';
+    const hasChanges = formData.nome || formData.email || formData.telefone || 
+                      formData.empresa || formData.endereco || formData.cidade || 
+                      formData.estado || formData.cep || formData.tipoPessoa !== 'pessoa-fisica';
     
     if (hasChanges) {
       if (window.confirm('Deseja descartar as alterações?')) {
@@ -82,7 +111,12 @@ const NewClientDialog: React.FC<NewClientDialogProps> = ({ open, onOpenChange })
           tipoPessoa: 'pessoa-fisica',
           nome: '',
           email: '',
-          telefone: ''
+          telefone: '',
+          empresa: '',
+          endereco: '',
+          cidade: '',
+          estado: '',
+          cep: ''
         });
         onOpenChange(false);
       }
@@ -143,14 +177,14 @@ const NewClientDialog: React.FC<NewClientDialogProps> = ({ open, onOpenChange })
 
             <div className="space-y-2">
               <Label htmlFor="nome" className="text-base font-medium text-gray-700">
-                Nome <span className="text-red-500">*</span>
+                Nome {formData.tipoPessoa === 'pessoa-juridica' ? 'da Empresa' : 'Completo'} <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="nome"
                 type="text"
                 value={formData.nome}
                 onChange={(e) => handleInputChange('nome', e.target.value)}
-                placeholder="Digite o nome completo"
+                placeholder={formData.tipoPessoa === 'pessoa-juridica' ? "Digite o nome da empresa" : "Digite o nome completo"}
                 className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-md"
                 required
               />
@@ -170,20 +204,96 @@ const NewClientDialog: React.FC<NewClientDialogProps> = ({ open, onOpenChange })
               />
             </div>
 
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium text-gray-700 border-b border-gray-200 pb-2">
-                Contato
-              </h3>
+            <div className="space-y-2">
+              <Label htmlFor="telefone" className="text-base font-medium text-gray-700">
+                Telefone
+              </Label>
+              <Input
+                id="telefone"
+                type="tel"
+                value={formData.telefone}
+                onChange={(e) => handleInputChange('telefone', e.target.value)}
+                placeholder="(11) 99999-9999"
+                className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-md"
+              />
+            </div>
+
+            {formData.tipoPessoa === 'pessoa-juridica' && (
               <div className="space-y-2">
-                <Label htmlFor="telefone" className="text-base font-medium text-gray-700">
-                  Telefone
+                <Label htmlFor="empresa" className="text-base font-medium text-gray-700">
+                  Nome Fantasia
                 </Label>
                 <Input
-                  id="telefone"
-                  type="tel"
-                  value={formData.telefone}
-                  onChange={(e) => handleInputChange('telefone', e.target.value)}
-                  placeholder="(11) 99999-9999"
+                  id="empresa"
+                  type="text"
+                  value={formData.empresa}
+                  onChange={(e) => handleInputChange('empresa', e.target.value)}
+                  placeholder="Nome fantasia da empresa"
+                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-md"
+                />
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-700 border-b border-gray-200 pb-2">
+                Endereço
+              </h3>
+              
+              <div className="space-y-2">
+                <Label htmlFor="endereco" className="text-base font-medium text-gray-700">
+                  Endereço
+                </Label>
+                <Input
+                  id="endereco"
+                  type="text"
+                  value={formData.endereco}
+                  onChange={(e) => handleInputChange('endereco', e.target.value)}
+                  placeholder="Rua, número, complemento"
+                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-md"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="cidade" className="text-base font-medium text-gray-700">
+                    Cidade
+                  </Label>
+                  <Input
+                    id="cidade"
+                    type="text"
+                    value={formData.cidade}
+                    onChange={(e) => handleInputChange('cidade', e.target.value)}
+                    placeholder="Nome da cidade"
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-md"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="estado" className="text-base font-medium text-gray-700">
+                    Estado
+                  </Label>
+                  <Input
+                    id="estado"
+                    type="text"
+                    value={formData.estado}
+                    onChange={(e) => handleInputChange('estado', e.target.value)}
+                    placeholder="UF"
+                    maxLength={2}
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-md"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cep" className="text-base font-medium text-gray-700">
+                  CEP
+                </Label>
+                <Input
+                  id="cep"
+                  type="text"
+                  value={formData.cep}
+                  onChange={(e) => handleInputChange('cep', e.target.value)}
+                  placeholder="00000-000"
                   className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-md"
                 />
               </div>
@@ -196,14 +306,16 @@ const NewClientDialog: React.FC<NewClientDialogProps> = ({ open, onOpenChange })
               variant="ghost" 
               onClick={handleCancel}
               className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+              disabled={loading}
             >
               CANCELAR
             </Button>
             <Button 
               type="submit" 
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md"
+              disabled={loading}
             >
-              CONFIRMAR
+              {loading ? 'SALVANDO...' : 'CONFIRMAR'}
             </Button>
           </DialogFooter>
         </form>
