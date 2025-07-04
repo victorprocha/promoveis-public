@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -52,7 +51,14 @@ const NewClientDialog: React.FC<NewClientDialogProps> = ({ open, onOpenChange, o
     setIsSubmitting(true);
 
     try {
-      await createClient(formData);
+      // Create client data with required fields
+      const clientData = {
+        ...formData,
+        type: formData.company ? 'Pessoa Jurídica' : 'Pessoa Física' as 'Pessoa Física' | 'Pessoa Jurídica',
+        consultantId: '' // This will be set automatically in the service using the authenticated user
+      };
+
+      await createClient(clientData);
       
       // Reset form
       setFormData({

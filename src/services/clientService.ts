@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Client, CreateClientData, UpdateClientData, ClientFilters, ClientsResponse } from '@/types/client';
 import { ApiResponse } from '@/types/common';
@@ -98,7 +97,7 @@ export const clientService = {
       const { data, error } = await supabase
         .from('clients')
         .insert({
-          user_id: user.id,
+          user_id: user.id, // Use the authenticated user's ID
           name: clientData.name,
           email: clientData.email,
           phone: clientData.phone,
