@@ -12,6 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ProjectDetailsProps {
   projectId?: string;
@@ -21,28 +23,38 @@ interface ProjectDetailsProps {
 const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) => {
   const params = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeSection, setActiveSection] = useState('dados-projeto');
+  const [project, setProject] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   
   const id = projectId || params.id;
 
-  // Mock project data
-  const project = {
-    id: id,
-    name: 'Projeto Cozinha Maria Silva',
-    client: {
-      name: 'Maria Silva',
-      phone: '(11) 99999-9999',
-      email: 'maria.silva@email.com'
-    },
-    consultant: 'Maria Oliveira',
-    executor: 'Carlos Santos',
-    designer: 'Ana Costa',
-    specifier: 'Roberto Lima',
-    enterprise: 'Residencial Gardens',
-    deadline: '30/06/2024',
-    deliveryAddress: 'Rua das Flores, 123 - São Paulo, SP',
-    observations: 'Cliente prefere tons neutros'
-  };
+  useEffect(() => {
+    const fetchProject = async () => {
+      if (!id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        if (error) {
+          console.error('Erro ao buscar projeto:', error);
+        } else {
+          setProject(data);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar projeto:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProject();
+  }, [id]);
 
   const navigationItems = [
     { id: 'dados-projeto', label: 'Dados do Projeto', icon: Edit },
@@ -95,6 +107,27 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#ECF0F5] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Carregando projeto...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!project) {
+    return (
+      <div className="min-h-screen bg-[#ECF0F5] flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Projeto não encontrado</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#ECF0F5]">
       {/* Breadcrumb */}
@@ -103,7 +136,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
           <span>Cadastro de Projetos</span>
           <span>/</span>
           <span className="text-gray-900 font-medium">
-            {id} - {project.name} - {new Date().toLocaleDateString('pt-BR')}
+            Detalhes do Projeto
           </span>
         </div>
       </div>
@@ -121,9 +154,9 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                       <User className="h-8 w-8 text-blue-600" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-semibold text-gray-900">{project.client.name}</h3>
-                      <p className="text-gray-600">{project.client.phone}</p>
-                      <p className="text-gray-600">{project.client.email}</p>
+                      <h3 className="text-xl font-semibold text-gray-900">{project.client_name}</h3>
+                      <p className="text-gray-600">{project.client_phone || 'Telefone não informado'}</p>
+                      <p className="text-gray-600">{project.client_email || 'Email não informado'}</p>
                     </div>
                   </div>
                   <Button variant="outline" size="icon" className="rounded-full">
@@ -150,36 +183,36 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Consultor Responsável</label>
-                      <div className="p-3 bg-gray-50 rounded-md">{project.consultant}</div>
+                      <div className="p-3 bg-gray-50 rounded-md">{user?.name || 'Usuário'}</div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Consultor Executor</label>
-                      <div className="p-3 bg-gray-50 rounded-md">{project.executor}</div>
+                      <div className="p-3 bg-gray-50 rounded-md">{user?.name || 'Usuário'}</div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Projetista</label>
-                      <div className="p-3 bg-gray-50 rounded-md">{project.designer}</div>
+                      <div className="p-3 bg-gray-50 rounded-md">{user?.name || 'Usuário'}</div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Especificador</label>
-                      <div className="p-3 bg-gray-50 rounded-md">{project.specifier}</div>
+                      <div className="p-3 bg-gray-50 rounded-md">{user?.name || 'Usuário'}</div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Empreendimento</label>
-                      <div className="p-3 bg-gray-50 rounded-md">{project.enterprise}</div>
+                      <div className="p-3 bg-gray-50 rounded-md">-</div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Prazo da Obra</label>
-                      <div className="p-3 bg-gray-50 rounded-md">{project.deadline}</div>
+                      <div className="p-3 bg-gray-50 rounded-md">{project.deadline ? new Date(project.deadline).toLocaleDateString('pt-BR') : 'Não definido'}</div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Endereço de Entrega</label>
-                      <div className="p-3 bg-gray-50 rounded-md">{project.deliveryAddress}</div>
+                      <div className="p-3 bg-gray-50 rounded-md">-</div>
                     </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Observações</label>
-                    <div className="p-3 bg-gray-50 rounded-md">{project.observations}</div>
+                    <div className="p-3 bg-gray-50 rounded-md">{project.description || 'Nenhuma observação'}</div>
                   </div>
                   
                   {/* File Upload Area */}

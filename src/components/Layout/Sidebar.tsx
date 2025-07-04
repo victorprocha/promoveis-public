@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   FolderOpen, 
@@ -22,6 +23,7 @@ import {
   Home
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useAuth } from '@/hooks/useAuth';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -53,6 +55,7 @@ interface FlyoutPosition {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange }) => {
+  const { user } = useAuth();
   const [activeFlyout, setActiveFlyout] = useState<string | null>(null);
   const [flyoutPosition, setFlyoutPosition] = useState<FlyoutPosition>({ top: 0, left: 0 });
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -352,12 +355,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
             <Avatar className="h-10 w-10">
               <AvatarImage src="/placeholder.svg" />
               <AvatarFallback className="bg-[#007BFF] text-white">
-                EV
+                {user?.name?.charAt(0)?.toUpperCase() || 'U'}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <p className="text-sm font-medium">Enzo Vargas Santos</p>
-              <ChevronDown className="h-4 w-4 text-gray-300 mt-1" />
+              <p className="text-sm font-medium">{user?.name || 'Usuário'}</p>
             </div>
           </div>
         </div>
