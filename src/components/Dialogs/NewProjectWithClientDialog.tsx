@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useClients } from '@/hooks/useClients';
+import { useAuth } from '@/hooks/useAuth';
 import { projectService } from '@/services/projectService';
 import ClientSelectionDialog from './ClientSelectionDialog';
 
@@ -42,7 +43,15 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
   const [showClientSelection, setShowClientSelection] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
   const { data: clientsData } = useClients();
+
+  // Set default consultant to authenticated user's name
+  useEffect(() => {
+    if (user?.name) {
+      setFormData(prev => ({ ...prev, consultant: user.name }));
+    }
+  }, [user]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -91,14 +100,14 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
 
       toast({
         title: "Projeto criado com sucesso!",
-        description: `O projeto "${formData.projectName}" foi criado para o cliente ${selectedClient.name}.`,
+        description: `O projeto "${formData.projectName}" foi criado para o cliente ${selectedClient.nome}.`,
       });
 
       // Reset form and close dialog
       setFormData({
         projectName: '',
         description: '',
-        consultant: '',
+        consultant: user?.name || '',
         environments: '',
         priority: 'Normal'
       });
@@ -116,15 +125,16 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
   };
 
   const handleCancel = () => {
-    const hasChanges = formData.projectName || formData.description || formData.consultant || 
-                      formData.environments || selectedClient || formData.priority !== 'Normal';
+    const hasChanges = formData.projectName || formData.description || 
+                      formData.environments || selectedClient || formData.priority !== 'Normal' ||
+                      formData.consultant !== (user?.name || '');
     
     if (hasChanges) {
       if (window.confirm('Deseja descartar as alterações?')) {
         setFormData({
           projectName: '',
           description: '',
-          consultant: '',
+          consultant: user?.name || '',
           environments: '',
           priority: 'Normal'
         });
@@ -162,7 +172,7 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
               {selectedClient ? (
                 <div className="flex items-center justify-between p-3 border border-gray-300 rounded-md bg-gray-50">
                   <div>
-                    <p className="font-medium text-gray-800">{selectedClient.name}</p>
+                    <p className="font-medium text-gray-800">{selectedClient.nome}</p>
                     <p className="text-sm text-gray-600">{selectedClient.email || 'Email não informado'}</p>
                   </div>
                   <Button
@@ -218,15 +228,16 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="consultant" className="text-base font-medium text-gray-700">
-                  Consultor
+                  Consultor Executor <span className="text-red-500">*</span>
                 </Label>
-                <Input
-                  id="consultant"
-                  value={formData.consultant}
-                  onChange={(e) => handleInputChange('consultant', e.target.value)}
-                  placeholder="Nome do consultor"
-                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-md"
-                />
+                <div className="relative">
+                  <Input
+                    id="consultant"
+                    value={formData.consultant}
+                    readOnly
+                    className="border-gray-300 bg-gray-50 text-gray-700 rounded-md cursor-not-allowed"
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="environments" className="text-base font-medium text-gray-700">

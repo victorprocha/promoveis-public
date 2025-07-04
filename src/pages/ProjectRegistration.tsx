@@ -3,10 +3,10 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { User, ArrowLeft } from 'lucide-react';
+import { User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import ClientSelectionDialog from '@/components/Dialogs/ClientSelectionDialog';
 
 interface Client {
@@ -25,8 +25,8 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack }) => 
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [showClientSelection, setShowClientSelection] = useState(false);
   const [projectName, setProjectName] = useState('');
-  const [consultant, setConsultant] = useState('Enzo Vargas Santos');
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleClientSelect = (client: Client) => {
     setSelectedClient(client);
@@ -56,7 +56,7 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack }) => 
       console.log('Criando projeto:', {
         cliente: selectedClient,
         nome: projectName,
-        consultor: consultant
+        consultor: user?.name || 'Usuário'
       });
 
       toast({
@@ -67,7 +67,6 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack }) => 
       // Reset form
       setSelectedClient(null);
       setProjectName('');
-      setConsultant('Enzo Vargas Santos');
       
       if (onBack) {
         onBack();
@@ -82,13 +81,12 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack }) => 
   };
 
   const handleCancel = () => {
-    const hasChanges = selectedClient || projectName.trim() || consultant !== 'Enzo Vargas Santos';
+    const hasChanges = selectedClient || projectName.trim();
     
     if (hasChanges) {
       if (window.confirm('Deseja descartar as alterações?')) {
         setSelectedClient(null);
         setProjectName('');
-        setConsultant('Enzo Vargas Santos');
         if (onBack) {
           onBack();
         }
@@ -186,18 +184,12 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack }) => 
                   <Label htmlFor="consultant" className="text-base font-medium text-gray-700">
                     Consultor Executor <span className="text-red-500">*</span>
                   </Label>
-                  <Select value={consultant} onValueChange={setConsultant}>
-                    <SelectTrigger className="border-gray-300 focus:border-blue-500">
-                      <SelectValue placeholder="Selecione o consultor" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Enzo Vargas Santos">Enzo Vargas Santos</SelectItem>
-                      <SelectItem value="Maria Oliveira">Maria Oliveira</SelectItem>
-                      <SelectItem value="Carlos Santos">Carlos Santos</SelectItem>
-                      <SelectItem value="Roberto Lima">Roberto Lima</SelectItem>
-                      <SelectItem value="Fernanda Souza">Fernanda Souza</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    id="consultant"
+                    value={user?.name || 'Usuário'}
+                    readOnly
+                    className="border-gray-300 bg-gray-50 text-gray-700 cursor-not-allowed"
+                  />
                 </div>
               </div>
             </CardContent>
