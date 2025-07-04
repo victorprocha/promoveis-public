@@ -12,6 +12,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 import NewClientDialog from '@/components/Dialogs/NewClientDialog';
 import NewProjectWithClientDialog from '@/components/Dialogs/NewProjectWithClientDialog';
 
@@ -21,11 +23,26 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const navigate = useNavigate();
+  const { logout, user } = useAuth();
+  const { toast } = useToast();
   const [showNewClientDialog, setShowNewClientDialog] = useState(false);
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
 
-  const handleLogout = () => {
-    navigate('/auth');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast({
+        title: "Logout realizado",
+        description: "Você foi desconectado com sucesso.",
+      });
+      navigate('/auth');
+    } catch (error: any) {
+      toast({
+        title: "Erro no logout",
+        description: error.message || "Erro ao desconectar",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -45,7 +62,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
             <span className="text-white font-bold text-sm">P</span>
           </div>
           <div className="text-xl font-bold bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
-            PROM<span className="text-blue-400">ÓVEIS</span>
+            PRO<span className="text-blue-400">MÓVEIS</span>
           </div>
         </div>
       </div>
@@ -105,11 +122,11 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
                   <Avatar className="h-8 w-8 ring-2 ring-white/20">
                     <AvatarImage src="" />
                     <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-                      <User className="h-4 w-4" />
+                      {user?.name?.charAt(0)?.toUpperCase() || <User className="h-4 w-4" />}
                     </AvatarFallback>
                   </Avatar>
                   <div className="text-left hidden md:block">
-                    <div className="text-sm font-medium">Usuário</div>
+                    <div className="text-sm font-medium">{user?.name || 'Usuário'}</div>
                     <div className="text-xs text-blue-200">Promóveis</div>
                   </div>
                 </div>
@@ -117,6 +134,13 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 bg-white/95 backdrop-blur-sm border-slate-200/50 shadow-xl">
               <DropdownMenuLabel className="text-slate-700">Minha Conta</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-slate-200/50" />
+              <DropdownMenuItem className="hover:bg-slate-100/80">
+                <div className="flex flex-col">
+                  <span className="font-medium">{user?.name}</span>
+                  <span className="text-xs text-gray-500">{user?.email}</span>
+                </div>
+              </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-slate-200/50" />
               <DropdownMenuItem className="hover:bg-slate-100/80">Perfil</DropdownMenuItem>
               <DropdownMenuItem className="hover:bg-slate-100/80">Configurações</DropdownMenuItem>
