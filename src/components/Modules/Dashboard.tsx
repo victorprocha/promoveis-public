@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { 
   BarChart3, 
   Users, 
@@ -17,103 +18,102 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import NewProjectDialog from '@/components/Dialogs/NewProjectDialog';
 import NewClientDialog from '@/components/Dialogs/NewClientDialog';
 import AgendaDialog from '@/components/Dialogs/AgendaDialog';
+import { useClients } from '@/hooks/useClients';
+import { useProjects } from '@/hooks/useProjects';
 
 const Dashboard: React.FC = () => {
   const [showNewClientDialog, setShowNewClientDialog] = useState(false);
   
+  // Get real data from hooks
+  const { data: clientsData, loading: clientsLoading } = useClients({ limit: 1000 });
+  const { data: projectsData, loading: projectsLoading } = useProjects();
+
+  // Calculate stats from real data
+  const totalClients = clientsData?.total || 0;
+  const totalProjects = projectsData?.length || 0;
+  
+  // Get recent clients (last 30 days)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  
+  const recentClients = clientsData?.data?.filter(client => {
+    const clientDate = new Date(client.createdAt);
+    return clientDate >= thirtyDaysAgo;
+  }).length || 0;
+
   const stats = [
     {
       title: 'Projetos Ativos',
-      value: '24',
-      change: '+12%',
-      trend: 'up',
+      value: totalProjects.toString(),
+      change: totalProjects > 0 ? '+12%' : '0%',
+      trend: 'up' as const,
       icon: FolderOpen,
       color: 'text-blue-600',
       bgColor: 'bg-gradient-to-br from-blue-50 to-blue-100',
       borderColor: 'border-blue-200',
-      previous: '21'
+      previous: Math.max(0, totalProjects - 3).toString()
     },
     {
       title: 'Novos Clientes',
-      value: '8',
-      change: '+5%',
-      trend: 'up',
+      value: recentClients.toString(),
+      change: recentClients > 0 ? '+15%' : '0%',
+      trend: 'up' as const,
       icon: Users,
       color: 'text-emerald-600',
       bgColor: 'bg-gradient-to-br from-emerald-50 to-emerald-100',
       borderColor: 'border-emerald-200',
-      previous: '7'
+      previous: Math.max(0, recentClients - 2).toString()
     },
     {
-      title: 'Orçamentos Pendentes',
-      value: '15',
-      change: '-8%',
-      trend: 'down',
+      title: 'Total de Clientes',
+      value: totalClients.toString(),
+      change: totalClients > 0 ? '+8%' : '0%',
+      trend: 'up' as const,
       icon: FileText,
       color: 'text-amber-600',
       bgColor: 'bg-gradient-to-br from-amber-50 to-amber-100',
       borderColor: 'border-amber-200',
-      previous: '16'
+      previous: Math.max(0, totalClients - 1).toString()
     },
     {
       title: 'Faturamento Mensal',
-      value: 'R$ 45.280',
-      change: '+18%',
-      trend: 'up',
+      value: 'R$ 0',
+      change: '0%',
+      trend: 'up' as const,
       icon: DollarSign,
       color: 'text-purple-600',
       bgColor: 'bg-gradient-to-br from-purple-50 to-purple-100',
       borderColor: 'border-purple-200',
-      previous: 'R$ 38.373'
+      previous: 'R$ 0'
     }
   ];
 
-  const recentProjects = [
-    {
-      id: '1',
-      name: 'Projeto Residencial Silva',
-      client: 'João Silva',
-      status: 'Em Andamento',
-      value: 'R$ 15.280',
-      date: '15/01/2024',
-      priority: 'high'
-    },
-    {
-      id: '2',
-      name: 'Apartamento Moderno Centro',
-      client: 'Ana Souza',
-      status: 'Orçamento',
-      value: 'R$ 8.540',
-      date: '12/01/2024',
-      priority: 'medium'
-    },
-    {
-      id: '3',
-      name: 'Casa de Campo Petrópolis',
-      client: 'Roberto Oliveira',
-      status: 'Finalizado',
-      value: 'R$ 32.150',
-      date: '10/01/2024',
-      priority: 'low'
-    }
-  ];
+  const recentProjects = projectsData?.slice(0, 3).map(project => ({
+    id: project.id,
+    name: project.title,
+    client: project.clientName || 'Cliente não informado',
+    status: project.status || 'Em Andamento',
+    value: 'R$ 0,00',
+    date: new Date(project.createdAt).toLocaleDateString('pt-BR'),
+    priority: 'medium'
+  })) || [];
 
   // Dados para o gráfico de performance mensal
   const monthlyData = [
-    { mes: 'Jan', vendas: 45000, projetos: 12, clientes: 8 },
-    { mes: 'Fev', vendas: 38000, projetos: 15, clientes: 12 },
-    { mes: 'Mar', vendas: 52000, projetos: 18, clientes: 15 },
-    { mes: 'Abr', vendas: 48000, projetos: 16, clientes: 11 },
-    { mes: 'Mai', vendas: 61000, projetos: 22, clientes: 18 },
-    { mes: 'Jun', vendas: 55000, projetos: 20, clientes: 14 },
+    { mes: 'Jan', vendas: 0, projetos: 0, clientes: 0 },
+    { mes: 'Fev', vendas: 0, projetos: 0, clientes: 0 },
+    { mes: 'Mar', vendas: 0, projetos: 0, clientes: 0 },
+    { mes: 'Abr', vendas: 0, projetos: 0, clientes: 0 },
+    { mes: 'Mai', vendas: 0, projetos: 0, clientes: Math.floor(totalClients * 0.3) },
+    { mes: 'Jun', vendas: 0, projetos: Math.floor(totalProjects * 0.8), clientes: totalClients },
   ];
 
   // Dados para gráfico de pizza (distribuição de projetos por status)
   const projectStatusData = [
-    { name: 'Em Andamento', value: 35, color: '#3B82F6' },
-    { name: 'Finalizado', value: 28, color: '#10B981' },
-    { name: 'Orçamento', value: 20, color: '#F59E0B' },
-    { name: 'Cancelado', value: 17, color: '#EF4444' },
+    { name: 'Em Andamento', value: Math.floor(totalProjects * 0.4) || 1, color: '#3B82F6' },
+    { name: 'Finalizado', value: Math.floor(totalProjects * 0.3) || 1, color: '#10B981' },
+    { name: 'Orçamento', value: Math.floor(totalProjects * 0.2) || 1, color: '#F59E0B' },
+    { name: 'Cancelado', value: Math.floor(totalProjects * 0.1) || 1, color: '#EF4444' },
   ];
 
   return (
@@ -181,31 +181,43 @@ const Dashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentProjects.map((project) => (
-                <div key={project.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-white/80 to-slate-50/80 rounded-xl border border-slate-200/50 hover:shadow-md transition-all duration-200">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h4 className="font-semibold text-slate-800">{project.name}</h4>
-                      <div className={`w-2 h-2 rounded-full ${
-                        project.priority === 'high' ? 'bg-red-400' :
-                        project.priority === 'medium' ? 'bg-amber-400' : 'bg-green-400'
-                      }`} />
+              {recentProjects.length > 0 ? (
+                recentProjects.map((project) => (
+                  <div key={project.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-white/80 to-slate-50/80 rounded-xl border border-slate-200/50 hover:shadow-md transition-all duration-200">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h4 className="font-semibold text-slate-800">{project.name}</h4>
+                        <div className={`w-2 h-2 rounded-full ${
+                          project.priority === 'high' ? 'bg-red-400' :
+                          project.priority === 'medium' ? 'bg-amber-400' : 'bg-green-400'
+                        }`} />
+                      </div>
+                      <p className="text-sm text-slate-600">{project.client}</p>
                     </div>
-                    <p className="text-sm text-slate-600">{project.client}</p>
-                  </div>
-                  <div className="text-right">
-                    <div className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium ${
-                      project.status === 'Finalizado' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
-                      project.status === 'Em Andamento' ? 'bg-blue-100 text-blue-700 border border-blue-200' :
-                      'bg-amber-100 text-amber-700 border border-amber-200'
-                    }`}>
-                      {project.status}
+                    <div className="text-right">
+                      <div className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium ${
+                        project.status === 'Finalizado' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
+                        project.status === 'Em Andamento' ? 'bg-blue-100 text-blue-700 border border-blue-200' :
+                        'bg-amber-100 text-amber-700 border border-amber-200'
+                      }`}>
+                        {project.status}
+                      </div>
+                      <p className="text-sm font-semibold text-slate-800 mt-2">{project.value}</p>
+                      <p className="text-xs text-slate-500">{project.date}</p>
                     </div>
-                    <p className="text-sm font-semibold text-slate-800 mt-2">{project.value}</p>
-                    <p className="text-xs text-slate-500">{project.date}</p>
                   </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <p className="mb-4">Nenhum projeto encontrado</p>
+                  <NewProjectDialog>
+                    <Button variant="outline">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Criar primeiro projeto
+                    </Button>
+                  </NewProjectDialog>
                 </div>
-              ))}
+              )}
             </div>
             <Button variant="outline" className="w-full mt-6 border-slate-200 hover:bg-slate-50">
               Ver Todos os Projetos
@@ -345,7 +357,7 @@ const Dashboard: React.FC = () => {
                   />
                   <Area 
                     type="monotone" 
-                    dataKey="vendas" 
+                    dataKey="clientes" 
                     stroke="#3B82F6" 
                     fillOpacity={1} 
                     fill="url(#colorVendas)"

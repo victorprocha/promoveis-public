@@ -37,22 +37,31 @@ const ClientSelectionDialog: React.FC<ClientSelectionDialogProps> = ({
   const [showNewClientDialog, setShowNewClientDialog] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   
+  // Use real clients data with search and pagination
   const { data: clientsData, loading, fetchClients } = useClients({
     search: searchTerm,
     page: currentPage,
     limit: 5
   });
 
-  // Recarregar quando abrir o dialog ou mudar os filtros
+  // Reload when dialog opens or filters change
   useEffect(() => {
     if (open) {
-      fetchClients();
+      fetchClients({
+        search: searchTerm,
+        page: currentPage,
+        limit: 5
+      });
     }
-  }, [open, searchTerm, currentPage, fetchClients]);
+  }, [open, searchTerm, currentPage]);
 
   const handleSearch = () => {
     setCurrentPage(1);
-    fetchClients();
+    fetchClients({
+      search: searchTerm,
+      page: 1,
+      limit: 5
+    });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -68,7 +77,12 @@ const ClientSelectionDialog: React.FC<ClientSelectionDialogProps> = ({
 
   const handleNewClientCreated = () => {
     setShowNewClientDialog(false);
-    fetchClients(); // Recarregar lista após criar cliente
+    // Reload clients list after creating new client
+    fetchClients({
+      search: searchTerm,
+      page: currentPage,
+      limit: 5
+    });
   };
 
   const totalPages = clientsData?.totalPages || 1;
@@ -86,7 +100,7 @@ const ClientSelectionDialog: React.FC<ClientSelectionDialogProps> = ({
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Barra de Busca */}
+            {/* Search Bar */}
             <div className="relative">
               <Input
                 type="text"
@@ -102,7 +116,7 @@ const ClientSelectionDialog: React.FC<ClientSelectionDialogProps> = ({
               />
             </div>
 
-            {/* Tabela de Clientes */}
+            {/* Clients Table */}
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
@@ -177,12 +191,12 @@ const ClientSelectionDialog: React.FC<ClientSelectionDialogProps> = ({
             </div>
 
             <div className="flex items-center gap-4">
-              {/* Contador */}
+              {/* Counter */}
               <span className="text-sm text-gray-600">
                 {clients.length > 0 ? `${((currentPage - 1) * 5) + 1}-${Math.min(currentPage * 5, total)} de ${total}` : '0 de 0'}
               </span>
 
-              {/* Paginação */}
+              {/* Pagination */}
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
@@ -218,10 +232,8 @@ const ClientSelectionDialog: React.FC<ClientSelectionDialogProps> = ({
 
       <NewClientDialog 
         open={showNewClientDialog} 
-        onOpenChange={(open) => {
-          setShowNewClientDialog(open);
-          if (!open) handleNewClientCreated();
-        }}
+        onOpenChange={setShowNewClientDialog}
+        onClientCreated={handleNewClientCreated}
       />
     </>
   );

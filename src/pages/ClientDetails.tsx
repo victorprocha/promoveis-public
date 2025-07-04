@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, User, Phone, Mail, Plus, Calendar, Edit, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useClient } from '@/hooks/useClients';
 
 interface ClientDetailsProps {
   clientId?: string;
@@ -11,51 +14,61 @@ interface ClientDetailsProps {
 }
 
 const ClientDetails: React.FC<ClientDetailsProps> = ({ clientId, onBack }) => {
-  const [client] = useState({
-    id: '1',
-    name: 'ANDRÉA PACHECO TERRA',
-    gender: 'Masculino',
-    age: '0 ano(s)',
-    phone: '(22) 98126-1888',
-    email: 'andreaterra012@gmail.com',
-    address: 'Não Informado',
-    cpf: 'Não Informado',
-    rg: 'Não Informado'
-  });
+  const { client, loading, error } = useClient(clientId || '');
 
-  const [projects] = useState([
-    {
-      id: '6',
-      name: 'ANDRÉA PACHECO TERRA - 25/02/25',
-      budget: 'Orçamento Automático 1',
-      salesType: 'Normal',
-      number: 'Não Informado',
-      createdAt: '25/02/2025',
-      status: 'Incluído',
-      value: 'R$ 108.707,00'
-    }
-  ]);
+  if (loading === 'loading') {
+    return (
+      <div className="flex-1 flex flex-col h-full bg-[#ECF0F5]">
+        {/* Breadcrumb */}
+        <div className="bg-white border-b border-gray-200 px-6 py-3">
+          <div className="text-sm text-gray-500">
+            Clientes &gt; Ficha do Cliente
+          </div>
+        </div>
 
-  const [salesHistory] = useState({
-    budgets: 1,
-    sales: 0,
-    totalValue: 'R$0,00'
-  });
+        {/* Loading Content */}
+        <div className="flex-1 p-6">
+          <div className="space-y-6">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <Skeleton className="w-16 h-16 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-6 w-64" />
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-48" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  const [phones] = useState([
-    {
-      type: 'Celular (Principal)',
-      number: '(22) 98126-1888'
-    }
-  ]);
-
-  const [agendas] = useState([
-    {
-      type: 'REAPRESENTAÇÃO',
-      date: '10/05/2025 - 15:00',
-      client: 'ANDRÉA PACHECO TERRA'
-    }
-  ]);
+  if (error || !client) {
+    return (
+      <div className="flex-1 flex flex-col h-full bg-[#ECF0F5]">
+        <div className="bg-white border-b border-gray-200 px-6 py-3">
+          <div className="text-sm text-gray-500">
+            Clientes &gt; Ficha do Cliente
+          </div>
+        </div>
+        
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">Cliente não encontrado</h2>
+            <p className="text-gray-600 mb-4">O cliente solicitado não foi encontrado.</p>
+            <Button onClick={onBack} variant="outline">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[#ECF0F5]">
@@ -81,17 +94,21 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ clientId, onBack }) => {
                   <div className="flex-1">
                     <h1 className="text-xl font-bold text-[#2A3F54] mb-1">{client.name}</h1>
                     <div className="text-sm text-gray-600">
-                      {client.gender}, {client.age}
+                      {client.type}
                     </div>
                     <div className="flex items-center gap-4 mt-2">
-                      <div className="flex items-center gap-1 text-sm text-gray-600">
-                        <Phone className="h-4 w-4" />
-                        {client.phone}
-                      </div>
-                      <div className="flex items-center gap-1 text-sm text-gray-600">
-                        <Mail className="h-4 w-4" />
-                        {client.email}
-                      </div>
+                      {client.phone && (
+                        <div className="flex items-center gap-1 text-sm text-gray-600">
+                          <Phone className="h-4 w-4" />
+                          {client.phone}
+                        </div>
+                      )}
+                      {client.email && (
+                        <div className="flex items-center gap-1 text-sm text-gray-600">
+                          <Mail className="h-4 w-4" />
+                          {client.email}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <Button size="icon" variant="outline" className="text-[#007BFF] border-[#007BFF]">
@@ -110,15 +127,29 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ clientId, onBack }) => {
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <label className="text-sm font-medium text-gray-700">Endereço</label>
-                    <p className="text-gray-900">{client.address}</p>
+                    <p className="text-gray-900">{client.address || 'Não informado'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">CPF</label>
-                    <p className="text-gray-900">{client.cpf}</p>
+                    <label className="text-sm font-medium text-gray-700">Cidade</label>
+                    <p className="text-gray-900">{client.city || 'Não informado'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">RG</label>
-                    <p className="text-gray-900">{client.rg}</p>
+                    <label className="text-sm font-medium text-gray-700">Estado</label>
+                    <p className="text-gray-900">{client.state || 'Não informado'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">CEP</label>
+                    <p className="text-gray-900">{client.zipCode || 'Não informado'}</p>
+                  </div>
+                  {client.company && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Empresa</label>
+                      <p className="text-gray-900">{client.company}</p>
+                    </div>
+                  )}
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Data de Cadastro</label>
+                    <p className="text-gray-900">{client.birthFoundation}</p>
                   </div>
                 </div>
               </CardContent>
@@ -139,43 +170,13 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ clientId, onBack }) => {
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-gray-50">
-                      <TableHead>Projeto</TableHead>
-                      <TableHead>Orçamento</TableHead>
-                      <TableHead>Tipo de Venda</TableHead>
-                      <TableHead>Número</TableHead>
-                      <TableHead>Criado em</TableHead>
-                      <TableHead>Situação</TableHead>
-                      <TableHead>Valor</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {projects.map((project) => (
-                      <TableRow key={project.id} className="hover:bg-gray-50">
-                        <TableCell>
-                          <button className="text-[#007BFF] hover:underline font-medium">
-                            {project.name}
-                          </button>
-                        </TableCell>
-                        <TableCell className="text-gray-600">{project.budget}</TableCell>
-                        <TableCell className="text-gray-600">{project.salesType}</TableCell>
-                        <TableCell className="text-gray-600">{project.number}</TableCell>
-                        <TableCell className="text-gray-600">{project.createdAt}</TableCell>
-                        <TableCell>
-                          <Badge className="bg-green-100 text-green-800">
-                            {project.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="font-medium">{project.value}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                <div className="px-6 py-4 text-sm text-gray-500">
-                  Linhas por página: 30 ▼ &nbsp;&nbsp;&nbsp; 1-1 de 1
+              <CardContent className="p-6">
+                <div className="text-center py-8 text-gray-500">
+                  <p>Nenhum projeto encontrado para este cliente.</p>
+                  <Button variant="outline" className="mt-4">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Criar Projeto
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -198,7 +199,7 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ clientId, onBack }) => {
               <div className="flex justify-between">
                 <div className="text-center">
                   <div className="w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center mx-auto mb-1">
-                    <span className="text-white font-bold text-lg">1</span>
+                    <span className="text-white font-bold text-lg">0</span>
                   </div>
                   <div className="text-xs text-gray-600">ORÇAMENTOS</div>
                 </div>
@@ -210,7 +211,7 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ clientId, onBack }) => {
                 </div>
               </div>
               <div className="text-center pt-2 border-t">
-                <div className="text-2xl font-bold text-pink-500">{salesHistory.totalValue}</div>
+                <div className="text-2xl font-bold text-pink-500">R$0,00</div>
                 <div className="text-xs text-gray-600">TOTAL VENDIDO</div>
               </div>
             </CardContent>
@@ -230,12 +231,16 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ clientId, onBack }) => {
               </div>
             </CardHeader>
             <CardContent>
-              {phones.map((phone, index) => (
-                <div key={index} className="mb-2">
-                  <div className="text-xs text-gray-500">{phone.type}</div>
-                  <div className="text-sm text-[#007BFF] font-medium">{phone.number}</div>
+              {client.phone ? (
+                <div className="mb-2">
+                  <div className="text-xs text-gray-500">Principal</div>
+                  <div className="text-sm text-[#007BFF] font-medium">{client.phone}</div>
                 </div>
-              ))}
+              ) : (
+                <div className="text-center text-gray-500 text-sm">
+                  Nenhum telefone cadastrado
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -250,21 +255,8 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ clientId, onBack }) => {
               </div>
             </CardHeader>
             <CardContent>
-              {agendas.map((agenda, index) => (
-                <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded mb-2">
-                  <Calendar className="h-4 w-4 text-gray-400" />
-                  <div className="flex-1">
-                    <div className="text-xs font-medium text-red-600">{agenda.type}</div>
-                    <div className="text-xs text-gray-600">{agenda.date}</div>
-                    <div className="text-xs text-gray-600">{agenda.client}</div>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-gray-400" />
-                </div>
-              ))}
-              <div className="text-center pt-2">
-                <Button variant="link" className="text-[#007BFF] text-xs">
-                  VER TODAS AGENDAS
-                </Button>
+              <div className="text-center text-gray-500 text-sm">
+                Nenhuma agenda cadastrada
               </div>
             </CardContent>
           </Card>
@@ -284,6 +276,11 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ clientId, onBack }) => {
                 </Button>
               </div>
             </CardHeader>
+            <CardContent>
+              <div className="text-center text-gray-500 text-sm">
+                Nenhum anexo cadastrado
+              </div>
+            </CardContent>
           </Card>
         </div>
       </div>
