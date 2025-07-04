@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, Edit, Upload, Plus, Receipt, Calendar, Users, Paperclip, TrendingUp } from 'lucide-react';
@@ -291,29 +292,31 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
         </div>
       </div>
 
-      {/* Fixed Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-4 z-10">
-        <div className="flex items-center justify-between max-w-full">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={handleBack}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              VOLTAR
-            </Button>
-            <div className="flex items-center gap-2 text-sm">
-              <button className="text-blue-600 hover:underline">TROCAR CLIENTE</button>
-              <span className="text-gray-400">|</span>
-              <button className="text-blue-600 hover:underline">HISTÓRICO</button>
-              <span className="text-gray-400">|</span>
-              <button className="text-blue-600 hover:underline">CANCELAR PROJETO</button>
+      {/* Fixed Bottom Action Bar - Adjusted for sidebar */}
+      <div className="fixed bottom-0 left-0 lg:left-64 right-0 bg-white border-t border-gray-200 px-6 py-4 z-10">
+        <div className="flex items-center justify-center max-w-full">
+          <div className="flex items-center justify-between w-full max-w-6xl">
+            <div className="flex items-center gap-4">
+              <Button variant="outline" onClick={handleBack}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                VOLTAR
+              </Button>
+              <div className="flex items-center gap-2 text-sm">
+                <button className="text-blue-600 hover:underline">TROCAR CLIENTE</button>
+                <span className="text-gray-400">|</span>
+                <button className="text-blue-600 hover:underline">HISTÓRICO</button>
+                <span className="text-gray-400">|</span>
+                <button className="text-blue-600 hover:underline">CANCELAR PROJETO</button>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="destructive">
-              EXCLUIR
-            </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              EDITAR
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="destructive">
+                EXCLUIR
+              </Button>
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                EDITAR
+              </Button>
+            </div>
           </div>
         </div>
       </div>
