@@ -4,11 +4,11 @@ import { Project, CreateProjectData, UpdateProjectData, KanbanColumn } from '@/t
 import { ApiResponse } from '@/types/common';
 
 // Mapear dados do banco para o tipo da aplicação
-const mapDatabaseToProject = (dbProject: any, clientName?: string): Project => ({
+const mapDatabaseToProject = (dbProject: any): Project => ({
   id: dbProject.id,
   title: dbProject.name,
   clientId: dbProject.client_id || '',
-  clientName: clientName || dbProject.client_name || 'Cliente não informado',
+  clientName: dbProject.client_name || 'Cliente não informado',
   projectNumber: `PROJ-${dbProject.id.slice(-6)}`,
   description: dbProject.description,
   status: 'Normal',
@@ -24,13 +24,10 @@ const mapDatabaseToProject = (dbProject: any, clientName?: string): Project => (
 export const projectService = {
   async getKanbanProjects(): Promise<KanbanColumn[]> {
     try {
-      // Buscar projetos com informações do cliente
+      // Buscar projetos diretamente (sem join, pois client_name já está na tabela)
       const { data: projects, error } = await supabase
         .from('projects')
-        .select(`
-          *,
-          clients!inner(name)
-        `);
+        .select('*');
 
       if (error) {
         throw new Error(error.message);
@@ -48,7 +45,7 @@ export const projectService = {
       // Mapear projetos para as colunas (por enquanto todos vão para 'assinatura')
       if (projects) {
         const mappedProjects = projects.map(project => 
-          mapDatabaseToProject(project, project.clients?.name)
+          mapDatabaseToProject(project)
         );
         
         // Por enquanto, colocar todos os projetos na primeira coluna
@@ -102,7 +99,7 @@ export const projectService = {
       }
 
       return {
-        data: mapDatabaseToProject(project, client.name),
+        data: mapDatabaseToProject(project),
         message: 'Projeto criado com sucesso',
         success: true
       };
@@ -121,10 +118,7 @@ export const projectService = {
       // Buscar o projeto atual para retornar
       const { data: project, error } = await supabase
         .from('projects')
-        .select(`
-          *,
-          clients!inner(name)
-        `)
+        .select('*')
         .eq('id', projectId)
         .single();
 
@@ -132,7 +126,7 @@ export const projectService = {
         throw new Error(error.message);
       }
 
-      const updatedProject = mapDatabaseToProject(project, project.clients?.name);
+      const updatedProject = mapDatabaseToProject(project);
       updatedProject.columnId = newColumnId;
 
       return {
