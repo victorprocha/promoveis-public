@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Header from '@/components/Layout/Header';
 import Sidebar from '@/components/Layout/Sidebar';
@@ -119,7 +118,7 @@ const Index = () => {
       case 'vendas':
         return <Sales />;
       case 'clientes':
-        return <Clients onViewClient={handleViewClient} />;
+        return <Clients />;
       case 'especificadores':
         return <Specifiers />;
       case 'projetos-comercial':
