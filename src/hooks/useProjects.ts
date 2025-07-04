@@ -1,0 +1,45 @@
+
+import { useState, useEffect } from 'react';
+import { projectService } from '@/services/projectService';
+import { Project, KanbanColumn } from '@/types/project';
+import { LoadingState } from '@/types/common';
+import { useToast } from '@/hooks/use-toast';
+
+export const useProjects = () => {
+  const [data, setData] = useState<Project[]>([]);
+  const [loading, setLoading] = useState<LoadingState>('idle');
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const fetchProjects = async () => {
+    setLoading('loading');
+    setError(null);
+    
+    try {
+      const kanbanData = await projectService.getKanbanProjects();
+      // Flatten all projects from all columns
+      const allProjects = kanbanData.flatMap(column => column.projects);
+      setData(allProjects);
+      setLoading('success');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao carregar projetos');
+      setLoading('error');
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar projetos",
+        variant: "destructive",
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  return {
+    data,
+    loading,
+    error,
+    refetch: fetchProjects
+  };
+};

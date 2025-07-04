@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import NewProjectDialog from '@/components/Dialogs/NewProjectDialog';
 import FilterDialog from '@/components/Dialogs/FilterDialog';
+import { useProjects } from '@/hooks/useProjects';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ProjectRegistrationProps {
   onNewProject?: () => void;
@@ -15,52 +17,21 @@ interface ProjectRegistrationProps {
 const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onNewProject, onViewProject }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
-
-  const projectsData = [
-    {
-      id: '1',
-      name: 'Projeto Residencial Silva',
-      client: 'João Silva',
-      status: 'Normal',
-      priority: 'Alta',
-      consultant: 'Maria Santos',
-      creationDate: '15/01/2024',
-    },
-    {
-      id: '2',
-      name: 'Apartamento Moderno Centro',
-      client: 'Ana Souza',
-      status: 'Pendente',
-      priority: 'Média',
-      consultant: 'Carlos Lima',
-      creationDate: '12/01/2024',
-    },
-    {
-      id: '3',
-      name: 'Casa de Campo Petrópolis',
-      client: 'Roberto Oliveira',
-      status: 'Atrasado',
-      priority: 'Baixa',
-      consultant: 'Ana Costa',
-      creationDate: '10/01/2024',
-    },
-    {
-      id: '4',
-      name: 'Escritório Comercial ABC',
-      client: 'Luciana Pereira',
-      status: 'Finalizado',
-      priority: 'Urgente',
-      consultant: 'João Silva',
-      creationDate: '05/01/2024',
-    },
-  ];
-
   const [currentPage, setCurrentPage] = useState(1);
   const projectsPerPage = 5;
-  const totalPages = Math.ceil(projectsData.length / projectsPerPage);
+
+  const { data: projects, loading, error, refetch } = useProjects();
+
+  // Filter projects based on search term
+  const filteredProjects = projects.filter(project =>
+    project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    project.clientName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredProjects.length / projectsPerPage);
   const startIndex = (currentPage - 1) * projectsPerPage;
   const endIndex = startIndex + projectsPerPage;
-  const currentProjects = projectsData.slice(startIndex, endIndex);
+  const currentProjects = filteredProjects.slice(startIndex, endIndex);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -106,6 +77,62 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onNewProject,
     }
   };
 
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setSelectedProjects([]);
+    setCurrentPage(1);
+  };
+
+  const handleProjectCreated = () => {
+    refetch(); // Refresh the projects list
+  };
+
+  // Loading state
+  if (loading === 'loading') {
+    return (
+      <div className="p-6">
+        <div className="mb-6">
+          <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+            <span>Sistema</span>
+            <span>/</span>
+            <span className="text-gray-900 font-medium">Cadastro de Projetos</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-gray-900">Projetos</h1>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex items-center space-x-4 mb-4">
+              <Skeleton className="h-4 w-4" />
+              <Skeleton className="h-4 w-48" />
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-36" />
+              <Skeleton className="h-4 w-40" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Projetos</h1>
+        </div>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
+          <p className="text-red-600 mb-4">Erro ao carregar projetos: {error}</p>
+          <Button onClick={refetch}>Tentar Novamente</Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6">
       {/* Page Header */}
@@ -118,7 +145,7 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onNewProject,
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900">Projetos</h1>
           <div className="text-sm text-gray-500">
-            Total de {projectsData.length} projetos
+            Total de {filteredProjects.length} projetos
           </div>
         </div>
       </div>
@@ -136,7 +163,7 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onNewProject,
                 className="pl-10"
               />
             </div>
-            <Button variant="outline" onClick={() => setSearchTerm('')}>
+            <Button variant="outline" onClick={handleClearFilters}>
               LIMPAR FILTROS
             </Button>
           </div>
@@ -195,92 +222,94 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onNewProject,
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {currentProjects.map((project) => (
-              <tr key={project.id}>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <Checkbox
-                    checked={selectedProjects.includes(project.id)}
-                    onCheckedChange={() => handleSelectProject(project.id)}
-                  />
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <button 
-                    className="text-sm text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
-                    onClick={() => handleProjectClick(project.id)}
-                  >
-                    {project.name}
-                  </button>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-500">{project.client}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      project.status === 'Finalizado'
-                        ? 'bg-green-100 text-green-800'
-                        : project.status === 'Em Andamento'
-                        ? 'bg-blue-100 text-blue-800'
-                        : project.status === 'Pendente'
-                        ? 'bg-orange-100 text-orange-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}
-                  >
-                    {project.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{project.priority}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-500">{project.consultant}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-500">{project.creationDate}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right">
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => handleProjectClick(project.id)}>
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
-                  </div>
+            {currentProjects.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                  {searchTerm ? 'Nenhum projeto encontrado para sua pesquisa.' : 'Nenhum projeto encontrado. Crie seu primeiro projeto!'}
                 </td>
               </tr>
-            ))}
+            ) : (
+              currentProjects.map((project) => (
+                <tr key={project.id}>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <Checkbox
+                      checked={selectedProjects.includes(project.id)}
+                      onCheckedChange={() => handleSelectProject(project.id)}
+                    />
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <button 
+                      className="text-sm text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                      onClick={() => handleProjectClick(project.id)}
+                    >
+                      {project.title}
+                    </button>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-500">{project.clientName}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {project.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{project.priority}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-500">{project.consultant}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-500">
+                      {new Date(project.createdAt).toLocaleDateString('pt-BR')}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <div className="flex gap-2">
+                      <Button variant="ghost" size="icon" onClick={() => handleProjectClick(project.id)}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon">
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between mt-6">
-        <div className="text-sm text-gray-500">
-          Página {currentPage} de {totalPages}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-6">
+          <div className="text-sm text-gray-500">
+            Página {currentPage} de {totalPages}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              disabled={currentPage === 1}
+              onClick={() => handlePageChange(currentPage - 1)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              disabled={currentPage === totalPages}
+              onClick={() => handlePageChange(currentPage + 1)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            disabled={currentPage === 1}
-            onClick={() => handlePageChange(currentPage - 1)}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            disabled={currentPage === totalPages}
-            onClick={() => handlePageChange(currentPage + 1)}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      )}
     </div>
   );
 };

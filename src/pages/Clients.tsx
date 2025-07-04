@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Search, Filter, Plus, MoreVertical, FolderOpen, Info, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -47,7 +48,7 @@ const Clients: React.FC<ClientsProps> = ({ onViewClient }) => {
     limit: parseInt(itemsPerPage)
   }), [searchTerm, currentPage, itemsPerPage]);
 
-  const { data, loading, error, fetchClients, deleteClient } = useClients(filters);
+  const { data, loading, error, fetchClients, deleteClient, createClient } = useClients(filters);
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
@@ -96,6 +97,11 @@ const Clients: React.FC<ClientsProps> = ({ onViewClient }) => {
     if (currentPage > 1) {
       setCurrentPage(prev => prev - 1);
     }
+  };
+
+  const handleClientCreated = () => {
+    setShowNewClientDialog(false);
+    fetchClients(); // Refresh the list
   };
 
   // Loading skeleton
@@ -250,51 +256,59 @@ const Clients: React.FC<ClientsProps> = ({ onViewClient }) => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data?.data.map((client) => (
-                    <TableRow key={client.id} className="hover:bg-gray-50">
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 text-[#007BFF]"
-                        >
-                          <Info className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                      <TableCell>
-                        <button 
-                          className="text-[#007BFF] hover:text-[#0056b3] hover:underline font-medium"
-                          onClick={() => onViewClient?.(client.id)}
-                        >
-                          {client.name}
-                        </button>
-                      </TableCell>
-                      <TableCell className="text-gray-600">{client.birthFoundation}</TableCell>
-                      <TableCell className="text-gray-600">{client.type}</TableCell>
-                      <TableCell className="text-gray-600">{client.phone}</TableCell>
-                      <TableCell className="text-gray-600">{client.email}</TableCell>
-                      <TableCell className="text-gray-600">{client.consultantName}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-6 w-6">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>Editar</DropdownMenuItem>
-                            <DropdownMenuItem>Visualizar</DropdownMenuItem>
-                            <DropdownMenuItem 
-                              className="text-red-600"
-                              onClick={() => handleDeleteClient(client.id, client.name)}
-                            >
-                              Excluir
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                  {data?.data && data.data.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                        Nenhum cliente encontrado. Crie seu primeiro cliente!
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    data?.data.map((client) => (
+                      <TableRow key={client.id} className="hover:bg-gray-50">
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-[#007BFF]"
+                          >
+                            <Info className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                        <TableCell>
+                          <button 
+                            className="text-[#007BFF] hover:text-[#0056b3] hover:underline font-medium"
+                            onClick={() => onViewClient?.(client.id)}
+                          >
+                            {client.name}
+                          </button>
+                        </TableCell>
+                        <TableCell className="text-gray-600">{client.birthFoundation}</TableCell>
+                        <TableCell className="text-gray-600">{client.type}</TableCell>
+                        <TableCell className="text-gray-600">{client.phone}</TableCell>
+                        <TableCell className="text-gray-600">{client.email}</TableCell>
+                        <TableCell className="text-gray-600">{client.consultantName}</TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-6 w-6">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem>Editar</DropdownMenuItem>
+                              <DropdownMenuItem>Visualizar</DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className="text-red-600"
+                                onClick={() => handleDeleteClient(client.id, client.name)}
+                              >
+                                Excluir
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
               
@@ -373,6 +387,7 @@ const Clients: React.FC<ClientsProps> = ({ onViewClient }) => {
       <NewClientDialog 
         open={showNewClientDialog} 
         onOpenChange={setShowNewClientDialog}
+        onClientCreated={handleClientCreated}
       />
     </div>
   );
