@@ -4,7 +4,7 @@ import { Search, Filter, Plus, MoreVertical, Edit, Eye, Trash2, ChevronLeft, Che
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import NewProjectDialog from '@/components/Dialogs/NewProjectDialog';
+import NewProjectWithClientDialog from '@/components/Dialogs/NewProjectWithClientDialog';
 import FilterDialog from '@/components/Dialogs/FilterDialog';
 import { useProjects } from '@/hooks/useProjects';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -18,6 +18,7 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onNewProject,
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
   const projectsPerPage = 5;
 
   const { data: projects, loading, error, refetch } = useProjects();
@@ -68,6 +69,8 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onNewProject,
   const handleNewProjectClick = () => {
     if (onNewProject) {
       onNewProject();
+    } else {
+      setShowNewProjectDialog(true);
     }
   };
 
@@ -85,6 +88,7 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onNewProject,
 
   const handleProjectCreated = () => {
     refetch(); // Refresh the projects list
+    setShowNewProjectDialog(false);
   };
 
   // Loading state
@@ -310,6 +314,11 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onNewProject,
           </div>
         </div>
       )}
+
+      <NewProjectWithClientDialog 
+        open={showNewProjectDialog} 
+        onOpenChange={setShowNewProjectDialog}
+      />
     </div>
   );
 };

@@ -15,14 +15,15 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Area, AreaChart } from 'recharts';
-import NewProjectDialog from '@/components/Dialogs/NewProjectDialog';
 import NewClientDialog from '@/components/Dialogs/NewClientDialog';
+import NewProjectWithClientDialog from '@/components/Dialogs/NewProjectWithClientDialog';
 import AgendaDialog from '@/components/Dialogs/AgendaDialog';
 import { useClients } from '@/hooks/useClients';
 import { useProjects } from '@/hooks/useProjects';
 
 const Dashboard: React.FC = () => {
   const [showNewClientDialog, setShowNewClientDialog] = useState(false);
+  const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
   
   // Get real data from hooks
   const { data: clientsData, loading: clientsLoading } = useClients({ limit: 1000 });
@@ -210,12 +211,10 @@ const Dashboard: React.FC = () => {
               ) : (
                 <div className="text-center py-8 text-gray-500">
                   <p className="mb-4">Nenhum projeto encontrado</p>
-                  <NewProjectDialog>
-                    <Button variant="outline">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Criar primeiro projeto
-                    </Button>
-                  </NewProjectDialog>
+                  <Button variant="outline" onClick={() => setShowNewProjectDialog(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Criar primeiro projeto
+                  </Button>
                 </div>
               )}
             </div>
@@ -237,22 +236,21 @@ const Dashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <NewProjectDialog>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start h-auto p-4 border-slate-200/60 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 transition-all duration-200"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl shadow-sm">
-                      <FolderOpen className="h-4 w-4 text-blue-600" />
-                    </div>
-                    <div className="text-left">
-                      <div className="font-semibold text-slate-800">Novo Projeto</div>
-                      <div className="text-sm text-slate-500">Cadastrar um novo projeto</div>
-                    </div>
+              <Button
+                variant="outline"
+                className="w-full justify-start h-auto p-4 border-slate-200/60 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 transition-all duration-200"
+                onClick={() => setShowNewProjectDialog(true)}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl shadow-sm">
+                    <FolderOpen className="h-4 w-4 text-blue-600" />
                   </div>
-                </Button>
-              </NewProjectDialog>
+                  <div className="text-left">
+                    <div className="font-semibold text-slate-800">Novo Projeto</div>
+                    <div className="text-sm text-slate-500">Cadastrar um novo projeto</div>
+                  </div>
+                </div>
+              </Button>
 
               <Button
                 variant="outline"
@@ -418,6 +416,11 @@ const Dashboard: React.FC = () => {
       <NewClientDialog 
         open={showNewClientDialog} 
         onOpenChange={setShowNewClientDialog}
+      />
+      
+      <NewProjectWithClientDialog 
+        open={showNewProjectDialog} 
+        onOpenChange={setShowNewProjectDialog}
       />
     </div>
   );

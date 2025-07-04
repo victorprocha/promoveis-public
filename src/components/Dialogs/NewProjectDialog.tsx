@@ -14,12 +14,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { projectService } from '@/services/projectService';
 
 interface NewProjectDialogProps {
   children: React.ReactNode;
+  onProjectCreated?: () => void;
 }
 
-const NewProjectDialog: React.FC<NewProjectDialogProps> = ({ children }) => {
+const NewProjectDialog: React.FC<NewProjectDialogProps> = ({ children, onProjectCreated }) => {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
     projectName: '',
@@ -29,6 +31,7 @@ const NewProjectDialog: React.FC<NewProjectDialogProps> = ({ children }) => {
     environments: '',
     priority: 'normal'
   });
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   const handleInputChange = (field: string, value: string) => {
@@ -38,27 +41,69 @@ const NewProjectDialog: React.FC<NewProjectDialogProps> = ({ children }) => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Simulação de criação de projeto
-    console.log('Criando novo projeto:', formData);
-    
-    toast({
-      title: "Projeto criado com sucesso!",
-      description: `O projeto "${formData.projectName}" foi criado.`,
-    });
+    if (!formData.projectName.trim()) {
+      toast({
+        title: "Erro de validação",
+        description: "O nome do projeto é obrigatório.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    // Reset form and close dialog
-    setFormData({
-      projectName: '',
-      clientName: '',
-      description: '',
-      consultant: '',
-      environments: '',
-      priority: 'normal'
-    });
-    setOpen(false);
+    if (!formData.clientName.trim()) {
+      toast({
+        title: "Erro de validação",
+        description: "O nome do cliente é obrigatório.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      // Create a simple project without client ID for now
+      await projectService.createSimpleProject({
+        title: formData.projectName,
+        clientName: formData.clientName,
+        description: formData.description,
+        consultant: formData.consultant,
+        environments: formData.environments,
+        priority: formData.priority as any
+      });
+
+      toast({
+        title: "Projeto criado com sucesso!",
+        description: `O projeto "${formData.projectName}" foi criado.`,
+      });
+
+      // Reset form and close dialog
+      setFormData({
+        projectName: '',
+        clientName: '',
+        description: '',
+        consultant: '',
+        environments: '',
+        priority: 'normal'
+      });
+      setOpen(false);
+      
+      // Call callback if provided
+      if (onProjectCreated) {
+        onProjectCreated();
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro ao criar projeto",
+        description: error.message || "Ocorreu um erro ao criar o projeto. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -142,11 +187,11 @@ const NewProjectDialog: React.FC<NewProjectDialogProps> = ({ children }) => {
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
               Cancelar
             </Button>
-            <Button type="submit" className="bg-[#28A745] hover:bg-[#218838]">
-              Criar Projeto
+            <Button type="submit" className="bg-[#28A745] hover:bg-[#218838]" disabled={loading}>
+              {loading ? 'Criando...' : 'Criar Projeto'}
             </Button>
           </DialogFooter>
         </form>

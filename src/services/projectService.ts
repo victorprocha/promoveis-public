@@ -27,7 +27,8 @@ export const projectService = {
       // Buscar projetos diretamente (sem join, pois client_name já está na tabela)
       const { data: projects, error } = await supabase
         .from('projects')
-        .select('*');
+        .select('*')
+        .order('created_at', { ascending: false });
 
       if (error) {
         throw new Error(error.message);
@@ -88,6 +89,52 @@ export const projectService = {
           client_email: '',
           client_phone: '',
           description: data.description,
+          budget: null,
+          deadline: null
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return {
+        data: mapDatabaseToProject(project),
+        message: 'Projeto criado com sucesso',
+        success: true
+      };
+    } catch (error) {
+      console.error('Erro ao criar projeto:', error);
+      throw error;
+    }
+  },
+
+  async createSimpleProject(data: {
+    title: string;
+    clientName: string;
+    description?: string;
+    consultant?: string;
+    environments?: string;
+    priority?: string;
+  }): Promise<ApiResponse<Project>> {
+    try {
+      // Obter o usuário atual
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      const { data: project, error } = await supabase
+        .from('projects')
+        .insert({
+          user_id: user.id,
+          name: data.title,
+          client_name: data.clientName,
+          client_email: '',
+          client_phone: '',
+          description: data.description || null,
           budget: null,
           deadline: null
         })
