@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, Edit, Upload, Plus, Receipt, Calendar, Users, Paperclip, TrendingUp } from 'lucide-react';
@@ -26,34 +25,51 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
   const { user } = useAuth();
   const [activeSection, setActiveSection] = useState('dados-projeto');
   const [project, setProject] = useState<any>(null);
+  const [client, setClient] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   
   const id = projectId || params.id;
 
   useEffect(() => {
-    const fetchProject = async () => {
+    const fetchProjectAndClient = async () => {
       if (!id) return;
       
       try {
-        const { data, error } = await supabase
+        // Fetch project data
+        const { data: projectData, error: projectError } = await supabase
           .from('projects')
           .select('*')
           .eq('id', id)
           .single();
 
-        if (error) {
-          console.error('Erro ao buscar projeto:', error);
+        if (projectError) {
+          console.error('Erro ao buscar projeto:', projectError);
         } else {
-          setProject(data);
+          setProject(projectData);
+          
+          // Fetch client data using client_name
+          if (projectData?.client_name) {
+            const { data: clientData, error: clientError } = await supabase
+              .from('clients')
+              .select('*')
+              .eq('name', projectData.client_name)
+              .single();
+
+            if (clientError) {
+              console.error('Erro ao buscar cliente:', clientError);
+            } else {
+              setClient(clientData);
+            }
+          }
         }
       } catch (error) {
-        console.error('Erro ao buscar projeto:', error);
+        console.error('Erro ao buscar dados:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProject();
+    fetchProjectAndClient();
   }, [id]);
 
   const navigationItems = [
@@ -155,8 +171,8 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                     </div>
                     <div>
                       <h3 className="text-xl font-semibold text-gray-900">{project.client_name}</h3>
-                      <p className="text-gray-600">{project.client_phone || 'Telefone não informado'}</p>
-                      <p className="text-gray-600">{project.client_email || 'Email não informado'}</p>
+                      <p className="text-gray-600">{client?.phone || project.client_phone || 'Telefone não informado'}</p>
+                      <p className="text-gray-600">{client?.email || project.client_email || 'Email não informado'}</p>
                     </div>
                   </div>
                   <Button variant="outline" size="icon" className="rounded-full">
