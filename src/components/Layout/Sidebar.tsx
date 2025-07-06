@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   FolderOpen, 
@@ -77,23 +76,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
       submenuCategories: [
         {
           title: 'VENDAS',
-          items: [{ id: 'vendas', label: 'Vendas' }]
-        },
-        {
-          title: 'CLIENTES',
-          items: [{ id: 'clientes', label: 'Clientes' }]
-        },
-        {
-          title: 'ESPECIFICADORES',
-          items: [{ id: 'especificadores', label: 'Especificadores' }]
-        },
-        {
-          title: 'PROJETOS',
-          items: [{ id: 'projetos-comercial', label: 'Projetos' }]
-        },
-        {
-          title: 'CONTRATOS',
-          items: [{ id: 'contratos', label: 'Contratos' }]
+          items: [
+            { id: 'clientes', label: 'Clientes' },
+            { id: 'especificadores', label: 'Especificadores' },
+            { id: 'projetos-comercial', label: 'Projetos' },
+            { id: 'contratos', label: 'Contratos' }
+          ]
         },
         {
           title: 'RELATÓRIOS',
