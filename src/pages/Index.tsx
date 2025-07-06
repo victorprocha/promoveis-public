@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Header from '@/components/Layout/Header';
 import Sidebar from '@/components/Layout/Sidebar';
@@ -12,6 +11,7 @@ import Sales from '@/pages/Sales';
 import Clients from '@/pages/Clients';
 import Specifiers from '@/pages/Specifiers';
 import Contracts from '@/pages/Contracts';
+import ContractDetails from '@/pages/ContractDetails';
 import EnvironmentReview from '@/pages/EnvironmentReview';
 import Deliveries from '@/pages/Deliveries';
 import Assembly from '@/pages/Assembly';
@@ -30,6 +30,8 @@ const Index = () => {
   const [showNovoColaborador, setShowNovoColaborador] = useState(false);
   const [showClientDetails, setShowClientDetails] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [showContractDetails, setShowContractDetails] = useState(false);
+  const [selectedContractId, setSelectedContractId] = useState<string | null>(null);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -43,6 +45,8 @@ const Index = () => {
     setShowNovoColaborador(false);
     setShowClientDetails(false);
     setSelectedClientId(null);
+    setShowContractDetails(false);
+    setSelectedContractId(null);
     // Close sidebar on mobile when selecting a module
     if (window.innerWidth < 1024) {
       setSidebarOpen(false);
@@ -87,6 +91,16 @@ const Index = () => {
     setSelectedClientId(null);
   };
 
+  const handleViewContract = (contractId: string) => {
+    setSelectedContractId(contractId);
+    setShowContractDetails(true);
+  };
+
+  const handleBackFromContractDetails = () => {
+    setShowContractDetails(false);
+    setSelectedContractId(null);
+  };
+
   const renderModule = () => {
     if (showProjectRegistration) {
       return <ProjectRegistration onBack={handleBackFromProjectRegistration} />;
@@ -102,6 +116,10 @@ const Index = () => {
 
     if (showClientDetails) {
       return <ClientDetails clientId={selectedClientId} onBack={handleBackFromClientDetails} />;
+    }
+
+    if (showContractDetails) {
+      return <ContractDetails contractId={selectedContractId} onBack={handleBackFromContractDetails} />;
     }
 
     switch (activeModule) {
@@ -125,7 +143,7 @@ const Index = () => {
       case 'projetos-comercial':
         return <ProjectList onNewProject={handleNewProject} onViewProject={handleViewProject} />;
       case 'contratos':
-        return <Contracts />;
+        return <Contracts onViewContract={handleViewContract} />;
       
       // Pós-Venda
       case 'revisao-ambientes':

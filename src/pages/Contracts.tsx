@@ -14,7 +14,11 @@ interface Contract {
   valor: string;
 }
 
-const Contracts = () => {
+interface ContractsProps {
+  onViewContract?: (contractId: string) => void;
+}
+
+const Contracts: React.FC<ContractsProps> = ({ onViewContract }) => {
   const [contractsData, setContractsData] = useState<Contract[]>([
     { id: 'CT001', cliente: 'João Silva', projeto: 'Cozinha Modulada', dataAssinatura: '10/12/2024', status: 'Ativo', valor: 'R$ 25.000,00' },
     { id: 'CT002', cliente: 'Empresa ABC Ltda', projeto: 'Escritório Completo', dataAssinatura: '08/12/2024', status: 'Em Análise', valor: 'R$ 85.000,00' },
@@ -44,7 +48,11 @@ const Contracts = () => {
   };
 
   const handleView = (contract: Contract) => {
-    console.log('Visualizar contrato:', contract);
+    if (onViewContract) {
+      onViewContract(contract.id);
+    } else {
+      console.log('Visualizar contrato:', contract);
+    }
   };
 
   const handleDelete = (contract: Contract) => {
