@@ -1,10 +1,8 @@
 
 import React, { useState } from 'react';
-import { Search, Filter, Plus, MoreVertical, Edit, Eye, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Filter, MoreVertical, Edit, Eye, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
-import NewProjectWithClientDialog from '@/components/Dialogs/NewProjectWithClientDialog';
 import FilterDialog from '@/components/Dialogs/FilterDialog';
 import { useProjects } from '@/hooks/useProjects';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,11 +12,9 @@ interface ProjectRegistrationProps {
   onViewProject?: (projectId: string) => void;
 }
 
-const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onNewProject, onViewProject }) => {
+const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onViewProject }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
   const projectsPerPage = 5;
 
   const { data: projects, loading, error, refetch } = useProjects();
@@ -38,42 +34,6 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onNewProject,
     setCurrentPage(page);
   };
 
-  const handleSelectProject = (projectId: string) => {
-    setSelectedProjects((prev) =>
-      prev.includes(projectId)
-        ? prev.filter((id) => id !== projectId)
-        : [...prev, projectId]
-    );
-  };
-
-  const isAllSelected = currentProjects.every((project) =>
-    selectedProjects.includes(project.id)
-  );
-
-  const handleSelectAll = () => {
-    if (isAllSelected) {
-      setSelectedProjects(
-        selectedProjects.filter((id) => !currentProjects.map((p) => p.id).includes(id))
-      );
-    } else {
-      const newSelected = [...selectedProjects];
-      currentProjects.forEach((project) => {
-        if (!newSelected.includes(project.id)) {
-          newSelected.push(project.id);
-        }
-      });
-      setSelectedProjects(newSelected);
-    }
-  };
-
-  const handleNewProjectClick = () => {
-    if (onNewProject) {
-      onNewProject();
-    } else {
-      setShowNewProjectDialog(true);
-    }
-  };
-
   const handleProjectClick = (projectId: string) => {
     if (onViewProject) {
       onViewProject(projectId);
@@ -82,13 +42,7 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onNewProject,
 
   const handleClearFilters = () => {
     setSearchTerm('');
-    setSelectedProjects([]);
     setCurrentPage(1);
-  };
-
-  const handleProjectCreated = () => {
-    refetch(); // Refresh the projects list
-    setShowNewProjectDialog(false);
   };
 
   // Loading state
@@ -109,7 +63,6 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onNewProject,
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="flex items-center space-x-4 mb-4">
-              <Skeleton className="h-4 w-4" />
               <Skeleton className="h-4 w-48" />
               <Skeleton className="h-4 w-32" />
               <Skeleton className="h-4 w-24" />
@@ -173,14 +126,6 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onNewProject,
           </div>
           
           <div className="flex items-center gap-2">
-            <Button 
-              className="bg-[#28A745] hover:bg-[#218838] text-white"
-              onClick={handleNewProjectClick}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Projeto
-            </Button>
-            
             <FilterDialog>
               <Button variant="outline" size="icon" className="text-[#FFC107] border-[#FFC107] hover:bg-[#FFC107] hover:text-white">
                 <Filter className="h-4 w-4" />
@@ -199,9 +144,6 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onNewProject,
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                <Checkbox checked={isAllSelected} onCheckedChange={handleSelectAll} />
-              </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Projeto
               </th>
@@ -228,19 +170,13 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onNewProject,
           <tbody className="bg-white divide-y divide-gray-200">
             {currentProjects.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
-                  {searchTerm ? 'Nenhum projeto encontrado para sua pesquisa.' : 'Nenhum projeto encontrado. Crie seu primeiro projeto!'}
+                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                  {searchTerm ? 'Nenhum projeto encontrado para sua pesquisa.' : 'Nenhum projeto encontrado.'}
                 </td>
               </tr>
             ) : (
               currentProjects.map((project) => (
                 <tr key={project.id}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <Checkbox
-                      checked={selectedProjects.includes(project.id)}
-                      onCheckedChange={() => handleSelectProject(project.id)}
-                    />
-                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <button 
                       className="text-sm text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
@@ -314,11 +250,6 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onNewProject,
           </div>
         </div>
       )}
-
-      <NewProjectWithClientDialog 
-        open={showNewProjectDialog} 
-        onOpenChange={setShowNewProjectDialog}
-      />
     </div>
   );
 };

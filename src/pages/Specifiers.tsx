@@ -4,11 +4,12 @@ import { User } from 'lucide-react';
 import PageTemplate from '@/components/Layout/PageTemplate';
 import InteractiveDataTable from '@/components/Common/InteractiveDataTable';
 import NewSpecifierDialog from '@/components/Dialogs/NewSpecifierDialog';
+import EditSpecifierDialog from '@/components/Dialogs/EditSpecifierDialog';
 import { useSpecifiers } from '@/hooks/useSpecifiers';
 import { useToast } from '@/hooks/use-toast';
 
 const Specifiers = () => {
-  const { specifiers, loading, addSpecifier, deleteSpecifier } = useSpecifiers();
+  const { specifiers, loading, addSpecifier, updateSpecifier, deleteSpecifier } = useSpecifiers();
   const { toast } = useToast();
 
   const columns = [
@@ -23,8 +24,7 @@ const Specifiers = () => {
   };
 
   const handleEdit = (specifier: any) => {
-    console.log('Editar especificador:', specifier);
-    // TODO: Implementar funcionalidade de edição
+    // This will be handled by the EditSpecifierDialog component
   };
 
   const handleView = (specifier: any) => {
@@ -48,6 +48,10 @@ const Specifiers = () => {
         });
       }
     }
+  };
+
+  const handleUpdateSpecifier = async (id: string, data: any) => {
+    await updateSpecifier(id, data);
   };
 
   if (loading) {
@@ -83,6 +87,12 @@ const Specifiers = () => {
           onEdit={handleEdit}
           onView={handleView}
           onDelete={handleDelete}
+          customActions={(item) => (
+            <EditSpecifierDialog 
+              specifier={item} 
+              onUpdate={handleUpdateSpecifier}
+            />
+          )}
         />
       </PageTemplate>
     </div>
