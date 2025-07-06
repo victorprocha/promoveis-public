@@ -21,7 +21,11 @@ import AgendaDialog from '@/components/Dialogs/AgendaDialog';
 import { useClients } from '@/hooks/useClients';
 import { useProjects } from '@/hooks/useProjects';
 
-const Dashboard: React.FC = () => {
+interface DashboardProps {
+  onModuleChange?: (module: string) => void;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ onModuleChange }) => {
   const [showNewClientDialog, setShowNewClientDialog] = useState(false);
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
   
@@ -52,7 +56,8 @@ const Dashboard: React.FC = () => {
       color: 'text-blue-600',
       bgColor: 'bg-gradient-to-br from-blue-50 to-blue-100',
       borderColor: 'border-blue-200',
-      previous: Math.max(0, totalProjects - 3).toString()
+      previous: Math.max(0, totalProjects - 3).toString(),
+      onClick: () => onModuleChange?.('projetos')
     },
     {
       title: 'Novos Clientes',
@@ -63,7 +68,8 @@ const Dashboard: React.FC = () => {
       color: 'text-emerald-600',
       bgColor: 'bg-gradient-to-br from-emerald-50 to-emerald-100',
       borderColor: 'border-emerald-200',
-      previous: Math.max(0, recentClients - 2).toString()
+      previous: Math.max(0, recentClients - 2).toString(),
+      onClick: () => onModuleChange?.('clientes')
     },
     {
       title: 'Total de Clientes',
@@ -74,7 +80,8 @@ const Dashboard: React.FC = () => {
       color: 'text-amber-600',
       bgColor: 'bg-gradient-to-br from-amber-50 to-amber-100',
       borderColor: 'border-amber-200',
-      previous: Math.max(0, totalClients - 1).toString()
+      previous: Math.max(0, totalClients - 1).toString(),
+      onClick: () => onModuleChange?.('clientes')
     },
     {
       title: 'Faturamento Mensal',
@@ -140,7 +147,11 @@ const Dashboard: React.FC = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {stats.map((stat, index) => (
-          <Card key={index} className={`relative overflow-hidden bg-white/60 backdrop-blur-sm border ${stat.borderColor} shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105`}>
+          <Card 
+            key={index} 
+            className={`relative overflow-hidden bg-white/60 backdrop-blur-sm border ${stat.borderColor} shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer`}
+            onClick={stat.onClick}
+          >
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className={`p-3 rounded-xl ${stat.bgColor} shadow-sm`}>
@@ -255,7 +266,7 @@ const Dashboard: React.FC = () => {
               <Button
                 variant="outline"
                 className="w-full justify-start h-auto p-4 border-slate-200/60 hover:bg-gradient-to-r hover:from-purple-50 hover:to-purple-100 transition-all duration-200"
-                onClick={() => console.log('Acompanhar carteira')}
+                onClick={() => onModuleChange?.('carteira')}
               >
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl shadow-sm">

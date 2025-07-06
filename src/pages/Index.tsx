@@ -118,7 +118,7 @@ const Index = () => {
       case 'vendas':
         return <Sales />;
       case 'clientes':
-        return <Clients />;
+        return <Clients onViewClient={handleViewClient} />;
       case 'especificadores':
         return <Specifiers />;
       case 'projetos-comercial':
@@ -175,7 +175,7 @@ const Index = () => {
       
       case 'dashboard':
       default:
-        return <Dashboard />;
+        return <Dashboard onModuleChange={handleModuleChange} />;
     }
   };
 
