@@ -174,6 +174,39 @@ export type Database = {
         }
         Relationships: []
       }
+      specifiers: {
+        Row: {
+          contato: string | null
+          created_at: string
+          email: string
+          especialidade: string | null
+          id: string
+          nome: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contato?: string | null
+          created_at?: string
+          email: string
+          especialidade?: string | null
+          id?: string
+          nome: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contato?: string | null
+          created_at?: string
+          email?: string
+          especialidade?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,23 +1,15 @@
 
-import React, { useState } from 'react';
-import { User, Users, Award, Mail, Phone } from 'lucide-react';
+import React from 'react';
+import { User } from 'lucide-react';
 import PageTemplate from '@/components/Layout/PageTemplate';
 import InteractiveDataTable from '@/components/Common/InteractiveDataTable';
 import NewSpecifierDialog from '@/components/Dialogs/NewSpecifierDialog';
-
-interface Specifier {
-  nome: string;
-  contato: string;
-  especialidade: string;
-  email: string;
-}
+import { useSpecifiers } from '@/hooks/useSpecifiers';
+import { useToast } from '@/hooks/use-toast';
 
 const Specifiers = () => {
-  const [specifiersData, setSpecifiersData] = useState<Specifier[]>([
-    { nome: 'Arq. Roberto Lima', contato: '(11) 99999-1234', especialidade: 'Arquitetura Residencial', email: 'roberto@email.com' },
-    { nome: 'Eng. Fernanda Costa', contato: '(11) 88888-5678', especialidade: 'Engenharia Civil', email: 'fernanda@email.com' },
-    { nome: 'Des. Patricia Silva', contato: '(11) 77777-9012', especialidade: 'Design de Interiores', email: 'patricia@email.com' },
-  ]);
+  const { specifiers, loading, addSpecifier, deleteSpecifier } = useSpecifiers();
+  const { toast } = useToast();
 
   const columns = [
     { key: 'nome', header: 'Nome' },
@@ -26,83 +18,50 @@ const Specifiers = () => {
     { key: 'email', header: 'Email' },
   ];
 
-  const handleAddSpecifier = (newSpecifier: Specifier) => {
-    setSpecifiersData(prev => [newSpecifier, ...prev]);
+  const handleAddSpecifier = async (newSpecifier: any) => {
+    await addSpecifier(newSpecifier);
   };
 
-  const handleEdit = (specifier: Specifier) => {
+  const handleEdit = (specifier: any) => {
     console.log('Editar especificador:', specifier);
+    // TODO: Implementar funcionalidade de edição
   };
 
-  const handleView = (specifier: Specifier) => {
+  const handleView = (specifier: any) => {
     console.log('Visualizar especificador:', specifier);
+    // TODO: Implementar funcionalidade de visualização
   };
 
-  const handleDelete = (specifier: Specifier) => {
+  const handleDelete = async (specifier: any) => {
     if (window.confirm(`Tem certeza que deseja excluir o especificador "${specifier.nome}"?`)) {
-      setSpecifiersData(prev => prev.filter(s => s.email !== specifier.email));
+      try {
+        await deleteSpecifier(specifier.id);
+        toast({
+          title: "Especificador excluído",
+          description: "O especificador foi excluído com sucesso.",
+        });
+      } catch (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao excluir especificador. Tente novamente.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
-  return (
-    <div className="flex-1 flex flex-col min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-indigo-100/40">
-      {/* Statistics Cards */}
-      <div className="p-6 pb-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-white/20 hover:scale-105">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600">Total de Especificadores</p>
-                <p className="text-3xl font-bold text-slate-800 mt-1">{specifiersData.length}</p>
-                <p className="text-xs text-blue-600 mt-1">Profissionais cadastrados</p>
-              </div>
-              <div className="p-3 bg-gradient-to-br from-blue-400 to-blue-500 rounded-xl shadow-lg">
-                <Users className="h-6 w-6 text-white" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-white/20 hover:scale-105">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600">Arquitetos</p>
-                <p className="text-3xl font-bold text-slate-800 mt-1">1</p>
-                <p className="text-xs text-emerald-600 mt-1">Especialistas em arquitetura</p>
-              </div>
-              <div className="p-3 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-xl shadow-lg">
-                <Award className="h-6 w-6 text-white" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-white/20 hover:scale-105">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600">Engenheiros</p>
-                <p className="text-3xl font-bold text-slate-800 mt-1">1</p>
-                <p className="text-xs text-amber-600 mt-1">Especialistas em engenharia</p>
-              </div>
-              <div className="p-3 bg-gradient-to-br from-amber-400 to-amber-500 rounded-xl shadow-lg">
-                <Award className="h-6 w-6 text-white" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-white/20 hover:scale-105">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600">Designers</p>
-                <p className="text-3xl font-bold text-slate-800 mt-1">1</p>
-                <p className="text-xs text-purple-600 mt-1">Especialistas em design</p>
-              </div>
-              <div className="p-3 bg-gradient-to-br from-purple-400 to-purple-500 rounded-xl shadow-lg">
-                <Award className="h-6 w-6 text-white" />
-              </div>
-            </div>
-          </div>
+  if (loading) {
+    return (
+      <div className="flex-1 flex flex-col min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-indigo-100/40">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg text-gray-600">Carregando especificadores...</div>
         </div>
       </div>
+    );
+  }
 
+  return (
+    <div className="flex-1 flex flex-col min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-indigo-100/40">
       <PageTemplate
         title="Especificadores"
         icon={User}
@@ -119,7 +78,7 @@ const Specifiers = () => {
       >
         <InteractiveDataTable
           columns={columns}
-          data={specifiersData}
+          data={specifiers}
           emptyMessage="Nenhum especificador encontrado"
           onEdit={handleEdit}
           onView={handleView}

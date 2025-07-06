@@ -11,8 +11,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 
-interface Specifier {
+interface SpecifierFormData {
   nome: string;
   contato: string;
   especialidade: string;
@@ -20,22 +21,35 @@ interface Specifier {
 }
 
 interface NewSpecifierDialogProps {
-  onAdd: (specifier: Specifier) => void;
+  onAdd: (specifier: SpecifierFormData) => Promise<void>;
   children: React.ReactNode;
 }
 
 const NewSpecifierDialog: React.FC<NewSpecifierDialogProps> = ({ onAdd, children }) => {
-  const [formData, setFormData] = useState<Specifier>({
+  const [formData, setFormData] = useState<SpecifierFormData>({
     nome: '',
     contato: '',
     especialidade: '',
     email: '',
   });
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
-  const handleSave = () => {
-    if (formData.nome && formData.email) {
-      onAdd(formData);
+  const handleSave = async () => {
+    if (!formData.nome || !formData.email) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Nome e e-mail são obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await onAdd(formData);
+      
       setFormData({
         nome: '',
         contato: '',
@@ -43,10 +57,24 @@ const NewSpecifierDialog: React.FC<NewSpecifierDialogProps> = ({ onAdd, children
         email: '',
       });
       setOpen(false);
+      
+      toast({
+        title: "Especificador adicionado",
+        description: "O especificador foi adicionado com sucesso.",
+      });
+    } catch (error) {
+      console.error('Erro ao adicionar especificador:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao adicionar especificador. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleInputChange = (field: keyof Specifier, value: string) => {
+  const handleInputChange = (field: keyof SpecifierFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -68,6 +96,7 @@ const NewSpecifierDialog: React.FC<NewSpecifierDialogProps> = ({ onAdd, children
               value={formData.nome}
               onChange={(e) => handleInputChange('nome', e.target.value)}
               placeholder="Ex: Arq. Roberto Lima"
+              disabled={loading}
             />
           </div>
           
@@ -78,6 +107,7 @@ const NewSpecifierDialog: React.FC<NewSpecifierDialogProps> = ({ onAdd, children
               value={formData.contato}
               onChange={(e) => handleInputChange('contato', e.target.value)}
               placeholder="Ex: (11) 99999-1234"
+              disabled={loading}
             />
           </div>
           
@@ -88,6 +118,7 @@ const NewSpecifierDialog: React.FC<NewSpecifierDialogProps> = ({ onAdd, children
               value={formData.especialidade}
               onChange={(e) => handleInputChange('especialidade', e.target.value)}
               placeholder="Ex: Arquitetura Residencial"
+              disabled={loading}
             />
           </div>
           
@@ -99,16 +130,17 @@ const NewSpecifierDialog: React.FC<NewSpecifierDialogProps> = ({ onAdd, children
               value={formData.email}
               onChange={(e) => handleInputChange('email', e.target.value)}
               placeholder="Ex: roberto@email.com"
+              disabled={loading}
             />
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={loading}>
             Cancelar
           </Button>
-          <Button onClick={handleSave} disabled={!formData.nome || !formData.email}>
-            Adicionar Especificador
+          <Button onClick={handleSave} disabled={!formData.nome || !formData.email || loading}>
+            {loading ? 'Adicionando...' : 'Adicionar Especificador'}
           </Button>
         </DialogFooter>
       </DialogContent>
