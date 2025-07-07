@@ -1,10 +1,12 @@
 
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useProjects } from '@/hooks/useProjects';
+import { Project } from '@/types/project';
+import { LoadingState } from '@/types/common';
 
 interface ProjectContextType {
-  data: any[];
-  loading: any;
+  data: Project[];
+  loading: LoadingState;
   error: string | null;
   refetch: () => void;
 }

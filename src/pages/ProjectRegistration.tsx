@@ -8,6 +8,7 @@ import { User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { projectService } from '@/services/projectService';
+import { useProjectContext } from '@/contexts/ProjectContext';
 import ClientSelectionDialog from '@/components/Dialogs/ClientSelectionDialog';
 
 interface Client {
@@ -32,6 +33,7 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack, onPro
   const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  const { refetch } = useProjectContext();
 
   const handleClientSelect = (client: Client) => {
     setSelectedClient(client);
@@ -82,7 +84,10 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack, onPro
         setPriority('Normal');
         setDescription('');
         
-        // Notificar o componente pai para atualizar a lista
+        // Atualizar a lista de projetos imediatamente
+        await refetch();
+        
+        // Notificar o componente pai
         if (onProjectCreated) {
           onProjectCreated();
         }

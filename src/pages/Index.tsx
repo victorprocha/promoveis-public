@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Header from '@/components/Layout/Header';
 import Sidebar from '@/components/Layout/Sidebar';
@@ -20,6 +19,7 @@ import Colaboradores from '@/pages/Colaboradores';
 import NovoColaborador from '@/pages/NovoColaborador';
 import ClientDetails from '@/pages/ClientDetails';
 import { Toaster } from '@/components/ui/toaster';
+import { ProjectProvider } from '@/contexts/ProjectContext';
 
 const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -183,20 +183,22 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#ECF0F5] w-full">
-      <Header onToggleSidebar={toggleSidebar} />
-      <Sidebar 
-        isOpen={sidebarOpen} 
-        activeModule={activeModule}
-        onModuleChange={handleModuleChange}
-      />
-      
-      <main className="lg:ml-64 pt-16 min-h-screen">
-        {renderModule()}
-      </main>
-      
-      <Toaster />
-    </div>
+    <ProjectProvider>
+      <div className="min-h-screen bg-[#ECF0F5] w-full">
+        <Header onToggleSidebar={toggleSidebar} />
+        <Sidebar 
+          isOpen={sidebarOpen} 
+          activeModule={activeModule}
+          onModuleChange={handleModuleChange}
+        />
+        
+        <main className="lg:ml-64 pt-16 min-h-screen">
+          {renderModule()}
+        </main>
+        
+        <Toaster />
+      </div>
+    </ProjectProvider>
   );
 };
 

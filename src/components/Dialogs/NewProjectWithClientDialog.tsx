@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useClients } from '@/hooks/useClients';
 import { useAuth } from '@/hooks/useAuth';
 import { projectService } from '@/services/projectService';
+import { useProjectContext } from '@/contexts/ProjectContext';
 import ClientSelectionDialog from './ClientSelectionDialog';
 
 interface Client {
@@ -49,6 +50,7 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
   const { toast } = useToast();
   const { user } = useAuth();
   const { data: clientsData } = useClients();
+  const { refetch } = useProjectContext();
 
   // Set default consultant to authenticated user's name
   useEffect(() => {
@@ -118,6 +120,9 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
         priority: 'Normal'
       });
       setSelectedClient(null);
+      
+      // Atualizar a lista de projetos imediatamente
+      await refetch();
       
       // Notificar o componente pai para atualizar a lista
       if (onProjectCreated) {

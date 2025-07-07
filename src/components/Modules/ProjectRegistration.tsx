@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import FilterDialog from '@/components/Dialogs/FilterDialog';
-import { useProjects } from '@/hooks/useProjects';
+import { useProjectContext } from '@/contexts/ProjectContext';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface ProjectRegistrationProps {
@@ -21,7 +21,7 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const projectsPerPage = 5;
 
-  const { data: projects, loading, error, refetch } = useProjects();
+  const { data: projects, loading, error, refetch } = useProjectContext();
 
   // Atualizar lista quando refreshTrigger mudar
   useEffect(() => {
