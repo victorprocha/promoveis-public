@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter, MoreVertical, Edit, Eye, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,14 +10,25 @@ import { Skeleton } from '@/components/ui/skeleton';
 interface ProjectRegistrationProps {
   onNewProject?: () => void;
   onViewProject?: (projectId: string) => void;
+  refreshTrigger?: number;
 }
 
-const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onViewProject }) => {
+const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ 
+  onViewProject, 
+  refreshTrigger 
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const projectsPerPage = 5;
 
   const { data: projects, loading, error, refetch } = useProjects();
+
+  // Atualizar lista quando refreshTrigger mudar
+  useEffect(() => {
+    if (refreshTrigger && refreshTrigger > 0) {
+      refetch();
+    }
+  }, [refreshTrigger, refetch]);
 
   // Filter projects based on search term
   const filteredProjects = projects.filter(project =>

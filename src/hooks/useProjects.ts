@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { projectService } from '@/services/projectService';
 import { Project, KanbanColumn } from '@/types/project';
 import { LoadingState } from '@/types/common';
@@ -11,7 +11,7 @@ export const useProjects = () => {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     setLoading('loading');
     setError(null);
     
@@ -30,16 +30,20 @@ export const useProjects = () => {
         variant: "destructive",
       });
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchProjects();
-  }, []);
+  }, [fetchProjects]);
+
+  const refetch = useCallback(() => {
+    fetchProjects();
+  }, [fetchProjects]);
 
   return {
     data,
     loading,
     error,
-    refetch: fetchProjects
+    refetch
   };
 };

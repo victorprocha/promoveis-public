@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, User, Phone, Mail, Plus, Calendar, Edit, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,11 +11,22 @@ import NewProjectWithClientDialog from '@/components/Dialogs/NewProjectWithClien
 interface ClientDetailsProps {
   clientId?: string;
   onBack?: () => void;
+  onProjectCreated?: () => void;
 }
 
-const ClientDetails: React.FC<ClientDetailsProps> = ({ clientId, onBack }) => {
+const ClientDetails: React.FC<ClientDetailsProps> = ({ clientId, onBack, onProjectCreated }) => {
   const { client, loading, error } = useClient(clientId || '');
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
+
+  const handleProjectCreated = () => {
+    // Fechar o dialog
+    setShowNewProjectDialog(false);
+    
+    // Notificar o componente pai se callback foi fornecido
+    if (onProjectCreated) {
+      onProjectCreated();
+    }
+  };
 
   if (loading === 'loading') {
     return (
@@ -309,6 +319,7 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ clientId, onBack }) => {
       <NewProjectWithClientDialog
         open={showNewProjectDialog}
         onOpenChange={setShowNewProjectDialog}
+        onProjectCreated={handleProjectCreated}
       />
     </div>
   );

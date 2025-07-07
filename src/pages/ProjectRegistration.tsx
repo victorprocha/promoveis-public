@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,9 +20,10 @@ interface Client {
 
 interface ProjectRegistrationProps {
   onBack?: () => void;
+  onProjectCreated?: () => void;
 }
 
-const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack }) => {
+const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack, onProjectCreated }) => {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [showClientSelection, setShowClientSelection] = useState(false);
   const [projectName, setProjectName] = useState('');
@@ -59,6 +59,8 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack }) => 
     setIsCreating(true);
 
     try {
+      console.log('Cliente selecionado:', selectedClient);
+      
       const result = await projectService.createSimpleProject({
         title: projectName.trim(),
         clientName: selectedClient.nome,
@@ -79,6 +81,11 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack }) => 
         setProjectName('');
         setPriority('Normal');
         setDescription('');
+        
+        // Notificar o componente pai para atualizar a lista
+        if (onProjectCreated) {
+          onProjectCreated();
+        }
         
         if (onBack) {
           onBack();

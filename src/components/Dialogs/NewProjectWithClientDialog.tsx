@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -29,9 +28,14 @@ interface Client {
 interface NewProjectWithClientDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onProjectCreated?: () => void;
 }
 
-const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({ open, onOpenChange }) => {
+const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({ 
+  open, 
+  onOpenChange, 
+  onProjectCreated 
+}) => {
   const [formData, setFormData] = useState({
     projectName: '',
     description: '',
@@ -89,6 +93,8 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
     setLoading(true);
     
     try {
+      console.log('Cliente selecionado no dialog:', selectedClient);
+      
       await projectService.createProject({
         title: formData.projectName,
         clientId: selectedClient.id,
@@ -100,7 +106,7 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
 
       toast({
         title: "Projeto criado com sucesso!",
-        description: `O projeto "${formData.projectName}" foi criado para o cliente ${selectedClient.nome}.`,
+        description: `O projeto "${formData.projectName}" foi criado para o cliente ${selectedClient.nome || selectedClient.name}.`,
       });
 
       // Reset form and close dialog
@@ -112,8 +118,15 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
         priority: 'Normal'
       });
       setSelectedClient(null);
+      
+      // Notificar o componente pai para atualizar a lista
+      if (onProjectCreated) {
+        onProjectCreated();
+      }
+      
       onOpenChange(false);
     } catch (error: any) {
+      console.error('Erro ao criar projeto:', error);
       toast({
         title: "Erro ao criar projeto",
         description: error.message || "Ocorreu um erro ao criar o projeto. Tente novamente.",
@@ -172,7 +185,7 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
               {selectedClient ? (
                 <div className="flex items-center justify-between p-3 border border-gray-300 rounded-md bg-gray-50">
                   <div>
-                    <p className="font-medium text-gray-800">{selectedClient.nome}</p>
+                    <p className="font-medium text-gray-800">{selectedClient.nome || selectedClient.name}</p>
                     <p className="text-sm text-gray-600">{selectedClient.email || 'Email não informado'}</p>
                   </div>
                   <Button

@@ -127,6 +127,8 @@ export const projectService = {
         throw new Error('Usuário não autenticado');
       }
 
+      console.log('Criando projeto com dados:', data);
+
       const { data: project, error } = await supabase
         .from('projects')
         .insert({
@@ -144,8 +146,11 @@ export const projectService = {
         .single();
 
       if (error) {
+        console.error('Erro do Supabase:', error);
         throw new Error(error.message);
       }
+
+      console.log('Projeto criado:', project);
 
       return {
         data: mapDatabaseToProject(project),
