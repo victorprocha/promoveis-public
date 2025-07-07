@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { projectService } from '@/services/projectService';
 import ClientSelectionDialog from '@/components/Dialogs/ClientSelectionDialog';
 
 interface Client {
@@ -25,6 +27,9 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack }) => 
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [showClientSelection, setShowClientSelection] = useState(false);
   const [projectName, setProjectName] = useState('');
+  const [priority, setPriority] = useState('Normal');
+  const [description, setDescription] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -51,42 +56,55 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack }) => 
       return;
     }
 
+    setIsCreating(true);
+
     try {
-      // Simular chamada de API
-      console.log('Criando projeto:', {
-        cliente: selectedClient,
-        nome: projectName,
-        consultor: user?.name || 'Usuário'
+      const result = await projectService.createSimpleProject({
+        title: projectName.trim(),
+        clientName: selectedClient.nome,
+        description: description.trim() || undefined,
+        consultant: user?.name || 'Usuário',
+        environments: '1',
+        priority: priority
       });
 
-      toast({
-        title: "Projeto criado com sucesso!",
-        description: `O projeto "${projectName}" foi criado para o cliente ${selectedClient.nome}.`,
-      });
+      if (result.success) {
+        toast({
+          title: "Projeto criado com sucesso!",
+          description: `O projeto "${projectName}" foi criado para o cliente ${selectedClient.nome}.`,
+        });
 
-      // Reset form
-      setSelectedClient(null);
-      setProjectName('');
-      
-      if (onBack) {
-        onBack();
+        // Reset form
+        setSelectedClient(null);
+        setProjectName('');
+        setPriority('Normal');
+        setDescription('');
+        
+        if (onBack) {
+          onBack();
+        }
       }
     } catch (error) {
+      console.error('Erro ao criar projeto:', error);
       toast({
         title: "Erro ao criar projeto",
         description: "Ocorreu um erro ao criar o projeto. Tente novamente.",
         variant: "destructive",
       });
+    } finally {
+      setIsCreating(false);
     }
   };
 
   const handleCancel = () => {
-    const hasChanges = selectedClient || projectName.trim();
+    const hasChanges = selectedClient || projectName.trim() || description.trim() || priority !== 'Normal';
     
     if (hasChanges) {
       if (window.confirm('Deseja descartar as alterações?')) {
         setSelectedClient(null);
         setProjectName('');
+        setPriority('Normal');
+        setDescription('');
         if (onBack) {
           onBack();
         }
@@ -181,6 +199,36 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack }) => 
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="priority" className="text-base font-medium text-gray-700">
+                    Prioridade
+                  </Label>
+                  <Select value={priority} onValueChange={setPriority}>
+                    <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                      <SelectValue placeholder="Selecione a prioridade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Baixa">Baixa</SelectItem>
+                      <SelectItem value="Normal">Normal</SelectItem>
+                      <SelectItem value="Alta">Alta</SelectItem>
+                      <SelectItem value="Urgente">Urgente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description" className="text-base font-medium text-gray-700">
+                    Descrição
+                  </Label>
+                  <Input
+                    id="description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Digite uma descrição opcional para o projeto"
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="consultant" className="text-base font-medium text-gray-700">
                     Consultor Executor <span className="text-red-500">*</span>
                   </Label>
@@ -204,6 +252,7 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack }) => 
             variant="ghost" 
             onClick={handleCancel}
             className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            disabled={isCreating}
           >
             CANCELAR
           </Button>
@@ -214,6 +263,7 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack }) => 
                 variant="ghost" 
                 onClick={() => setShowClientSelection(true)}
                 className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-semibold"
+                disabled={isCreating}
               >
                 INFORMAR CLIENTE
               </Button>
@@ -223,8 +273,9 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack }) => 
               <Button 
                 onClick={handleCreateProject}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-8"
+                disabled={isCreating}
               >
-                CRIAR PROJETO
+                {isCreating ? 'CRIANDO...' : 'CRIAR PROJETO'}
               </Button>
             )}
           </div>

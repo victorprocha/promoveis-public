@@ -12,7 +12,7 @@ const mapDatabaseToProject = (dbProject: any): Project => ({
   projectNumber: `PROJ-${dbProject.id.slice(-6)}`,
   description: dbProject.description,
   status: 'Normal',
-  priority: 'Normal',
+  priority: dbProject.priority || 'Normal',
   consultant: 'Consultor Responsável',
   environments: '1',
   columnId: 'assinatura',
@@ -89,6 +89,7 @@ export const projectService = {
           client_email: '',
           client_phone: '',
           description: data.description,
+          priority: data.priority || 'Normal',
           budget: null,
           deadline: null
         })
@@ -135,6 +136,7 @@ export const projectService = {
           client_email: '',
           client_phone: '',
           description: data.description || null,
+          priority: data.priority || 'Normal',
           budget: null,
           deadline: null
         })
