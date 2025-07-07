@@ -3,7 +3,7 @@ import React, { createContext, useContext, ReactNode } from 'react';
 import { useProjects } from '@/hooks/useProjects';
 
 interface ProjectContextType {
-  projects: any[];
+  data: any[];
   loading: any;
   error: string | null;
   refetch: () => void;
