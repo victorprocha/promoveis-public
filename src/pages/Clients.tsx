@@ -120,7 +120,6 @@ const Clients: React.FC = () => {
                 <TableHeader>
                   <TableRow className="bg-gray-50">
                     <TableHead className="font-semibold">Nome</TableHead>
-                    <TableHead className="font-semibold">Tipo</TableHead>
                     <TableHead className="font-semibold">Telefone</TableHead>
                     <TableHead className="font-semibold">E-mail</TableHead>
                     <TableHead className="font-semibold">Cidade</TableHead>
@@ -132,7 +131,6 @@ const Clients: React.FC = () => {
                     [...Array(10)].map((_, i) => (
                       <TableRow key={i}>
                         <TableCell><Skeleton className="h-4 w-48" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-40" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-28" /></TableCell>
@@ -150,11 +148,6 @@ const Clients: React.FC = () => {
                             {client.name}
                           </button>
                         </TableCell>
-                        <TableCell>
-                          <Badge variant={client.type === 'Pessoa Física' ? 'default' : 'secondary'}>
-                            {client.type}
-                          </Badge>
-                        </TableCell>
                         <TableCell className="text-gray-600">
                           {client.phone || '-'}
                         </TableCell>
@@ -171,7 +164,7 @@ const Clients: React.FC = () => {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-12 text-gray-500">
+                      <TableCell colSpan={5} className="text-center py-12 text-gray-500">
                         {searchTerm ? 'Nenhum cliente encontrado para esta pesquisa.' : 'Nenhum cliente cadastrado ainda.'}
                         <div className="mt-2">
                           <Button 

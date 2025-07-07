@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useClient } from '@/hooks/useClients';
+import NewProjectWithClientDialog from '@/components/Dialogs/NewProjectWithClientDialog';
 
 interface ClientDetailsProps {
   clientId?: string;
@@ -15,6 +16,7 @@ interface ClientDetailsProps {
 
 const ClientDetails: React.FC<ClientDetailsProps> = ({ clientId, onBack }) => {
   const { client, loading, error } = useClient(clientId || '');
+  const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
 
   if (loading === 'loading') {
     return (
@@ -93,9 +95,6 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ clientId, onBack }) => {
                   </div>
                   <div className="flex-1">
                     <h1 className="text-xl font-bold text-[#2A3F54] mb-1">{client.name}</h1>
-                    <div className="text-sm text-gray-600">
-                      {client.type}
-                    </div>
                     <div className="flex items-center gap-4 mt-2">
                       {client.phone && (
                         <div className="flex items-center gap-1 text-sm text-gray-600">
@@ -165,7 +164,11 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ clientId, onBack }) => {
                       Projetos de {client.name}
                     </CardTitle>
                   </div>
-                  <Button size="icon" className="bg-[#28A745] hover:bg-[#218838] rounded-full">
+                  <Button 
+                    size="icon" 
+                    className="bg-[#28A745] hover:bg-[#218838] rounded-full"
+                    onClick={() => setShowNewProjectDialog(true)}
+                  >
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
@@ -173,7 +176,11 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ clientId, onBack }) => {
               <CardContent className="p-6">
                 <div className="text-center py-8 text-gray-500">
                   <p>Nenhum projeto encontrado para este cliente.</p>
-                  <Button variant="outline" className="mt-4">
+                  <Button 
+                    variant="outline" 
+                    className="mt-4"
+                    onClick={() => setShowNewProjectDialog(true)}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Criar Projeto
                   </Button>
@@ -298,6 +305,11 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ clientId, onBack }) => {
           <Button className="bg-[#007BFF] hover:bg-[#0056b3]">EDITAR</Button>
         </div>
       </div>
+
+      <NewProjectWithClientDialog
+        open={showNewProjectDialog}
+        onOpenChange={setShowNewProjectDialog}
+      />
     </div>
   );
 };

@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Search, Filter, MoreVertical, Edit, Eye, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import FilterDialog from '@/components/Dialogs/FilterDialog';
 import { useProjects } from '@/hooks/useProjects';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -43,6 +44,24 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onViewProject
   const handleClearFilters = () => {
     setSearchTerm('');
     setCurrentPage(1);
+  };
+
+  const getPriorityBadge = (priority: string) => {
+    const priorityColors = {
+      'Baixa': 'bg-green-100 text-green-800 border-green-200',
+      'Normal': 'bg-blue-100 text-blue-800 border-blue-200',
+      'Alta': 'bg-orange-100 text-orange-800 border-orange-200',
+      'Urgente': 'bg-red-100 text-red-800 border-red-200'
+    };
+    
+    return (
+      <Badge 
+        variant="outline" 
+        className={`${priorityColors[priority as keyof typeof priorityColors] || 'bg-gray-100 text-gray-800 border-gray-200'} font-medium`}
+      >
+        {priority}
+      </Badge>
+    );
   };
 
   // Loading state
@@ -151,9 +170,6 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onViewProject
                 Cliente
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Prioridade
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -170,7 +186,7 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onViewProject
           <tbody className="bg-white divide-y divide-gray-200">
             {currentProjects.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                   {searchTerm ? 'Nenhum projeto encontrado para sua pesquisa.' : 'Nenhum projeto encontrado.'}
                 </td>
               </tr>
@@ -189,12 +205,7 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onViewProject
                     <div className="text-sm text-gray-500">{project.clientName}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {project.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{project.priority}</div>
+                    {getPriorityBadge(project.priority)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-500">{project.consultant}</div>
