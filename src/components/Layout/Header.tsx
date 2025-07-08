@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Bell, MessageCircle, Plus, Menu, LogOut, User, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -45,18 +46,26 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   };
 
   const handleNewClient = () => {
+    console.log('Abrindo dialog de novo cliente');
     setShowNewClientDialog(true);
   };
 
   const handleNewProject = () => {
-    console.log('Abrindo dialog de novo projeto');
+    console.log('Abrindo dialog de novo projeto - Estado atual:', showNewProjectDialog);
     setShowNewProjectDialog(true);
+    console.log('Estado após setShowNewProjectDialog(true):', true);
   };
 
   const handleProjectCreated = () => {
-    // Callback quando projeto é criado com sucesso
     console.log('Projeto criado com sucesso');
   };
+
+  const handleProjectDialogChange = (open: boolean) => {
+    console.log('Dialog de projeto mudou para:', open);
+    setShowNewProjectDialog(open);
+  };
+
+  console.log('Header renderizando - showNewProjectDialog:', showNewProjectDialog);
 
   return (
     <>
@@ -179,7 +188,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
       
       <NewProjectWithClientDialog 
         open={showNewProjectDialog} 
-        onOpenChange={setShowNewProjectDialog}
+        onOpenChange={handleProjectDialogChange}
         onProjectCreated={handleProjectCreated}
       />
     </>

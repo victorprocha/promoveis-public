@@ -39,6 +39,8 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
   onOpenChange, 
   onProjectCreated 
 }) => {
+  console.log('NewProjectWithClientDialog renderizando com open:', open);
+
   const [formData, setFormData] = useState({
     projectName: '',
     description: '',
@@ -175,6 +177,13 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
       onOpenChange(false);
     }
   };
+
+  // Log quando o dialog deveria estar aberto
+  useEffect(() => {
+    console.log('Dialog open state changed:', open);
+  }, [open]);
+
+  console.log('Renderizando Dialog com open:', open);
 
   return (
     <>
@@ -323,7 +332,7 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
                   <SelectValue placeholder="Selecione um especificador" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhum especificador</SelectItem>
+                  <SelectItem value="none">Nenhum especificador</SelectItem>
                   {specifiers.map((specifier) => (
                     <SelectItem key={specifier.id} value={specifier.id}>
                       {specifier.nome}
