@@ -37,7 +37,7 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack, onPro
   const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
-  const { data: specifiers } = useSpecifiers();
+  const { specifiers } = useSpecifiers();
   const { refetch } = useProjectContext();
 
   const handleClientSelect = (client: Client) => {

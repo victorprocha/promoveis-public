@@ -54,7 +54,7 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
   const { toast } = useToast();
   const { user } = useAuth();
   const { data: clientsData } = useClients();
-  const { data: specifiers } = useSpecifiers();
+  const { specifiers } = useSpecifiers();
   const { refetch } = useProjectContext();
 
   // Set default consultant to authenticated user's name
