@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -13,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useClients } from '@/hooks/useClients';
+import { useSpecifiers } from '@/hooks/useSpecifiers';
 import { useAuth } from '@/hooks/useAuth';
 import { projectService } from '@/services/projectService';
 import { useProjectContext } from '@/contexts/ProjectContext';
@@ -42,7 +44,9 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
     description: '',
     consultant: '',
     environments: '',
-    priority: 'Normal'
+    priority: 'Normal',
+    deliveryDeadline: '',
+    specifierId: ''
   });
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [showClientSelection, setShowClientSelection] = useState(false);
@@ -50,6 +54,7 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
   const { toast } = useToast();
   const { user } = useAuth();
   const { data: clientsData } = useClients();
+  const { data: specifiers } = useSpecifiers();
   const { refetch } = useProjectContext();
 
   // Set default consultant to authenticated user's name
@@ -103,7 +108,9 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
         description: formData.description,
         priority: formData.priority as any,
         consultant: formData.consultant,
-        environments: formData.environments
+        environments: formData.environments,
+        deliveryDeadline: formData.deliveryDeadline || undefined,
+        specifierId: formData.specifierId || undefined
       });
 
       toast({
@@ -117,7 +124,9 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
         description: '',
         consultant: user?.name || '',
         environments: '',
-        priority: 'Normal'
+        priority: 'Normal',
+        deliveryDeadline: '',
+        specifierId: ''
       });
       setSelectedClient(null);
       
@@ -145,7 +154,8 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
   const handleCancel = () => {
     const hasChanges = formData.projectName || formData.description || 
                       formData.environments || selectedClient || formData.priority !== 'Normal' ||
-                      formData.consultant !== (user?.name || '');
+                      formData.consultant !== (user?.name || '') || formData.deliveryDeadline ||
+                      formData.specifierId;
     
     if (hasChanges) {
       if (window.confirm('Deseja descartar as alterações?')) {
@@ -154,7 +164,9 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
           description: '',
           consultant: user?.name || '',
           environments: '',
-          priority: 'Normal'
+          priority: 'Normal',
+          deliveryDeadline: '',
+          specifierId: ''
         });
         setSelectedClient(null);
         onOpenChange(false);
@@ -271,19 +283,52 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="priority" className="text-base font-medium text-gray-700">
+                  Prioridade
+                </Label>
+                <Select value={formData.priority} onValueChange={(value) => handleInputChange('priority', value)}>
+                  <SelectTrigger className="border-gray-300 focus:border-blue-500">
+                    <SelectValue placeholder="Selecione a prioridade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Baixa">Baixa</SelectItem>
+                    <SelectItem value="Normal">Normal</SelectItem>
+                    <SelectItem value="Alta">Alta</SelectItem>
+                    <SelectItem value="Urgente">Urgente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="deliveryDeadline" className="text-base font-medium text-gray-700">
+                  Prazo de Entrega
+                </Label>
+                <Input
+                  id="deliveryDeadline"
+                  type="date"
+                  value={formData.deliveryDeadline}
+                  onChange={(e) => handleInputChange('deliveryDeadline', e.target.value)}
+                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-md"
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="priority" className="text-base font-medium text-gray-700">
-                Prioridade
+              <Label htmlFor="specifierId" className="text-base font-medium text-gray-700">
+                Especificador
               </Label>
-              <Select value={formData.priority} onValueChange={(value) => handleInputChange('priority', value)}>
+              <Select value={formData.specifierId} onValueChange={(value) => handleInputChange('specifierId', value)}>
                 <SelectTrigger className="border-gray-300 focus:border-blue-500">
-                  <SelectValue placeholder="Selecione a prioridade" />
+                  <SelectValue placeholder="Selecione um especificador" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Baixa">Baixa</SelectItem>
-                  <SelectItem value="Normal">Normal</SelectItem>
-                  <SelectItem value="Alta">Alta</SelectItem>
-                  <SelectItem value="Urgente">Urgente</SelectItem>
+                  <SelectItem value="">Nenhum especificador</SelectItem>
+                  {specifiers.map((specifier) => (
+                    <SelectItem key={specifier.id} value={specifier.id}>
+                      {specifier.nome}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

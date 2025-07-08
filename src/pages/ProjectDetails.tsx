@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, Edit, Upload, Plus, Receipt, Calendar, Users, Paperclip, TrendingUp } from 'lucide-react';
@@ -26,19 +27,28 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
   const [activeSection, setActiveSection] = useState('dados-projeto');
   const [project, setProject] = useState<any>(null);
   const [client, setClient] = useState<any>(null);
+  const [specifier, setSpecifier] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   
   const id = projectId || params.id;
 
   useEffect(() => {
-    const fetchProjectAndClient = async () => {
+    const fetchProjectData = async () => {
       if (!id) return;
       
       try {
-        // Fetch project data
+        // Buscar dados do projeto com especificador
         const { data: projectData, error: projectError } = await supabase
           .from('projects')
-          .select('*')
+          .select(`
+            *,
+            specifiers!projects_specifier_id_fkey (
+              id,
+              nome,
+              email,
+              especialidade
+            )
+          `)
           .eq('id', id)
           .single();
 
@@ -47,7 +57,11 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
         } else {
           setProject(projectData);
           
-          // Fetch client data using client_name
+          if (projectData?.specifiers) {
+            setSpecifier(projectData.specifiers);
+          }
+          
+          // Buscar dados do cliente usando client_name
           if (projectData?.client_name) {
             const { data: clientData, error: clientError } = await supabase
               .from('clients')
@@ -69,7 +83,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
       }
     };
 
-    fetchProjectAndClient();
+    fetchProjectData();
   }, [id]);
 
   const navigationItems = [
@@ -211,19 +225,19 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Especificador</label>
-                      <div className="p-3 bg-gray-50 rounded-md">{user?.name || 'Usuário'}</div>
+                      <div className="p-3 bg-gray-50 rounded-md">{specifier?.nome || 'Não informado'}</div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Empreendimento</label>
-                      <div className="p-3 bg-gray-50 rounded-md">-</div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Prazo da Obra</label>
-                      <div className="p-3 bg-gray-50 rounded-md">{project.deadline ? new Date(project.deadline).toLocaleDateString('pt-BR') : 'Não definido'}</div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Prazo de Entrega</label>
+                      <div className="p-3 bg-gray-50 rounded-md">
+                        {project.delivery_deadline ? new Date(project.delivery_deadline).toLocaleDateString('pt-BR') : 'Não definido'}
+                      </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Endereço de Entrega</label>
-                      <div className="p-3 bg-gray-50 rounded-md">-</div>
+                      <div className="p-3 bg-gray-50 rounded-md">
+                        {client?.address ? `${client.address}, ${client.city || ''} - ${client.state || ''}` : 'Endereço não informado'}
+                      </div>
                     </div>
                   </div>
                   <div>

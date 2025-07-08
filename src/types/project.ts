@@ -12,6 +12,9 @@ export interface Project {
   environments: string;
   columnId: string;
   itemsCount: string;
+  deliveryDeadline?: string;
+  specifierId?: string;
+  specifierName?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -23,6 +26,8 @@ export interface CreateProjectData {
   priority: 'Baixa' | 'Normal' | 'Alta' | 'Urgente';
   consultant: string;
   environments: string;
+  deliveryDeadline?: string;
+  specifierId?: string;
 }
 
 export interface UpdateProjectData extends Partial<CreateProjectData> {

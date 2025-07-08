@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Project, CreateProjectData, UpdateProjectData, KanbanColumn } from '@/types/project';
 import { ApiResponse } from '@/types/common';
@@ -17,6 +16,9 @@ const mapDatabaseToProject = (dbProject: any): Project => ({
   environments: '1',
   columnId: 'assinatura',
   itemsCount: '0/1',
+  deliveryDeadline: dbProject.delivery_deadline,
+  specifierId: dbProject.specifier_id,
+  specifierName: dbProject.specifier_name,
   createdAt: dbProject.created_at,
   updatedAt: dbProject.updated_at
 });
@@ -24,10 +26,16 @@ const mapDatabaseToProject = (dbProject: any): Project => ({
 export const projectService = {
   async getKanbanProjects(): Promise<KanbanColumn[]> {
     try {
-      // Buscar projetos diretamente (sem join, pois client_name já está na tabela)
+      // Buscar projetos com dados do especificador
       const { data: projects, error } = await supabase
         .from('projects')
-        .select('*')
+        .select(`
+          *,
+          specifiers!projects_specifier_id_fkey (
+            id,
+            nome
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -43,11 +51,16 @@ export const projectService = {
         { id: 'montagem', title: 'Montagem', projects: [] }
       ];
 
-      // Mapear projetos para as colunas (por enquanto todos vão para 'assinatura')
+      // Mapear projetos para as colunas
       if (projects) {
-        const mappedProjects = projects.map(project => 
-          mapDatabaseToProject(project)
-        );
+        const mappedProjects = projects.map(project => {
+          const mapped = mapDatabaseToProject(project);
+          // Adicionar nome do especificador se existir
+          if (project.specifiers) {
+            mapped.specifierName = project.specifiers.nome;
+          }
+          return mapped;
+        });
         
         // Por enquanto, colocar todos os projetos na primeira coluna
         columns[0].projects = mappedProjects;
@@ -91,7 +104,9 @@ export const projectService = {
           description: data.description,
           priority: data.priority || 'Normal',
           budget: null,
-          deadline: null
+          deadline: null,
+          delivery_deadline: data.deliveryDeadline || null,
+          specifier_id: data.specifierId || null
         })
         .select()
         .single();
@@ -118,6 +133,8 @@ export const projectService = {
     consultant?: string;
     environments?: string;
     priority?: string;
+    deliveryDeadline?: string;
+    specifierId?: string;
   }): Promise<ApiResponse<Project>> {
     try {
       // Obter o usuário atual
@@ -140,7 +157,9 @@ export const projectService = {
           description: data.description || null,
           priority: data.priority || 'Normal',
           budget: null,
-          deadline: null
+          deadline: null,
+          delivery_deadline: data.deliveryDeadline || null,
+          specifier_id: data.specifierId || null
         })
         .select()
         .single();

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useSpecifiers } from '@/hooks/useSpecifiers';
 import { projectService } from '@/services/projectService';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import ClientSelectionDialog from '@/components/Dialogs/ClientSelectionDialog';
@@ -30,9 +32,12 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack, onPro
   const [projectName, setProjectName] = useState('');
   const [priority, setPriority] = useState('Normal');
   const [description, setDescription] = useState('');
+  const [deliveryDeadline, setDeliveryDeadline] = useState('');
+  const [specifierId, setSpecifierId] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  const { data: specifiers } = useSpecifiers();
   const { refetch } = useProjectContext();
 
   const handleClientSelect = (client: Client) => {
@@ -69,7 +74,9 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack, onPro
         description: description.trim() || undefined,
         consultant: user?.name || 'Usuário',
         environments: '1',
-        priority: priority
+        priority: priority,
+        deliveryDeadline: deliveryDeadline || undefined,
+        specifierId: specifierId || undefined
       });
 
       if (result.success) {
@@ -83,6 +90,8 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack, onPro
         setProjectName('');
         setPriority('Normal');
         setDescription('');
+        setDeliveryDeadline('');
+        setSpecifierId('');
         
         // Atualizar a lista de projetos imediatamente
         await refetch();
@@ -109,7 +118,8 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack, onPro
   };
 
   const handleCancel = () => {
-    const hasChanges = selectedClient || projectName.trim() || description.trim() || priority !== 'Normal';
+    const hasChanges = selectedClient || projectName.trim() || description.trim() || 
+                      priority !== 'Normal' || deliveryDeadline || specifierId;
     
     if (hasChanges) {
       if (window.confirm('Deseja descartar as alterações?')) {
@@ -117,6 +127,8 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack, onPro
         setProjectName('');
         setPriority('Normal');
         setDescription('');
+        setDeliveryDeadline('');
+        setSpecifierId('');
         if (onBack) {
           onBack();
         }
@@ -210,21 +222,35 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack, onPro
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="priority" className="text-base font-medium text-gray-700">
-                    Prioridade
-                  </Label>
-                  <Select value={priority} onValueChange={setPriority}>
-                    <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
-                      <SelectValue placeholder="Selecione a prioridade" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Baixa">Baixa</SelectItem>
-                      <SelectItem value="Normal">Normal</SelectItem>
-                      <SelectItem value="Alta">Alta</SelectItem>
-                      <SelectItem value="Urgente">Urgente</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="priority" className="text-base font-medium text-gray-700">
+                      Prioridade
+                    </Label>
+                    <Select value={priority} onValueChange={setPriority}>
+                      <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                        <SelectValue placeholder="Selecione a prioridade" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Baixa">Baixa</SelectItem>
+                        <SelectItem value="Normal">Normal</SelectItem>
+                        <SelectItem value="Alta">Alta</SelectItem>
+                        <SelectItem value="Urgente">Urgente</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="deliveryDeadline" className="text-base font-medium text-gray-700">
+                      Prazo de Entrega
+                    </Label>
+                    <Input
+                      id="deliveryDeadline"
+                      type="date"
+                      value={deliveryDeadline}
+                      onChange={(e) => setDeliveryDeadline(e.target.value)}
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -240,16 +266,36 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack, onPro
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="consultant" className="text-base font-medium text-gray-700">
-                    Consultor Executor <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="consultant"
-                    value={user?.name || 'Usuário'}
-                    readOnly
-                    className="border-gray-300 bg-gray-50 text-gray-700 cursor-not-allowed"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="consultant" className="text-base font-medium text-gray-700">
+                      Consultor Executor <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="consultant"
+                      value={user?.name || 'Usuário'}
+                      readOnly
+                      className="border-gray-300 bg-gray-50 text-gray-700 cursor-not-allowed"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="specifier" className="text-base font-medium text-gray-700">
+                      Especificador
+                    </Label>
+                    <Select value={specifierId} onValueChange={setSpecifierId}>
+                      <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                        <SelectValue placeholder="Selecione um especificador" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Nenhum especificador</SelectItem>
+                        {specifiers.map((specifier) => (
+                          <SelectItem key={specifier.id} value={specifier.id}>
+                            {specifier.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
             </CardContent>
