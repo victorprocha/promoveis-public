@@ -6,6 +6,8 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useCollaborators } from '@/hooks/useCollaborators';
+import { useToast } from '@/hooks/use-toast';
 
 interface NovoColaboradorProps {
   onBack: () => void;
@@ -14,6 +16,15 @@ interface NovoColaboradorProps {
 const NovoColaborador: React.FC<NovoColaboradorProps> = ({ onBack }) => {
   const [activeSection, setActiveSection] = useState('informacoes-gerais');
   const [tipoPessoa, setTipoPessoa] = useState('fisica');
+  const [formData, setFormData] = useState({
+    nome: '',
+    telefone: '',
+    email: '',
+    cargo: ''
+  });
+  
+  const { addCollaborator } = useCollaborators();
+  const { toast } = useToast();
 
   const sections = [
     { id: 'informacoes-gerais', label: 'informações gerais', icon: User },
@@ -25,6 +36,36 @@ const NovoColaborador: React.FC<NovoColaboradorProps> = ({ onBack }) => {
     const element = document.getElementById(sectionId);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleConfirm = async () => {
+    if (!formData.nome.trim()) {
+      toast({
+        title: "Erro",
+        description: "Nome é obrigatório",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await addCollaborator({
+        name: formData.nome,
+        role: formData.cargo,
+        email: formData.email || undefined,
+        phone: formData.telefone || undefined
+      });
+      onBack();
+    } catch (error) {
+      // Error already handled by the hook
     }
   };
 
@@ -84,7 +125,9 @@ const NovoColaborador: React.FC<NovoColaboradorProps> = ({ onBack }) => {
                       Nome*
                     </Label>
                     <Input 
-                      id="nome" 
+                      id="nome"
+                      value={formData.nome}
+                      onChange={(e) => handleInputChange('nome', e.target.value)}
                       className="border-b-2 border-t-0 border-l-0 border-r-0 border-blue-400 rounded-none bg-transparent focus:border-blue-600" 
                     />
                   </div>
@@ -151,7 +194,9 @@ const NovoColaborador: React.FC<NovoColaboradorProps> = ({ onBack }) => {
                       Telefone
                     </Label>
                     <Input 
-                      id="telefone" 
+                      id="telefone"
+                      value={formData.telefone}
+                      onChange={(e) => handleInputChange('telefone', e.target.value)}
                       placeholder="(00) 00000-0000"
                       className="border-b border-t-0 border-l-0 border-r-0 border-slate-300 rounded-none bg-transparent focus:border-blue-600" 
                     />
@@ -178,7 +223,9 @@ const NovoColaborador: React.FC<NovoColaboradorProps> = ({ onBack }) => {
                       E-mail
                     </Label>
                     <Input 
-                      id="email" 
+                      id="email"
+                      value={formData.email}
+                      onChange={(e) => handleInputChange('email', e.target.value)}
                       type="email"
                       className="border-b border-t-0 border-l-0 border-r-0 border-slate-300 rounded-none bg-transparent focus:border-blue-600" 
                     />
@@ -199,7 +246,7 @@ const NovoColaborador: React.FC<NovoColaboradorProps> = ({ onBack }) => {
                     <Label htmlFor="cargo" className="text-sm font-medium text-slate-700">
                       Cargo*
                     </Label>
-                    <Select>
+                    <Select value={formData.cargo} onValueChange={(value) => handleInputChange('cargo', value)}>
                       <SelectTrigger className="border-b border-t-0 border-l-0 border-r-0 border-slate-300 rounded-none bg-transparent focus:border-blue-600">
                         <SelectValue placeholder="selecione..." />
                       </SelectTrigger>
@@ -345,7 +392,7 @@ const NovoColaborador: React.FC<NovoColaboradorProps> = ({ onBack }) => {
           >
             CANCELAR
           </Button>
-          <Button className="bg-blue-500 hover:bg-blue-600 text-white">
+          <Button onClick={handleConfirm} className="bg-blue-500 hover:bg-blue-600 text-white">
             CONFIRMAR
           </Button>
         </div>
