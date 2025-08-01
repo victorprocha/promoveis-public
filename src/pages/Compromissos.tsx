@@ -12,7 +12,7 @@ const Compromissos = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date(2020, 2, 8));
   const [selectedStore, setSelectedStore] = useState('Loja de Móveis');
   const [viewType, setViewType] = useState('Semana');
-  const [selectedAgendaType, setSelectedAgendaType] = useState('Entregas');
+  const [selectedAgendaType, setSelectedAgendaType] = useState('Seletor Padrão');
 
   // Sample collaborators/teams data
   const collaborators = [
@@ -21,8 +21,17 @@ const Compromissos = () => {
     { id: 3, name: 'Equipe 01', type: 'Colaborador', location: 'Loja de Móveis' },
   ];
 
-  // Sample agenda types
-  const agendaTypes = ['Entregas', 'Montagens', 'Visitas', 'Reuniões'];
+  // Sample agenda types from the reference image
+  const agendaTypes = [
+    'Seletor Padrão',
+    'Agendamentos',
+    'Assistência',
+    'Compromissos',
+    'Entrega',
+    'Instalação',
+    'Montagem',
+    'Visita'
+  ];
 
   // Sample personnel/equipment data
   const personnelList = [
@@ -134,22 +143,21 @@ const Compromissos = () => {
           {/* Agenda Types */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-medium">Tipos de Agenda</CardTitle>
+              <CardTitle className="text-base font-medium">Tipo de Agenda</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                {agendaTypes.map((type) => (
-                  <Button
-                    key={type}
-                    variant={selectedAgendaType === type ? "default" : "outline"}
-                    size="sm"
-                    className="w-full justify-start"
-                    onClick={() => setSelectedAgendaType(type)}
-                  >
-                    {type}
-                  </Button>
-                ))}
-              </div>
+              <Select value={selectedAgendaType} onValueChange={setSelectedAgendaType}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecionar tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {agendaTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </CardContent>
           </Card>
 
