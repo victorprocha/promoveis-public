@@ -19,6 +19,7 @@ import Compromissos from '@/pages/Compromissos';
 import TechnicalAssistance from '@/pages/TechnicalAssistance';
 import Colaboradores from '@/pages/Colaboradores';
 import NovoColaborador from '@/pages/NovoColaborador';
+import AgendaEntrega from '@/pages/AgendaEntrega';
 import ClientDetails from '@/pages/ClientDetails';
 import { Toaster } from '@/components/ui/toaster';
 import { ProjectProvider } from '@/contexts/ProjectContext';
@@ -173,6 +174,8 @@ const Index = () => {
         return <div className="p-6"><h1 className="text-2xl font-bold">Usuários</h1></div>;
       case 'colaborador':
         return <Colaboradores onNewColaborador={handleNewColaborador} />;
+      case 'agenda-entrega':
+        return <AgendaEntrega />;
       
       // Treinamentos
       case 'comercial-treinamento':

@@ -256,14 +256,23 @@ const Compromissos = () => {
                          <div className="text-sm text-muted-foreground">{collaborator.role || 'Colaborador'}</div>
                          <div>{collaborator.name}</div>
                        </div>
-                       {weekDays.map((date) => (
-                         <div 
-                           key={date.toISOString()} 
-                           className="p-4 border-l h-24 hover:bg-muted/30 cursor-pointer transition-colors"
-                         >
-                           {/* Appointment slots would go here */}
-                         </div>
-                       ))}
+                        {weekDays.map((date) => (
+                          <div 
+                            key={date.toISOString()} 
+                            className="p-2 border-l h-24 hover:bg-muted/30 cursor-pointer transition-colors relative group"
+                          >
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Calendar 
+                                className="h-4 w-4 text-muted-foreground hover:text-primary cursor-pointer" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // Navigate to the new agenda page
+                                  window.location.href = '#agenda-entrega';
+                                }}
+                              />
+                            </div>
+                          </div>
+                        ))}
                      </div>
                    ))}
                 </div>
