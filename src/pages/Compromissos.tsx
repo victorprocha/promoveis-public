@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import PageTemplate from '@/components/Layout/PageTemplate';
 import { useCollaborators } from '@/hooks/useCollaborators';
 
-const Compromissos = () => {
+const Compromissos = ({ onNavigate }: { onNavigate?: (page: string) => void }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [selectedStore, setSelectedStore] = useState('Loja de Móveis');
@@ -266,8 +266,7 @@ const Compromissos = () => {
                                 className="h-4 w-4 text-muted-foreground hover:text-primary cursor-pointer" 
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  // Navigate to the new agenda page
-                                  window.location.href = '#agenda-entrega';
+                                  onNavigate?.('agenda-entrega');
                                 }}
                               />
                             </div>

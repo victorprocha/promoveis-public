@@ -141,8 +141,8 @@ const Index = () => {
         return <Assembly />;
         case 'entregas-montagens':
           return <DeliveriesAndAssembly />;
-        case 'compromissos':
-          return <Compromissos />;
+      case 'compromissos':
+        return <Compromissos onNavigate={handleModuleChange} />;
       case 'assistencias':
       case 'assistencias-relatorio':
         return <TechnicalAssistance />;
