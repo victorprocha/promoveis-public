@@ -300,35 +300,61 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
     return (
       <div
         ref={flyoutRef}
-        className="fixed bg-[#1E2226] border-l border-[#3A4F64] shadow-xl z-50 
-                   w-[90vw] sm:w-[600px] md:w-[700px] lg:w-[800px] xl:w-[600px] 
-                   max-h-[70vh] sm:max-h-[500px] overflow-y-auto custom-scrollbar flyout-enter
-                   left-2 sm:left-auto"
+        className="fixed bg-[#1E2226] border border-[#3A4F64] shadow-2xl z-50 
+                   rounded-lg overflow-hidden flyout-enter"
         style={{
-          top: `${flyoutPosition.top + 64}px`,
-          left: window.innerWidth >= 640 ? `${flyoutPosition.left}px` : '8px',
+          top: '80px',
+          left: '280px',
+          right: '20px',
+          bottom: '20px',
+          width: 'calc(100vw - 300px)',
+          height: 'calc(100vh - 100px)',
+          maxWidth: 'none',
+          maxHeight: 'none'
         }}
       >
-        <div className="p-4 sm:p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-            {activeItem.submenuCategories.map((category, categoryIndex) => (
-              <div key={categoryIndex} className="space-y-3">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-                  {category.title}
-                </h3>
-                <div className="space-y-2">
-                  {category.items.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => handleSubmenuItemClick(item.id)}
-                      className="block w-full text-left text-sm text-gray-200 hover:text-white hover:bg-[#2A3F54] rounded px-3 py-2 transition-colors"
-                    >
-                      {item.label}
-                    </button>
-                  ))}
+        <div className="h-full flex flex-col">
+          {/* Header */}
+          <div className="p-6 border-b border-[#3A4F64] bg-[#2A3F54]">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-white flex items-center gap-3">
+                <activeItem.icon className="h-6 w-6" />
+                {activeItem.label}
+              </h2>
+              <button
+                onClick={() => setActiveFlyout(null)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 p-6 overflow-y-auto custom-scrollbar">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8 h-full">
+              {activeItem.submenuCategories.map((category, categoryIndex) => (
+                <div key={categoryIndex} className="space-y-4">
+                  <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4 pb-2 border-b border-[#3A4F64]">
+                    {category.title}
+                  </h3>
+                  <div className="space-y-3">
+                    {category.items.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => handleSubmenuItemClick(item.id)}
+                        className="block w-full text-left text-sm text-gray-200 hover:text-white 
+                                 hover:bg-[#2A3F54] rounded-lg px-4 py-3 transition-all duration-200
+                                 border border-transparent hover:border-[#007BFF]/30
+                                 hover:shadow-lg hover:scale-105"
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>
