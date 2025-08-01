@@ -266,7 +266,13 @@ const Compromissos = ({ onNavigate }: { onNavigate?: (page: string) => void }) =
                                 className="h-4 w-4 text-muted-foreground hover:text-primary cursor-pointer" 
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  onNavigate?.('agenda-entrega');
+                                  console.log('Clicando no ícone de agenda');
+                                  if (onNavigate) {
+                                    console.log('Redirecionando para agenda-entrega');
+                                    onNavigate('agenda-entrega');
+                                  } else {
+                                    console.log('onNavigate não definido');
+                                  }
                                 }}
                               />
                             </div>
