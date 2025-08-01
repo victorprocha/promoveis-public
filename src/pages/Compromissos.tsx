@@ -8,11 +8,12 @@ import { Badge } from '@/components/ui/badge';
 import PageTemplate from '@/components/Layout/PageTemplate';
 
 const Compromissos = () => {
-  const [currentDate, setCurrentDate] = useState(new Date(2020, 2, 8)); // March 8, 2020 to match the image
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date(2020, 2, 8));
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [selectedStore, setSelectedStore] = useState('Loja de Móveis');
   const [viewType, setViewType] = useState('Semana');
-  const [selectedAgendaType, setSelectedAgendaType] = useState('Seletor Padrão');
+  const [selectedAgendaType, setSelectedAgendaType] = useState('Apresentação');
+  const [selectedCollaborator, setSelectedCollaborator] = useState('');
 
   // Sample collaborators/teams data
   const collaborators = [
@@ -21,16 +22,15 @@ const Compromissos = () => {
     { id: 3, name: 'Equipe 01', type: 'Colaborador', location: 'Loja de Móveis' },
   ];
 
-  // Sample agenda types from the reference image
+  // Updated agenda types as requested
   const agendaTypes = [
-    'Seletor Padrão',
-    'Agendamentos',
+    'Apresentação',
     'Assistência',
     'Compromissos',
     'Entrega',
-    'Instalação',
+    'Medição',
     'Montagem',
-    'Visita'
+    'Tarefa'
   ];
 
   // Sample personnel/equipment data
@@ -170,15 +170,30 @@ const Compromissos = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-1 max-h-64 overflow-y-auto">
-                {personnelList.map((person, index) => (
-                  <div
-                    key={index}
-                    className="text-sm p-2 rounded-md hover:bg-muted cursor-pointer transition-colors"
-                  >
-                    {person}
-                  </div>
-                ))}
+              <div className="space-y-3">
+                <Select value={selectedCollaborator} onValueChange={setSelectedCollaborator}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Filtrar por colaborador..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todos os colaboradores</SelectItem>
+                    {personnelList.map((person, index) => (
+                      <SelectItem key={index} value={person}>
+                        {person}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="space-y-1 max-h-64 overflow-y-auto">
+                  {personnelList.map((person, index) => (
+                    <div
+                      key={index}
+                      className="text-sm p-2 rounded-md hover:bg-muted cursor-pointer transition-colors"
+                    >
+                      {person}
+                    </div>
+                  ))}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -272,53 +287,6 @@ const Compromissos = () => {
             </CardContent>
           </Card>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Compromissos Hoje
-                </CardTitle>
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">12</div>
-                <p className="text-xs text-muted-foreground">
-                  +2 desde ontem
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Colaboradores Ativos
-                </CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">8</div>
-                <p className="text-xs text-muted-foreground">
-                  Disponíveis para agendamento
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Taxa de Ocupação
-                </CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">67%</div>
-                <p className="text-xs text-muted-foreground">
-                  Média da semana
-                </p>
-              </CardContent>
-            </Card>
-          </div>
         </div>
       </div>
     </PageTemplate>
