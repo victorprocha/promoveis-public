@@ -5,7 +5,12 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useClient } from '@/hooks/useClients';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useClient, useClients } from '@/hooks/useClients';
+import { useToast } from '@/hooks/use-toast';
 import NewProjectWithClientDialog from '@/components/Dialogs/NewProjectWithClientDialog';
 
 interface ClientDetailsProps {
@@ -16,7 +21,21 @@ interface ClientDetailsProps {
 
 const ClientDetails: React.FC<ClientDetailsProps> = ({ clientId, onBack, onProjectCreated }) => {
   const { client, loading, error } = useClient(clientId || '');
+  const { deleteClient, updateClient } = useClients();
+  const { toast } = useToast();
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    company: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: ''
+  });
 
   const handleProjectCreated = () => {
     // Fechar o dialog
@@ -25,6 +44,50 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ clientId, onBack, onProje
     // Notificar o componente pai se callback foi fornecido
     if (onProjectCreated) {
       onProjectCreated();
+    }
+  };
+
+  const handleEdit = () => {
+    if (client) {
+      setEditFormData({
+        name: client.name,
+        email: client.email,
+        phone: client.phone,
+        company: client.company || '',
+        address: client.address || '',
+        city: client.city || '',
+        state: client.state || '',
+        zipCode: client.zipCode || ''
+      });
+      setShowEditDialog(true);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!client) return;
+
+    try {
+      await updateClient(client.id, editFormData);
+      setShowEditDialog(false);
+      // Recarregar a página ou atualizar os dados
+      window.location.reload();
+    } catch (error) {
+      console.error('Erro ao atualizar cliente:', error);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!client) return;
+
+    try {
+      await deleteClient(client.id);
+      setShowDeleteDialog(false);
+      // Voltar para a lista de clientes
+      if (onBack) {
+        onBack();
+      }
+    } catch (error) {
+      console.error('Erro ao excluir cliente:', error);
     }
   };
 
@@ -120,7 +183,12 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ clientId, onBack, onProje
                       )}
                     </div>
                   </div>
-                  <Button size="icon" variant="outline" className="text-[#007BFF] border-[#007BFF]">
+                  <Button 
+                    size="icon" 
+                    variant="outline" 
+                    className="text-[#007BFF] border-[#007BFF]"
+                    onClick={handleEdit}
+                  >
                     <Edit className="h-4 w-4" />
                   </Button>
                 </div>
@@ -311,8 +379,19 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ clientId, onBack, onProje
         
         <div className="flex items-center gap-4">
           <Button variant="link" className="text-[#007BFF]">VER FICHA COMPLETA</Button>
-          <Button variant="outline" className="text-red-600 border-red-600">EXCLUIR</Button>
-          <Button className="bg-[#007BFF] hover:bg-[#0056b3]">EDITAR</Button>
+          <Button 
+            variant="outline" 
+            className="text-red-600 border-red-600"
+            onClick={() => setShowDeleteDialog(true)}
+          >
+            EXCLUIR
+          </Button>
+          <Button 
+            className="bg-[#007BFF] hover:bg-[#0056b3]"
+            onClick={handleEdit}
+          >
+            EDITAR
+          </Button>
         </div>
       </div>
 
@@ -321,6 +400,120 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ clientId, onBack, onProje
         onOpenChange={setShowNewProjectDialog}
         onProjectCreated={handleProjectCreated}
       />
+
+      {/* Dialog de Confirmação de Exclusão */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o cliente <strong>{client?.name}</strong>? 
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog de Edição */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Editar Cliente</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="col-span-2">
+              <Label htmlFor="name">Nome *</Label>
+              <Input
+                id="name"
+                value={editFormData.name}
+                onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                placeholder="Nome do cliente"
+              />
+            </div>
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={editFormData.email}
+                onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                placeholder="email@exemplo.com"
+              />
+            </div>
+            <div>
+              <Label htmlFor="phone">Telefone</Label>
+              <Input
+                id="phone"
+                value={editFormData.phone}
+                onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                placeholder="(11) 99999-9999"
+              />
+            </div>
+            <div className="col-span-2">
+              <Label htmlFor="company">Empresa</Label>
+              <Input
+                id="company"
+                value={editFormData.company}
+                onChange={(e) => setEditFormData({ ...editFormData, company: e.target.value })}
+                placeholder="Nome da empresa"
+              />
+            </div>
+            <div className="col-span-2">
+              <Label htmlFor="address">Endereço</Label>
+              <Input
+                id="address"
+                value={editFormData.address}
+                onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })}
+                placeholder="Rua, número, bairro"
+              />
+            </div>
+            <div>
+              <Label htmlFor="city">Cidade</Label>
+              <Input
+                id="city"
+                value={editFormData.city}
+                onChange={(e) => setEditFormData({ ...editFormData, city: e.target.value })}
+                placeholder="Cidade"
+              />
+            </div>
+            <div>
+              <Label htmlFor="state">Estado</Label>
+              <Input
+                id="state"
+                value={editFormData.state}
+                onChange={(e) => setEditFormData({ ...editFormData, state: e.target.value })}
+                placeholder="Estado"
+              />
+            </div>
+            <div>
+              <Label htmlFor="zipCode">CEP</Label>
+              <Input
+                id="zipCode"
+                value={editFormData.zipCode}
+                onChange={(e) => setEditFormData({ ...editFormData, zipCode: e.target.value })}
+                placeholder="00000-000"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveEdit} className="bg-[#007BFF] hover:bg-[#0056b3]">
+              Salvar Alterações
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
