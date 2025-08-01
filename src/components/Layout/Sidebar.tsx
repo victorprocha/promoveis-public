@@ -142,19 +142,27 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
       submenuCategories: [
         {
           title: 'AGENDAMENTOS',
-          items: [{ id: 'agendamentos', label: 'Agendamentos' }]
-        },
-        {
-          title: 'COMPROMISSOS',
-          items: [{ id: 'compromissos', label: 'Compromissos' }]
-        },
-        {
-          title: 'HISTÓRICOS',
-          items: [{ id: 'historicos', label: 'Históricos' }]
+          items: [
+            { id: 'compromissos', label: 'Compromissos' },
+            { id: 'historicos', label: 'Históricos' }
+          ]
         },
         {
           title: 'CONFIGURAÇÕES',
-          items: [{ id: 'permissoes-acesso', label: 'Permissões de Acesso' }]
+          items: [
+            { id: 'configuracoes-agenda', label: 'Configurações da Agenda' },
+            { id: 'habilitacoes-agenda', label: 'Habilitações da Agenda' },
+            { id: 'permissoes-acesso', label: 'Permissões de Acesso' },
+            { id: 'tipos-compromisso', label: 'Tipos de Compromisso' },
+            { id: 'questionarios', label: 'Questionários' }
+          ]
+        },
+        {
+          title: 'RELATÓRIOS',
+          items: [
+            { id: 'monitor-compromissos', label: 'Monitor de Compromissos' },
+            { id: 'controle-checkin-checkout', label: 'Controle de Check-in e Check-Out' }
+          ]
         }
       ]
     },

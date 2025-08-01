@@ -15,6 +15,7 @@ import EnvironmentReview from '@/pages/EnvironmentReview';
 import Deliveries from '@/pages/Deliveries';
 import Assembly from '@/pages/Assembly';
 import DeliveriesAndAssembly from '@/pages/DeliveriesAndAssembly';
+import Compromissos from '@/pages/Compromissos';
 import TechnicalAssistance from '@/pages/TechnicalAssistance';
 import Colaboradores from '@/pages/Colaboradores';
 import NovoColaborador from '@/pages/NovoColaborador';
@@ -137,8 +138,10 @@ const Index = () => {
         return <Deliveries />;
       case 'montagem':
         return <Assembly />;
-      case 'entregas-montagens':
-        return <DeliveriesAndAssembly />;
+        case 'entregas-montagens':
+          return <DeliveriesAndAssembly />;
+        case 'compromissos':
+          return <Compromissos />;
       case 'assistencias':
       case 'assistencias-relatorio':
         return <TechnicalAssistance />;
@@ -148,8 +151,6 @@ const Index = () => {
       // Agendas
       case 'agendamentos':
         return <div className="p-6"><h1 className="text-2xl font-bold">Agendamentos</h1></div>;
-      case 'compromissos':
-        return <div className="p-6"><h1 className="text-2xl font-bold">Compromissos</h1></div>;
       case 'historicos':
         return <div className="p-6"><h1 className="text-2xl font-bold">Históricos</h1></div>;
       case 'permissoes-acesso':

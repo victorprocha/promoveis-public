@@ -1,0 +1,208 @@
+import React, { useState } from 'react';
+import { ChevronLeft, ChevronRight, Calendar, Users, Settings, FileText } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import PageTemplate from '@/components/Layout/PageTemplate';
+
+const Compromissos = () => {
+  const [currentDate, setCurrentDate] = useState(new Date(2020, 2, 8)); // March 8, 2020 to match the image
+  const [selectedStore, setSelectedStore] = useState('Loja de Móveis');
+  const [viewType, setViewType] = useState('Semana');
+
+  // Sample collaborators/teams data
+  const collaborators = [
+    { id: 1, name: 'Dinei Lopes', type: 'Colaborador' },
+    { id: 2, name: 'Entregador Próprio', type: 'Colaborador' },
+    { id: 3, name: 'Equipe 01', type: 'Colaborador' },
+  ];
+
+  // Generate week days
+  const getWeekDays = () => {
+    const startOfWeek = new Date(currentDate);
+    const day = startOfWeek.getDay();
+    const diff = startOfWeek.getDate() - day;
+    startOfWeek.setDate(diff);
+
+    const weekDays = [];
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(startOfWeek);
+      date.setDate(startOfWeek.getDate() + i);
+      weekDays.push(date);
+    }
+    return weekDays;
+  };
+
+  const weekDays = getWeekDays();
+  const dayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('pt-BR', { 
+      day: '2-digit', 
+      month: 'long', 
+      year: 'numeric' 
+    });
+  };
+
+  const navigateWeek = (direction: 'prev' | 'next') => {
+    const newDate = new Date(currentDate);
+    newDate.setDate(currentDate.getDate() + (direction === 'next' ? 7 : -7));
+    setCurrentDate(newDate);
+  };
+
+  return (
+    <PageTemplate 
+      title="Compromissos"
+      icon={Calendar}
+    >
+      <div className="space-y-6">
+        {/* Header Controls */}
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigateWeek('prev')}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                
+                <div className="text-lg font-semibold">
+                  {formatDate(weekDays[0])} - {formatDate(weekDays[6])}
+                </div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigateWeek('next')}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Select value={selectedStore} onValueChange={setSelectedStore}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Selecionar loja" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Loja de Móveis">Loja de Móveis</SelectItem>
+                    <SelectItem value="Loja Principal">Loja Principal</SelectItem>
+                    <SelectItem value="Filial 01">Filial 01</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={viewType} onValueChange={setViewType}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Visualização" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Dia">Dia</SelectItem>
+                    <SelectItem value="Semana">Semana</SelectItem>
+                    <SelectItem value="Mês">Mês</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+
+        {/* Calendar Grid */}
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <div className="min-w-[800px]">
+                {/* Header Row */}
+                <div className="grid grid-cols-8 border-b">
+                  <div className="p-4 bg-muted font-medium">
+                    Colaborador
+                  </div>
+                  {weekDays.map((date, index) => (
+                    <div key={date.toISOString()} className="p-4 bg-muted font-medium text-center border-l">
+                      <div className="text-sm text-muted-foreground">
+                        {dayNames[index]}
+                      </div>
+                      <div className="text-lg font-semibold">
+                        {date.getDate()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Collaborator Rows */}
+                {collaborators.map((collaborator) => (
+                  <div key={collaborator.id} className="grid grid-cols-8 border-b">
+                    <div className="p-4 bg-muted/50 font-medium border-r">
+                      <div className="text-sm text-muted-foreground">{collaborator.type}</div>
+                      <div>{collaborator.name}</div>
+                    </div>
+                    {weekDays.map((date) => (
+                      <div 
+                        key={date.toISOString()} 
+                        className="p-4 border-l h-24 hover:bg-muted/30 cursor-pointer transition-colors"
+                      >
+                        {/* Appointment slots would go here */}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Compromissos Hoje
+              </CardTitle>
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">12</div>
+              <p className="text-xs text-muted-foreground">
+                +2 desde ontem
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Colaboradores Ativos
+              </CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">8</div>
+              <p className="text-xs text-muted-foreground">
+                Disponíveis para agendamento
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Taxa de Ocupação
+              </CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">67%</div>
+              <p className="text-xs text-muted-foreground">
+                Média da semana
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </PageTemplate>
+  );
+};
+
+export default Compromissos;
