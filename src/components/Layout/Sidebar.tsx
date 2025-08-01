@@ -97,13 +97,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
       submenuCategories: [
         {
           title: 'REVISÕES',
-          items: [{ id: 'revisao-ambientes', label: 'Revisão de Ambientes' }]
+          items: [
+            { id: 'distribuicao-revisoes', label: 'Distribuição de Revisões' },
+            { id: 'revisao-ambientes', label: 'Revisão de Ambientes' },
+            { id: 'liberacao-revisao', label: 'Liberação de Revisão' },
+            { id: 'manutencao-ambientes', label: 'Manutenção de Ambientes' }
+          ]
         },
         {
-          title: 'ENTREGA E MONTAGEM',
+          title: 'ENTREGA & MONTAGEM',
           items: [
-            { id: 'entregas', label: 'Entregas' },
-            { id: 'montagem', label: 'Montagem' }
+            { id: 'entregas-montagem', label: 'Entregas e Montagem' },
+            { id: 'consultar-agendado-fabrica', label: 'Consultar Agendado na Fábrica' }
           ]
         },
         {
@@ -113,8 +118,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
         {
           title: 'RELATÓRIOS',
           items: [
-            { id: 'previsao-embarque', label: 'Previsão de Embarque' },
-            { id: 'assistencias-relatorio', label: 'Assistências' }
+            { id: 'revisao-embarque', label: 'Revisão de Embarque' },
+            { id: 'previsoes-entrega', label: 'Previsões de Entrega' },
+            { id: 'relatorio-assistencias', label: 'Relatório de Assistências' },
+            { id: 'relatorio-revisoes', label: 'Relatório de Revisões' },
+            { id: 'relatorio-contratos', label: 'Relatório de Contratos' }
+          ]
+        },
+        {
+          title: 'GESTÃO',
+          items: [
+            { id: 'tipos-ocorrencia', label: 'Tipos de Ocorrência' },
+            { id: 'tipos-montagem', label: 'Tipos de Montagem' }
           ]
         }
       ]
