@@ -300,14 +300,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
     return (
       <div
         ref={flyoutRef}
-        className="fixed bg-[#1E2226] border-l border-[#3A4F64] shadow-xl z-50 min-w-[600px] max-h-[500px] overflow-y-auto custom-scrollbar flyout-enter"
+        className="fixed bg-[#1E2226] border-l border-[#3A4F64] shadow-xl z-50 
+                   w-[90vw] sm:w-[600px] md:w-[700px] lg:w-[800px] xl:w-[600px] 
+                   max-h-[70vh] sm:max-h-[500px] overflow-y-auto custom-scrollbar flyout-enter
+                   left-2 sm:left-auto"
         style={{
           top: `${flyoutPosition.top + 64}px`,
-          left: `${flyoutPosition.left}px`,
+          left: window.innerWidth >= 640 ? `${flyoutPosition.left}px` : '8px',
         }}
       >
-        <div className="p-6">
-          <div className="grid grid-cols-3 gap-8">
+        <div className="p-4 sm:p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {activeItem.submenuCategories.map((category, categoryIndex) => (
               <div key={categoryIndex} className="space-y-3">
                 <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
@@ -346,10 +349,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
       <aside 
         ref={sidebarRef}
         className={`
-          fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] w-64 bg-[#2A3F54] text-white
+          fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] bg-[#2A3F54] text-white
           transform transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0 custom-scrollbar overflow-y-auto
+          w-64 sm:w-72 lg:w-80 xl:w-64
+          flex flex-col
         `}
       >
         {/* User Profile Section */}
