@@ -107,7 +107,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
         {
           title: 'ENTREGA & MONTAGEM',
           items: [
-            { id: 'entregas-montagem', label: 'Entregas e Montagem' },
+            { id: 'entregas-montagens', label: 'Entregas e Montagem' },
             { id: 'consultar-agendado-fabrica', label: 'Consultar Agendado na Fábrica' }
           ]
         },

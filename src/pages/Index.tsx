@@ -14,6 +14,7 @@ import ContractDetails from '@/pages/ContractDetails';
 import EnvironmentReview from '@/pages/EnvironmentReview';
 import Deliveries from '@/pages/Deliveries';
 import Assembly from '@/pages/Assembly';
+import DeliveriesAndAssembly from '@/pages/DeliveriesAndAssembly';
 import TechnicalAssistance from '@/pages/TechnicalAssistance';
 import Colaboradores from '@/pages/Colaboradores';
 import NovoColaborador from '@/pages/NovoColaborador';
@@ -136,6 +137,8 @@ const Index = () => {
         return <Deliveries />;
       case 'montagem':
         return <Assembly />;
+      case 'entregas-montagens':
+        return <DeliveriesAndAssembly />;
       case 'assistencias':
       case 'assistencias-relatorio':
         return <TechnicalAssistance />;
