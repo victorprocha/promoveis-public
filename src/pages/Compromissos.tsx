@@ -13,7 +13,7 @@ const Compromissos = () => {
   const [selectedStore, setSelectedStore] = useState('Loja de Móveis');
   const [viewType, setViewType] = useState('Semana');
   const [selectedAgendaType, setSelectedAgendaType] = useState('Apresentação');
-  const [selectedCollaborator, setSelectedCollaborator] = useState('');
+  const [selectedCollaborator, setSelectedCollaborator] = useState('all');
 
   // Sample collaborators/teams data
   const collaborators = [
@@ -176,7 +176,7 @@ const Compromissos = () => {
                     <SelectValue placeholder="Filtrar por colaborador..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos os colaboradores</SelectItem>
+                    <SelectItem value="all">Todos os colaboradores</SelectItem>
                     {personnelList.map((person, index) => (
                       <SelectItem key={index} value={person}>
                         {person}
