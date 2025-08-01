@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 import PageTemplate from '@/components/Layout/PageTemplate';
+import { useCollaborators } from '@/hooks/useCollaborators';
 
 const Compromissos = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -15,12 +16,8 @@ const Compromissos = () => {
   const [selectedAgendaType, setSelectedAgendaType] = useState('Apresentação');
   const [selectedCollaborator, setSelectedCollaborator] = useState('all');
 
-  // Sample collaborators/teams data
-  const collaborators = [
-    { id: 1, name: 'Dinei Lopes', type: 'Colaborador', location: 'Loja de Móveis' },
-    { id: 2, name: 'Entregador Próprio', type: 'Colaborador', location: 'Loja de Móveis' },
-    { id: 3, name: 'Equipe 01', type: 'Colaborador', location: 'Loja de Móveis' },
-  ];
+  // Get collaborators from database
+  const { collaborators: dbCollaborators, loading } = useCollaborators();
 
   // Updated agenda types as requested
   const agendaTypes = [
@@ -33,16 +30,10 @@ const Compromissos = () => {
     'Tarefa'
   ];
 
-  // Sample personnel/equipment data
-  const personnelList = [
-    'Dinei Lopes - Loja de Móveis',
-    'Entregador Próprio - Loja de Móveis',
-    'Equipe 01 - Loja de Móveis',
-    'Equipe 02 - Loja de Móveis',
-    'Montador Especializado - Loja de Móveis',
-    'TRANSPORTADOR - Loja de Móveis',
-    'TRANSPORTE PRÓPRIO - Loja de Móveis'
-  ];
+  // Filter collaborators based on selection
+  const filteredCollaborators = selectedCollaborator === 'all' 
+    ? dbCollaborators 
+    : dbCollaborators.filter(collab => collab.id === selectedCollaborator);
 
   // Generate week days
   const getWeekDays = () => {
@@ -161,42 +152,35 @@ const Compromissos = () => {
             </CardContent>
           </Card>
 
-          {/* Personnel/Equipment */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-medium flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Pessoas / Equipamentos
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <Select value={selectedCollaborator} onValueChange={setSelectedCollaborator}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Filtrar por colaborador..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os colaboradores</SelectItem>
-                    {personnelList.map((person, index) => (
-                      <SelectItem key={index} value={person}>
-                        {person}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <div className="space-y-1 max-h-64 overflow-y-auto">
-                  {personnelList.map((person, index) => (
-                    <div
-                      key={index}
-                      className="text-sm p-2 rounded-md hover:bg-muted cursor-pointer transition-colors"
-                    >
-                      {person}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+           {/* Personnel/Equipment */}
+           <Card>
+             <CardHeader className="pb-3">
+               <CardTitle className="text-base font-medium flex items-center gap-2">
+                 <Users className="h-4 w-4" />
+                 Pessoas / Equipamentos
+               </CardTitle>
+             </CardHeader>
+             <CardContent>
+               {loading ? (
+                 <div className="text-sm text-muted-foreground">Carregando colaboradores...</div>
+               ) : (
+                 <div className="space-y-1 max-h-64 overflow-y-auto">
+                   {dbCollaborators.map((collaborator) => (
+                     <div
+                       key={collaborator.id}
+                       className="text-sm p-2 rounded-md hover:bg-muted cursor-pointer transition-colors"
+                       onClick={() => setSelectedCollaborator(collaborator.id)}
+                     >
+                       {collaborator.name}
+                       {collaborator.role && (
+                         <span className="text-muted-foreground"> - {collaborator.role}</span>
+                       )}
+                     </div>
+                   ))}
+                 </div>
+               )}
+             </CardContent>
+           </Card>
         </div>
 
         {/* Main Content */}
@@ -265,23 +249,23 @@ const Compromissos = () => {
                     ))}
                   </div>
 
-                  {/* Collaborator Rows */}
-                  {collaborators.map((collaborator) => (
-                    <div key={collaborator.id} className="grid grid-cols-8 border-b">
-                      <div className="p-4 bg-muted/50 font-medium border-r">
-                        <div className="text-sm text-muted-foreground">{collaborator.type}</div>
-                        <div>{collaborator.name}</div>
-                      </div>
-                      {weekDays.map((date) => (
-                        <div 
-                          key={date.toISOString()} 
-                          className="p-4 border-l h-24 hover:bg-muted/30 cursor-pointer transition-colors"
-                        >
-                          {/* Appointment slots would go here */}
-                        </div>
-                      ))}
-                    </div>
-                  ))}
+                   {/* Collaborator Rows */}
+                   {filteredCollaborators.map((collaborator) => (
+                     <div key={collaborator.id} className="grid grid-cols-8 border-b">
+                       <div className="p-4 bg-muted/50 font-medium border-r">
+                         <div className="text-sm text-muted-foreground">{collaborator.role || 'Colaborador'}</div>
+                         <div>{collaborator.name}</div>
+                       </div>
+                       {weekDays.map((date) => (
+                         <div 
+                           key={date.toISOString()} 
+                           className="p-4 border-l h-24 hover:bg-muted/30 cursor-pointer transition-colors"
+                         >
+                           {/* Appointment slots would go here */}
+                         </div>
+                       ))}
+                     </div>
+                   ))}
                 </div>
               </div>
             </CardContent>
