@@ -105,17 +105,24 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ projeto, isDragging = false, 
     <Card
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
-      className={`cursor-grab active:cursor-grabbing mb-3 hover:shadow-md transition-shadow ${
+      className={`mb-3 hover:shadow-md transition-shadow ${
         isDragging ? 'shadow-lg' : ''
       }`}
-      onClick={(e) => {
-        e.stopPropagation();
-        onProjectClick?.(projeto);
-      }}
     >
-      <CardContent className="p-4">
+      <CardContent 
+        className="p-4 cursor-pointer"
+        onClick={(e) => {
+          e.stopPropagation();
+          onProjectClick?.(projeto);
+        }}
+        {...attributes}
+        {...listeners}
+        style={{ cursor: 'grab' }}
+        onMouseDown={(e) => {
+          // Permite tanto click quanto drag
+          e.stopPropagation();
+        }}
+      >
         <div className="space-y-3">
           <div className="flex items-start justify-between">
             <h3 className="font-medium text-sm text-gray-900 line-clamp-2">{projeto.name}</h3>
