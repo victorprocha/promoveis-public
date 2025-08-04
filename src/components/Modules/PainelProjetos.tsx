@@ -180,8 +180,8 @@ const PainelProjetos: React.FC<PainelProjetosProps> = ({ onNewProject }) => {
   const [loading, setLoading] = useState(true);
   const [activeProject, setActiveProject] = useState<ProjetoDetalhado | null>(null);
   const [filtros, setFiltros] = useState({
-    cliente: '',
-    consultor: '',
+    cliente: 'todos',
+    consultor: 'todos-consultores',
     unidade: '',
     busca: ''
   });
@@ -198,13 +198,10 @@ const PainelProjetos: React.FC<PainelProjetosProps> = ({ onNewProject }) => {
     try {
       setLoading(true);
       
-      // Carregar projetos
+      // Carregar projetos (removido JOIN com clients que não existe)
       const { data: projetosData, error: projetosError } = await supabase
         .from('projects')
-        .select(`
-          *,
-          clients(name)
-        `);
+        .select('*');
 
       if (projetosError) throw projetosError;
 
@@ -295,8 +292,8 @@ const PainelProjetos: React.FC<PainelProjetosProps> = ({ onNewProject }) => {
       projeto.name.toLowerCase().includes(filtros.busca.toLowerCase()) ||
       projeto.client_name.toLowerCase().includes(filtros.busca.toLowerCase());
     
-    const matchCliente = !filtros.cliente || projeto.client_name === filtros.cliente;
-    const matchConsultor = !filtros.consultor || projeto.consultor_responsavel === filtros.consultor;
+    const matchCliente = filtros.cliente === 'todos' || filtros.cliente === '' || projeto.client_name === filtros.cliente;
+    const matchConsultor = filtros.consultor === 'todos-consultores' || filtros.consultor === '' || projeto.consultor_responsavel === filtros.consultor;
     
     return matchBusca && matchCliente && matchConsultor;
   });
@@ -363,12 +360,12 @@ const PainelProjetos: React.FC<PainelProjetosProps> = ({ onNewProject }) => {
             />
           </div>
 
-          <Select value={filtros.cliente} onValueChange={(value) => setFiltros(prev => ({ ...prev, cliente: value }))}>
+          <Select value={filtros.cliente} onValueChange={(value) => setFiltros(prev => ({ ...prev, cliente: value === 'todos' ? '' : value }))}>
             <SelectTrigger className="w-48 h-8">
               <SelectValue placeholder="Todos os clientes" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos os clientes</SelectItem>
+              <SelectItem value="todos">Todos os clientes</SelectItem>
               {clientes.map(cliente => (
                 <SelectItem key={cliente.id} value={cliente.name}>
                   {cliente.name}
@@ -377,12 +374,12 @@ const PainelProjetos: React.FC<PainelProjetosProps> = ({ onNewProject }) => {
             </SelectContent>
           </Select>
 
-          <Select value={filtros.consultor} onValueChange={(value) => setFiltros(prev => ({ ...prev, consultor: value }))}>
+          <Select value={filtros.consultor} onValueChange={(value) => setFiltros(prev => ({ ...prev, consultor: value === 'todos-consultores' ? '' : value }))}>
             <SelectTrigger className="w-48 h-8">
               <SelectValue placeholder="Todos os consultores" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos os consultores</SelectItem>
+              <SelectItem value="todos-consultores">Todos os consultores</SelectItem>
               <SelectItem value="Consultor Padrão">Consultor Padrão</SelectItem>
             </SelectContent>
           </Select>
