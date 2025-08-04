@@ -95,6 +95,89 @@ export type Database = {
         }
         Relationships: []
       }
+      event_matrix: {
+        Row: {
+          agenda_type: string
+          created_at: string
+          description: string
+          end_date: string
+          id: string
+          start_date: string
+          updated_at: string
+          user_id: string
+          workflow_type: string
+        }
+        Insert: {
+          agenda_type?: string
+          created_at?: string
+          description?: string
+          end_date?: string
+          id?: string
+          start_date?: string
+          updated_at?: string
+          user_id: string
+          workflow_type?: string
+        }
+        Update: {
+          agenda_type?: string
+          created_at?: string
+          description?: string
+          end_date?: string
+          id?: string
+          start_date?: string
+          updated_at?: string
+          user_id?: string
+          workflow_type?: string
+        }
+        Relationships: []
+      }
+      event_matrix_events: {
+        Row: {
+          control_enabled: boolean
+          created_at: string
+          days: number
+          event_matrix_id: string
+          generates_commitment: string
+          id: string
+          name: string
+          order_sequence: number
+          selected_collaborators: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          control_enabled?: boolean
+          created_at?: string
+          days?: number
+          event_matrix_id: string
+          generates_commitment?: string
+          id?: string
+          name: string
+          order_sequence: number
+          selected_collaborators?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          control_enabled?: boolean
+          created_at?: string
+          days?: number
+          event_matrix_id?: string
+          generates_commitment?: string
+          id?: string
+          name?: string
+          order_sequence?: number
+          selected_collaborators?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_matrix_events_event_matrix_id_fkey"
+            columns: ["event_matrix_id"]
+            isOneToOne: false
+            referencedRelation: "event_matrix"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
