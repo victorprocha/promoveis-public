@@ -163,6 +163,52 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
       ]
     },
     {
+      id: 'compras',
+      label: 'Compras',
+      icon: Package,
+      hasSubmenu: true,
+      submenuCategories: [
+        {
+          title: 'PEDIDOS DE COMPRA',
+          items: [
+            { id: 'geracao-envio', label: 'Geração e Envio' },
+            { id: 'pedido-compras', label: 'Pedido de Compras' },
+            { id: 'atendimento', label: 'Atendimento' },
+            { id: 'cancelamento', label: 'Cancelamento' },
+            { id: 'comparativo', label: 'Comparativo' }
+          ]
+        },
+        {
+          title: 'ESTOQUE',
+          items: [
+            { id: 'movimentacao', label: 'Movimentação' },
+            { id: 'geracao-inventario', label: 'Geração de Inventário' },
+            { id: 'armazenados', label: 'Armazenados' },
+            { id: 'importacao-estoque', label: 'Importação de Estoque' },
+            { id: 'reserva-estoque', label: 'Reserva de Estoque' },
+            { id: 'analise-estoque', label: 'Análise de Estoque' }
+          ]
+        },
+        {
+          title: 'CADASTROS GERAIS',
+          items: [
+            { id: 'fornecedores', label: 'Fornecedores' },
+            { id: 'itens', label: 'Itens' },
+            { id: 'tabelas-compra', label: 'Tabelas de Compra' },
+            { id: 'classificacoes-itens', label: 'Classificações dos Itens' },
+            { id: 'etiquetas', label: 'Etiquetas' },
+            { id: 'catalogos', label: 'Catálogos' }
+          ]
+        },
+        {
+          title: 'GESTÃO',
+          items: [
+            { id: 'referencia-itens-fornecedor', label: 'Referência de Itens por Fornecedor' }
+          ]
+        }
+      ]
+    },
+    {
       id: 'agendas',
       label: 'Agendas',
       icon: Calendar,
