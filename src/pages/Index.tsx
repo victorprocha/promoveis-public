@@ -5,7 +5,7 @@ import Dashboard from '@/components/Modules/Dashboard';
 import ProjectDetails from '@/pages/ProjectDetails';
 import ProjectList from '@/components/Modules/ProjectRegistration';
 import PortfolioTracking from '@/components/Modules/PortfolioTracking';
-import ProjectBoard from '@/components/Modules/ProjectBoard';
+import PainelProjetos from '@/components/Modules/PainelProjetos';
 import Sales from '@/pages/Sales';
 import Clients from '@/pages/Clients';
 import Specifiers from '@/pages/Specifiers';
@@ -118,7 +118,7 @@ const Index = () => {
         return <PortfolioTracking />;
       case 'painel-projetos':
       case 'painel-projetos-enterprise':
-        return <ProjectBoard />;
+        return <PainelProjetos />;
       
       // Comercial
       case 'vendas':

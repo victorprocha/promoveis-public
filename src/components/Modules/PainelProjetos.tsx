@@ -221,7 +221,7 @@ const PainelProjetos: React.FC<PainelProjetosProps> = ({ onNewProject }) => {
         name: projeto.name,
         client_name: projeto.client_name,
         priority: projeto.priority || 'Normal',
-        etapa_atual: projeto.etapa_atual || 'Assinatura do Projeto',
+        etapa_atual: (projeto as any).etapa_atual || 'Assinatura do Projeto',
         budget: projeto.budget || 0,
         deadline: projeto.deadline,
         specifier_id: projeto.specifier_id,
@@ -263,7 +263,7 @@ const PainelProjetos: React.FC<PainelProjetosProps> = ({ onNewProject }) => {
       // Atualizar projeto no banco
       const { error } = await supabase
         .from('projects')
-        .update({ etapa_atual: novaEtapa })
+        .update({ etapa_atual: novaEtapa } as any)
         .eq('id', projetoId);
 
       if (error) throw error;

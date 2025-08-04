@@ -132,6 +132,7 @@ export type Database = {
           deadline: string | null
           delivery_deadline: string | null
           description: string | null
+          etapa_atual: string | null
           id: string
           name: string
           priority: string | null
@@ -148,6 +149,7 @@ export type Database = {
           deadline?: string | null
           delivery_deadline?: string | null
           description?: string | null
+          etapa_atual?: string | null
           id?: string
           name: string
           priority?: string | null
@@ -164,6 +166,7 @@ export type Database = {
           deadline?: string | null
           delivery_deadline?: string | null
           description?: string | null
+          etapa_atual?: string | null
           id?: string
           name?: string
           priority?: string | null
