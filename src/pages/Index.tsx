@@ -21,6 +21,8 @@ import Colaboradores from '@/pages/Colaboradores';
 import NovoColaborador from '@/pages/NovoColaborador';
 import AgendaEntrega from '@/pages/AgendaEntrega';
 import ClientDetails from '@/pages/ClientDetails';
+import CadastroMatrizEventos from '@/pages/CadastroMatrizEventos';
+import FluxoPadraoDetalhes from '@/pages/FluxoPadraoDetalhes';
 import { Toaster } from '@/components/ui/toaster';
 import { ProjectProvider } from '@/contexts/ProjectContext';
 
@@ -34,6 +36,8 @@ const Index = () => {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [showContractDetails, setShowContractDetails] = useState(false);
   const [selectedContractId, setSelectedContractId] = useState<string | null>(null);
+  const [showMatrizEventos, setShowMatrizEventos] = useState(false);
+  const [showFluxoPadrao, setShowFluxoPadrao] = useState(false);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -48,6 +52,14 @@ const Index = () => {
     setSelectedClientId(null);
     setShowContractDetails(false);
     setSelectedContractId(null);
+    setShowMatrizEventos(false);
+    setShowFluxoPadrao(false);
+    
+    // Handle special navigation cases
+    if (module === 'configuracao-matriz') {
+      setShowMatrizEventos(true);
+    }
+    
     // Close sidebar on mobile when selecting a module
     if (window.innerWidth < 1024) {
       setSidebarOpen(false);
@@ -92,7 +104,29 @@ const Index = () => {
     setSelectedContractId(null);
   };
 
+  const handleFluxoPadraoClick = () => {
+    setShowFluxoPadrao(true);
+    setShowMatrizEventos(false);
+  };
+
+  const handleBackFromFluxoPadrao = () => {
+    setShowFluxoPadrao(false);
+    setShowMatrizEventos(true);
+  };
+
+  const handleBackFromMatrizEventos = () => {
+    setShowMatrizEventos(false);
+  };
+
   const renderModule = () => {
+    if (showFluxoPadrao) {
+      return <FluxoPadraoDetalhes onBack={handleBackFromFluxoPadrao} />;
+    }
+
+    if (showMatrizEventos) {
+      return <CadastroMatrizEventos onFluxoPadraoClick={handleFluxoPadraoClick} />;
+    }
+
     if (showProjectDetails) {
       return <ProjectDetails projectId={selectedProjectId} onBack={handleBackFromProjectDetails} />;
     }
