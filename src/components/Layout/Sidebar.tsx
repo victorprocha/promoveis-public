@@ -19,7 +19,8 @@ import {
   FileText,
   User,
   Clock,
-  Home
+  Home,
+  DollarSign
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
@@ -204,6 +205,57 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
           title: 'GESTÃO',
           items: [
             { id: 'referencia-itens-fornecedor', label: 'Referência de Itens por Fornecedor' }
+          ]
+        }
+      ]
+    },
+    {
+      id: 'financeiro',
+      label: 'Financeiro',
+      icon: DollarSign,
+      hasSubmenu: true,
+      submenuCategories: [
+        {
+          title: 'CAIXA',
+          items: [
+            { id: 'boletim-caixa', label: 'Boletim de Caixa' },
+            { id: 'fluxo-previsto', label: 'Fluxo Previsto' },
+            { id: 'fluxo-realizado', label: 'Fluxo Realizado' },
+            { id: 'previsao-financeira', label: 'Previsão Financeira' }
+          ]
+        },
+        {
+          title: 'CONTAS A RECEBER',
+          items: [
+            { id: 'lancamentos-receber', label: 'Lançamentos' },
+            { id: 'baixa-lancamentos-receber', label: 'Baixa de Lançamentos' },
+            { id: 'recibo-avulso-receber', label: 'Recibo Avulso' }
+          ]
+        },
+        {
+          title: 'CONTAS A PAGAR',
+          items: [
+            { id: 'lancamentos-pagar', label: 'Lançamentos' },
+            { id: 'baixa-lancamentos-pagar', label: 'Baixa de Lançamentos' },
+            { id: 'efetivacao-titulos', label: 'Efetivação de Títulos' },
+            { id: 'recibo-avulso-pagar', label: 'Recibo Avulso' },
+            { id: 'extrato-comissoes', label: 'Extrato de Comissões' },
+            { id: 'comissoes-pendentes', label: 'Comissões Pendentes' }
+          ]
+        },
+        {
+          title: 'RELATÓRIOS',
+          items: [
+            { id: 'movimentacoes-financeiras', label: 'Movimentações Financeiras' }
+          ]
+        },
+        {
+          title: 'GESTÃO',
+          items: [
+            { id: 'contas-financeiras', label: 'Contas Financeiras' },
+            { id: 'liberacao-financeira', label: 'Liberação Financeira' },
+            { id: 'politicas-comissao', label: 'Políticas de Comissão' },
+            { id: 'portadores', label: 'Portadores' }
           ]
         }
       ]
