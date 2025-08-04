@@ -73,20 +73,9 @@ const CadastroMatrizEventos: React.FC<CadastroMatrizEventosProps> = ({ onFluxoPa
                   <Badge variant="secondary">Fluxo de venda padrão</Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                  <div className="flex items-center gap-2 justify-end">
-                    <span className="text-sm text-gray-500">Limites por Página:</span>
-                    <select className="text-sm border rounded px-2 py-1">
-                      <option>50</option>
-                      <option>100</option>
-                    </select>
-                    <span className="text-sm text-gray-500">1 a 50 de 1</span>
-                    <div className="flex gap-1">
-                      <Button variant="outline" size="sm" disabled>«</Button>
-                      <Button variant="outline" size="sm" disabled>‹</Button>
-                      <Button variant="outline" size="sm" disabled>›</Button>
-                      <Button variant="outline" size="sm" disabled>»</Button>
-                    </div>
-                  </div>
+                  <Badge variant="secondary" className="bg-green-100 text-green-800">
+                    Ativo
+                  </Badge>
                 </TableCell>
               </TableRow>
             </TableBody>

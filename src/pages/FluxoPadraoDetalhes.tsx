@@ -7,7 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Info } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ArrowLeft, Search } from 'lucide-react';
+import { useCollaborators } from '@/hooks/useCollaborators';
 
 interface FluxoPadraoDetalhesProps {
   onBack?: () => void;
@@ -19,23 +21,26 @@ const FluxoPadraoDetalhes: React.FC<FluxoPadraoDetalhesProps> = ({ onBack }) => 
   const [dataInicial, setDataInicial] = useState("01/01/2000");
   const [dataFinal, setDataFinal] = useState("31/12/9999");
   const [tipoAgenda, setTipoAgenda] = useState("Compromissos");
+  const [selectedCollaborators, setSelectedCollaborators] = useState<{[key: number]: string[]}>({});
+  
+  const { collaborators = [] } = useCollaborators();
   
   const [eventos, setEventos] = useState([
-    { nome: 'Assinatura do Contrato', ordem: 10, dias: 0, gera: 'Não Gera Compromisso', controle: true, maxProjeto: true },
-    { nome: 'Check-list Comercial do Contrato', ordem: 20, dias: 0, gera: 'Não Gera Compromisso', controle: true, maxProjeto: true },
-    { nome: 'Check-list Financeiro do Contrato', ordem: 20, dias: 0, gera: 'Não Gera Compromisso', controle: true, maxProjeto: true },
-    { nome: 'Liberação Comercial', ordem: 30, dias: 0, gera: 'Não Gera Compromisso', controle: true, maxProjeto: true },
-    { nome: 'Liberação Financeira', ordem: 30, dias: 0, gera: 'Não Gera Compromisso', controle: true, maxProjeto: true },
-    { nome: 'Medição dos Ambientes', ordem: 35, dias: 0, gera: 'Não Gera Compromisso', controle: true, maxProjeto: true },
-    { nome: 'Revisão dos Ambientes', ordem: 40, dias: 0, gera: 'Não Gera Compromisso', controle: true, maxProjeto: true },
-    { nome: 'Assinatura da Pasta Executiva', ordem: 45, dias: 0, gera: 'Não Gera Compromisso', controle: true, maxProjeto: true },
-    { nome: 'Compra dos Itens dos Ambientes', ordem: 50, dias: 0, gera: 'Não Gera Compromisso', controle: true, maxProjeto: true },
-    { nome: 'Produção dos Itens dos Ambientes', ordem: 55, dias: 0, gera: 'Não Gera Compromisso', controle: true, maxProjeto: true },
-    { nome: 'Liberação de Obra', ordem: 55, dias: 0, gera: 'Não Gera Compromisso', controle: true, maxProjeto: true },
-    { nome: 'Entrega dos Ambientes', ordem: 60, dias: 0, gera: 'Não Gera Compromisso', controle: true, maxProjeto: true },
-    { nome: 'Montagem dos Ambientes', ordem: 70, dias: 0, gera: 'Não Gera Compromisso', controle: true, maxProjeto: true },
-    { nome: 'Entrega Técnica', ordem: 75, dias: 0, gera: 'Não Gera Compromisso', controle: true, maxProjeto: true },
-    { nome: 'Conclusão do Contrato', ordem: 80, dias: 0, gera: 'Não Gera Compromisso', controle: true, maxProjeto: true }
+    { nome: 'Assinatura do Contrato', ordem: 10, dias: 0, gera: 'Não Gera Compromisso', controle: true },
+    { nome: 'Check-list Comercial do Contrato', ordem: 20, dias: 0, gera: 'Não Gera Compromisso', controle: true },
+    { nome: 'Check-list Financeiro do Contrato', ordem: 20, dias: 0, gera: 'Não Gera Compromisso', controle: true },
+    { nome: 'Liberação Comercial', ordem: 30, dias: 0, gera: 'Não Gera Compromisso', controle: true },
+    { nome: 'Liberação Financeira', ordem: 30, dias: 0, gera: 'Não Gera Compromisso', controle: true },
+    { nome: 'Medição dos Ambientes', ordem: 35, dias: 0, gera: 'Não Gera Compromisso', controle: true },
+    { nome: 'Revisão dos Ambientes', ordem: 40, dias: 0, gera: 'Não Gera Compromisso', controle: true },
+    { nome: 'Assinatura da Pasta Executiva', ordem: 45, dias: 0, gera: 'Não Gera Compromisso', controle: true },
+    { nome: 'Compra dos Itens dos Ambientes', ordem: 50, dias: 0, gera: 'Não Gera Compromisso', controle: true },
+    { nome: 'Produção dos Itens dos Ambientes', ordem: 55, dias: 0, gera: 'Não Gera Compromisso', controle: true },
+    { nome: 'Liberação de Obra', ordem: 55, dias: 0, gera: 'Não Gera Compromisso', controle: true },
+    { nome: 'Entrega dos Ambientes', ordem: 60, dias: 0, gera: 'Não Gera Compromisso', controle: true },
+    { nome: 'Montagem dos Ambientes', ordem: 70, dias: 0, gera: 'Não Gera Compromisso', controle: true },
+    { nome: 'Entrega Técnica', ordem: 75, dias: 0, gera: 'Não Gera Compromisso', controle: true },
+    { nome: 'Conclusão do Contrato', ordem: 80, dias: 0, gera: 'Não Gera Compromisso', controle: true }
   ]);
 
   const compromissoOptions = [
@@ -49,6 +54,25 @@ const FluxoPadraoDetalhes: React.FC<FluxoPadraoDetalhesProps> = ({ onBack }) => 
     setEventos(prev => prev.map((evento, i) => 
       i === index ? { ...evento, [field]: value } : evento
     ));
+  };
+
+  const handleCollaboratorToggle = (eventoIndex: number, collaboratorId: string) => {
+    setSelectedCollaborators(prev => {
+      const current = prev[eventoIndex] || [];
+      const isSelected = current.includes(collaboratorId);
+      
+      if (isSelected) {
+        return {
+          ...prev,
+          [eventoIndex]: current.filter(id => id !== collaboratorId)
+        };
+      } else {
+        return {
+          ...prev,
+          [eventoIndex]: [...current, collaboratorId]
+        };
+      }
+    });
   };
 
   const handleSave = () => {
@@ -158,12 +182,6 @@ const FluxoPadraoDetalhes: React.FC<FluxoPadraoDetalhesProps> = ({ onBack }) => 
                 <TableHead className="font-medium">Dias Úteis</TableHead>
                 <TableHead className="font-medium">Gerar Compromisso para</TableHead>
                 <TableHead className="font-medium text-center">Controle</TableHead>
-                <TableHead className="font-medium text-center">
-                  <div className="flex items-center gap-1">
-                    APP MaxProjeto
-                    <Info className="w-4 h-4 text-gray-400" />
-                  </div>
-                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -193,39 +211,67 @@ const FluxoPadraoDetalhes: React.FC<FluxoPadraoDetalhesProps> = ({ onBack }) => 
                     )}
                   </TableCell>
                   <TableCell>
-                    {isEditing ? (
-                      <Select 
-                        value={evento.gera} 
-                        onValueChange={(value) => handleEventoChange(index, 'gera', value)}
-                      >
-                        <SelectTrigger className="w-48">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {compromissoOptions.map((option) => (
-                            <SelectItem key={option} value={option}>
-                              {option}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Badge variant="outline" className="text-gray-600">
-                        {evento.gera}
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {isEditing ? (
+                        <Select 
+                          value={evento.gera} 
+                          onValueChange={(value) => handleEventoChange(index, 'gera', value)}
+                        >
+                          <SelectTrigger className="w-48">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {compromissoOptions.map((option) => (
+                              <SelectItem key={option} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Badge variant="outline" className="text-gray-600">
+                          {evento.gera}
+                        </Badge>
+                      )}
+                      
+                      {evento.gera !== 'Não Gera Compromisso' && (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" size="sm" className="p-1 h-8 w-8">
+                              <Search className="w-4 h-4" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-80">
+                            <div className="space-y-2">
+                              <h4 className="font-medium text-sm">Selecionar Colaboradores</h4>
+                              <div className="max-h-48 overflow-y-auto space-y-1">
+                                {collaborators.map((collaborator) => (
+                                  <div key={collaborator.id} className="flex items-center space-x-2">
+                                    <Checkbox
+                                      checked={selectedCollaborators[index]?.includes(collaborator.id) || false}
+                                      onCheckedChange={() => handleCollaboratorToggle(index, collaborator.id)}
+                                    />
+                                    <span className="text-sm">{collaborator.name}</span>
+                                  </div>
+                                ))}
+                              </div>
+                              {selectedCollaborators[index] && selectedCollaborators[index].length > 0 && (
+                                <div className="pt-2 border-t">
+                                  <p className="text-xs text-gray-500">
+                                    {selectedCollaborators[index].length} colaborador(es) selecionado(s)
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-center">
                     <Checkbox 
                       checked={evento.controle} 
                       onCheckedChange={(checked) => handleEventoChange(index, 'controle', checked)}
-                      disabled={!isEditing}
-                    />
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Checkbox 
-                      checked={evento.maxProjeto} 
-                      onCheckedChange={(checked) => handleEventoChange(index, 'maxProjeto', checked)}
                       disabled={!isEditing}
                     />
                   </TableCell>
