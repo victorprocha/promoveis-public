@@ -398,60 +398,27 @@ const PainelProjetos: React.FC<PainelProjetosProps> = ({ onNewProject }) => {
         </div>
       </div>
 
-      {/* Kanban Board com Navegação por Tabs */}
-      <div className="flex-1 p-4">
-        <Tabs defaultValue={ETAPAS_FIXAS[0]} className="w-full">
-          {/* Navegação Horizontal */}
-          <div className="mb-4">
-            <ScrollArea className="w-full">
-              <TabsList className="inline-flex h-auto p-1 bg-gray-100 rounded-lg min-w-max">
-                {ETAPAS_FIXAS.map((etapa, index) => {
-                  const projetosCount = getProjetosPorEtapa(etapa).length;
-                  return (
-                    <TabsTrigger
-                      key={etapa}
-                      value={etapa}
-                      className="px-4 py-2 text-xs font-medium whitespace-nowrap data-[state=active]:bg-white data-[state=active]:shadow-sm"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span>{index + 1}</span>
-                        <span className="hidden sm:inline">{etapa}</span>
-                        <span className="sm:hidden">{etapa.split(' ')[0]}</span>
-                        {projetosCount > 0 && (
-                          <Badge variant="secondary" className="h-5 w-5 p-0 text-xs flex items-center justify-center">
-                            {projetosCount}
-                          </Badge>
-                        )}
-                      </div>
-                    </TabsTrigger>
-                  );
-                })}
-              </TabsList>
-            </ScrollArea>
+      {/* Kanban Board - Visualização Horizontal */}
+      <div className="flex-1 p-4 overflow-hidden">
+        <ScrollArea className="w-full">
+          <div className="flex gap-4 pb-4 min-w-max">
+            {ETAPAS_FIXAS.map((etapa) => (
+              <KanbanColumn
+                key={etapa}
+                etapa={etapa}
+                projetos={getProjetosPorEtapa(etapa)}
+                onProjectClick={(projeto) => {
+                  console.log('onProjectClick sendo executado para:', projeto.name);
+                  console.log('Estado atual - isHistoryDialogOpen:', isHistoryDialogOpen);
+                  setSelectedProject(projeto);
+                  setIsHistoryDialogOpen(true);
+                  console.log('Dialog definido para abrir. Novo estado deve ser true');
+                }}
+                onCompleteStage={handleCompleteStage}
+              />
+            ))}
           </div>
-
-          {/* Conteúdo das Etapas */}
-          {ETAPAS_FIXAS.map((etapa) => (
-            <TabsContent key={etapa} value={etapa} className="mt-0">
-              <div className="flex justify-center">
-                <div className="w-full max-w-md">
-                  <KanbanColumn
-                    etapa={etapa}
-                    projetos={getProjetosPorEtapa(etapa)}
-                    onProjectClick={(projeto) => {
-                      console.log('onProjectClick sendo executado para:', projeto.name);
-                      console.log('Estado atual - isHistoryDialogOpen:', isHistoryDialogOpen);
-                      setSelectedProject(projeto);
-                      setIsHistoryDialogOpen(true);
-                      console.log('Dialog definido para abrir. Novo estado deve ser true');
-                    }}
-                    onCompleteStage={handleCompleteStage}
-                  />
-                </div>
-              </div>
-            </TabsContent>
-          ))}
-        </Tabs>
+        </ScrollArea>
       </div>
 
       {/* Dialog de Histórico do Projeto */}

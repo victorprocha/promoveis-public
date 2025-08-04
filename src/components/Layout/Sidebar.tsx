@@ -378,12 +378,34 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
       hasSubmenu: true,
       submenuCategories: [
         {
-          title: 'CADASTROS',
-          items: [{ id: 'cadastro-produtos', label: 'Cadastro de Produtos' }]
+          title: 'FoccoMENSAGEIRO',
+          items: [
+            { id: 'focco-mensageiro', label: 'FoccoMENSAGEIRO' },
+            { id: 'configuracao-mensagens', label: 'Configuração de Mensagens' }
+          ]
         },
         {
-          title: 'GERENCIAMENTO',
-          items: [{ id: 'painel-projetos-enterprise', label: 'Painel de Projetos' }]
+          title: 'ANÁLISE',
+          items: [
+            { id: 'analise-vendas-trial', label: 'Analise de Vendas (trial)' },
+            { id: 'analise-metricas', label: 'Análise de Métricas' }
+          ]
+        },
+        {
+          title: 'Empreendimento',
+          items: [
+            { id: 'empreendimento', label: 'Empreendimento' },
+            { id: 'parceiros', label: 'Parceiros' }
+          ]
+        },
+        {
+          title: 'Acompanhamento',
+          items: [
+            { id: 'acompanhamento-contrato-pipeline', label: 'Acompanhamento de Contrato - Pipeline' },
+            { id: 'acompanhamento-contrato-matriz', label: 'Acompanhamento de Contrato - Matriz' },
+            { id: 'acompanhamento-assistencia-matriz', label: 'Acompanhamento de Assistência Técnica - Matriz' },
+            { id: 'configuracao-matriz', label: 'Configuração - Matriz' }
+          ]
         }
       ]
     },
