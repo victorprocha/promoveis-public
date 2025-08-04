@@ -79,13 +79,41 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
           items: [
             { id: 'clientes', label: 'Clientes' },
             { id: 'especificadores', label: 'Especificadores' },
-            { id: 'projetos-comercial', label: 'Projetos' },
-            { id: 'contratos', label: 'Contratos' }
+            { id: 'vendas', label: 'Vendas' },
+            { id: 'pedidos-vendas', label: 'Pedidos de Vendas' },
+            { id: 'demonstracao', label: 'Demonstração' },
+            { id: 'devolucoes', label: 'Devoluções' }
+          ]
+        },
+        {
+          title: 'FINANCEIRO',
+          items: [
+            { id: 'condicoes-pagamento', label: 'Condições de Pagamento' },
+            { id: 'formacao-preco', label: 'Formação de Preço' },
+            { id: 'liberacao-descontos', label: 'Liberação de Descontos' },
+            { id: 'limites-desconto', label: 'Limites de Desconto' },
+            { id: 'taxas-financeiras', label: 'Taxas Financeiras' }
           ]
         },
         {
           title: 'RELATÓRIOS',
-          items: [{ id: 'acompanhamento-carteira', label: 'Acompanhamento de Carteira' }]
+          items: [
+            { id: 'acompanhamento-vendas', label: 'Acompanhamento de Vendas' },
+            { id: 'acompanhamento-pedidos', label: 'Acompanhamento de Pedidos de Venda' },
+            { id: 'fechamento-vendas', label: 'Fechamento de Vendas' },
+            { id: 'pedidos-pronta-entrega', label: 'Pedidos de Venda a Pronta Entrega' }
+          ]
+        },
+        {
+          title: 'GESTÃO',
+          items: [
+            { id: 'metas-vendas', label: 'Metas de Vendas' },
+            { id: 'situacoes-atendimento', label: 'Situações de Atendimento' },
+            { id: 'tipos-acao', label: 'Tipos de Ação' },
+            { id: 'concorrentes-cancelamento', label: 'Concorrentes de Cancelamento de Venda' },
+            { id: 'classificacao-vendas', label: 'Classificação de Vendas' },
+            { id: 'tipos-negociacao', label: 'Tipos de Negociação' }
+          ]
         }
       ]
     },
