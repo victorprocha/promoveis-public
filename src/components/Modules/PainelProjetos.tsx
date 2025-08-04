@@ -12,6 +12,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import ProjectHistoryDialog from '@/components/Dialogs/ProjectHistoryDialog';
 
 // Etapas fixas do processo
 const ETAPAS_FIXAS = [
@@ -58,10 +59,11 @@ interface KanbanColumnProps {
 interface ProjectCardProps {
   projeto: ProjetoDetalhado;
   isDragging?: boolean;
+  onProjectClick?: (projeto: ProjetoDetalhado) => void;
 }
 
 // Componente do cartão de projeto
-const ProjectCard: React.FC<ProjectCardProps> = ({ projeto, isDragging = false }) => {
+const ProjectCard: React.FC<ProjectCardProps> = ({ projeto, isDragging = false, onProjectClick }) => {
   const {
     attributes,
     listeners,
@@ -108,6 +110,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ projeto, isDragging = false }
       className={`cursor-grab active:cursor-grabbing mb-3 hover:shadow-md transition-shadow ${
         isDragging ? 'shadow-lg' : ''
       }`}
+      onClick={(e) => {
+        e.stopPropagation();
+        onProjectClick?.(projeto);
+      }}
     >
       <CardContent className="p-4">
         <div className="space-y-3">
@@ -138,7 +144,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ projeto, isDragging = false }
 };
 
 // Componente da coluna Kanban
-const KanbanColumn: React.FC<KanbanColumnProps> = ({ etapa, projetos, isOver = false }) => {
+const KanbanColumn: React.FC<KanbanColumnProps & { onProjectClick?: (projeto: ProjetoDetalhado) => void }> = ({ etapa, projetos, isOver = false, onProjectClick }) => {
   return (
     <div className={`flex flex-col bg-gray-50 rounded-lg p-4 min-h-[600px] w-80 ${isOver ? 'bg-blue-50 border-2 border-blue-300' : ''}`}>
       {/* Cabeçalho da coluna */}
@@ -156,7 +162,11 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ etapa, projetos, isOver = f
           strategy={verticalListSortingStrategy}
         >
           {projetos.map((projeto) => (
-            <ProjectCard key={projeto.id} projeto={projeto} />
+            <ProjectCard 
+              key={projeto.id} 
+              projeto={projeto} 
+              onProjectClick={onProjectClick}
+            />
           ))}
         </SortableContext>
         
@@ -187,6 +197,8 @@ const PainelProjetos: React.FC<PainelProjetosProps> = ({ onNewProject }) => {
   });
   const [clientes, setClientes] = useState<any[]>([]);
   const [consultores, setConsultores] = useState<any[]>([]);
+  const [selectedProject, setSelectedProject] = useState<ProjetoDetalhado | null>(null);
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const { toast } = useToast();
 
   // Carregar dados iniciais
@@ -400,6 +412,10 @@ const PainelProjetos: React.FC<PainelProjetosProps> = ({ onNewProject }) => {
                   key={etapa}
                   etapa={etapa}
                   projetos={getProjetosPorEtapa(etapa)}
+                  onProjectClick={(projeto) => {
+                    setSelectedProject(projeto);
+                    setIsHistoryDialogOpen(true);
+                  }}
                 />
               ))}
             </div>
@@ -412,6 +428,13 @@ const PainelProjetos: React.FC<PainelProjetosProps> = ({ onNewProject }) => {
           </DragOverlay>
         </DndContext>
       </div>
+
+      {/* Dialog de Histórico do Projeto */}
+      <ProjectHistoryDialog
+        isOpen={isHistoryDialogOpen}
+        onClose={() => setIsHistoryDialogOpen(false)}
+        projeto={selectedProject}
+      />
     </div>
   );
 };
