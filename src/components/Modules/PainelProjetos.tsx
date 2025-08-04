@@ -95,7 +95,12 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ projeto, onProjectClick, onCo
         <div className="space-y-3">
           <div 
             className="cursor-pointer"
-            onClick={() => onProjectClick?.(projeto)}
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log('Card clicado:', projeto.name);
+              console.log('onProjectClick function:', onProjectClick);
+              onProjectClick?.(projeto);
+            }}
           >
             <div className="flex items-start justify-between mb-3">
               <h3 className="font-medium text-sm text-gray-900 line-clamp-2">{projeto.name}</h3>
@@ -402,8 +407,11 @@ const PainelProjetos: React.FC<PainelProjetosProps> = ({ onNewProject }) => {
                 etapa={etapa}
                 projetos={getProjetosPorEtapa(etapa)}
                 onProjectClick={(projeto) => {
+                  console.log('onProjectClick sendo executado para:', projeto.name);
+                  console.log('Estado atual - isHistoryDialogOpen:', isHistoryDialogOpen);
                   setSelectedProject(projeto);
                   setIsHistoryDialogOpen(true);
+                  console.log('Dialog definido para abrir. Novo estado deve ser true');
                 }}
                 onCompleteStage={handleCompleteStage}
               />
