@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,8 +10,11 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ArrowLeft, Search } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { ArrowLeft, Search, CalendarIcon } from 'lucide-react';
 import { useCollaborators } from '@/hooks/useCollaborators';
+import { useEventMatrix } from '@/hooks/useEventMatrix';
+import { cn } from '@/lib/utils';
 
 interface FluxoPadraoDetalhesProps {
   onBack?: () => void;
@@ -17,31 +22,12 @@ interface FluxoPadraoDetalhesProps {
 
 const FluxoPadraoDetalhes: React.FC<FluxoPadraoDetalhesProps> = ({ onBack }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [descricao, setDescricao] = useState("FLUXO PADRÃO");
-  const [dataInicial, setDataInicial] = useState("01/01/2000");
-  const [dataFinal, setDataFinal] = useState("31/12/9999");
-  const [tipoAgenda, setTipoAgenda] = useState("Compromissos");
+  const [startDateOpen, setStartDateOpen] = useState(false);
+  const [endDateOpen, setEndDateOpen] = useState(false);
   const [selectedCollaborators, setSelectedCollaborators] = useState<{[key: number]: string[]}>({});
   
   const { collaborators = [] } = useCollaborators();
-  
-  const [eventos, setEventos] = useState([
-    { nome: 'Assinatura do Contrato', ordem: 10, dias: 0, gera: 'Não Gera Compromisso', controle: true },
-    { nome: 'Check-list Comercial do Contrato', ordem: 20, dias: 0, gera: 'Não Gera Compromisso', controle: true },
-    { nome: 'Check-list Financeiro do Contrato', ordem: 20, dias: 0, gera: 'Não Gera Compromisso', controle: true },
-    { nome: 'Liberação Comercial', ordem: 30, dias: 0, gera: 'Não Gera Compromisso', controle: true },
-    { nome: 'Liberação Financeira', ordem: 30, dias: 0, gera: 'Não Gera Compromisso', controle: true },
-    { nome: 'Medição dos Ambientes', ordem: 35, dias: 0, gera: 'Não Gera Compromisso', controle: true },
-    { nome: 'Revisão dos Ambientes', ordem: 40, dias: 0, gera: 'Não Gera Compromisso', controle: true },
-    { nome: 'Assinatura da Pasta Executiva', ordem: 45, dias: 0, gera: 'Não Gera Compromisso', controle: true },
-    { nome: 'Compra dos Itens dos Ambientes', ordem: 50, dias: 0, gera: 'Não Gera Compromisso', controle: true },
-    { nome: 'Produção dos Itens dos Ambientes', ordem: 55, dias: 0, gera: 'Não Gera Compromisso', controle: true },
-    { nome: 'Liberação de Obra', ordem: 55, dias: 0, gera: 'Não Gera Compromisso', controle: true },
-    { nome: 'Entrega dos Ambientes', ordem: 60, dias: 0, gera: 'Não Gera Compromisso', controle: true },
-    { nome: 'Montagem dos Ambientes', ordem: 70, dias: 0, gera: 'Não Gera Compromisso', controle: true },
-    { nome: 'Entrega Técnica', ordem: 75, dias: 0, gera: 'Não Gera Compromisso', controle: true },
-    { nome: 'Conclusão do Contrato', ordem: 80, dias: 0, gera: 'Não Gera Compromisso', controle: true }
-  ]);
+  const { eventMatrix, loading, updateEventMatrix, updateEvent } = useEventMatrix();
 
   const compromissoOptions = [
     'Não Gera Compromisso',
@@ -50,10 +36,12 @@ const FluxoPadraoDetalhes: React.FC<FluxoPadraoDetalhesProps> = ({ onBack }) => 
     'Cargo'
   ];
 
-  const handleEventoChange = (index: number, field: string, value: any) => {
-    setEventos(prev => prev.map((evento, i) => 
-      i === index ? { ...evento, [field]: value } : evento
-    ));
+  const handleEventoChange = async (eventId: string, field: string, value: any) => {
+    await updateEvent(eventId, { [field]: value });
+  };
+
+  const handleMatrixChange = async (field: string, value: any) => {
+    await updateEventMatrix({ [field]: value });
   };
 
   const handleCollaboratorToggle = (eventoIndex: number, collaboratorId: string) => {
@@ -77,13 +65,19 @@ const FluxoPadraoDetalhes: React.FC<FluxoPadraoDetalhesProps> = ({ onBack }) => 
 
   const handleSave = () => {
     setIsEditing(false);
-    // Here you would typically save the data to your backend
   };
 
   const handleCancel = () => {
     setIsEditing(false);
-    // Reset to original values if needed
   };
+
+  if (loading) {
+    return <div className="p-6">Carregando...</div>;
+  }
+
+  if (!eventMatrix) {
+    return <div className="p-6">Matriz de eventos não encontrada.</div>;
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -114,8 +108,8 @@ const FluxoPadraoDetalhes: React.FC<FluxoPadraoDetalhesProps> = ({ onBack }) => 
                 <Label htmlFor="descricao" className="text-sm font-medium text-gray-600">Descrição</Label>
                 <Input 
                   id="descricao" 
-                  value={descricao} 
-                  onChange={(e) => setDescricao(e.target.value)}
+                  value={eventMatrix.description} 
+                  onChange={(e) => handleMatrixChange('description', e.target.value)}
                   readOnly={!isEditing} 
                   className="mt-1" 
                 />
@@ -124,31 +118,93 @@ const FluxoPadraoDetalhes: React.FC<FluxoPadraoDetalhesProps> = ({ onBack }) => 
               <div>
                 <Label htmlFor="validade" className="text-sm font-medium text-gray-600">Validade*</Label>
                 <div className="flex gap-2 mt-1">
-                  <Input 
-                    value={dataInicial} 
-                    onChange={(e) => setDataInicial(e.target.value)}
-                    readOnly={!isEditing} 
-                    className="flex-1" 
-                  />
-                  <span className="self-center text-gray-500">até</span>
-                  <Input 
-                    value={dataFinal} 
-                    onChange={(e) => setDataFinal(e.target.value)}
-                    readOnly={!isEditing} 
-                    className="flex-1" 
-                  />
+                  {isEditing ? (
+                    <>
+                      <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "flex-1 justify-start text-left font-normal",
+                              !eventMatrix.start_date && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {eventMatrix.start_date ? format(new Date(eventMatrix.start_date), "dd/MM/yyyy", { locale: ptBR }) : "Selecionar data"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={eventMatrix.start_date ? new Date(eventMatrix.start_date) : undefined}
+                            onSelect={(date) => {
+                              if (date) {
+                                handleMatrixChange('start_date', format(date, 'yyyy-MM-dd'));
+                              }
+                              setStartDateOpen(false);
+                            }}
+                            initialFocus
+                            className="pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <span className="self-center text-gray-500">até</span>
+                      <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "flex-1 justify-start text-left font-normal",
+                              !eventMatrix.end_date && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {eventMatrix.end_date ? format(new Date(eventMatrix.end_date), "dd/MM/yyyy", { locale: ptBR }) : "Selecionar data"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={eventMatrix.end_date ? new Date(eventMatrix.end_date) : undefined}
+                            onSelect={(date) => {
+                              if (date) {
+                                handleMatrixChange('end_date', format(date, 'yyyy-MM-dd'));
+                              }
+                              setEndDateOpen(false);
+                            }}
+                            initialFocus
+                            className="pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </>
+                  ) : (
+                    <>
+                      <Input 
+                        value={eventMatrix.start_date ? format(new Date(eventMatrix.start_date), "dd/MM/yyyy", { locale: ptBR }) : ''}
+                        readOnly 
+                        className="flex-1" 
+                      />
+                      <span className="self-center text-gray-500">até</span>
+                      <Input 
+                        value={eventMatrix.end_date ? format(new Date(eventMatrix.end_date), "dd/MM/yyyy", { locale: ptBR }) : ''}
+                        readOnly 
+                        className="flex-1" 
+                      />
+                    </>
+                  )}
                 </div>
               </div>
               
               <div>
                 <Label htmlFor="fluxo" className="text-sm font-medium text-gray-600">Fluxo de Trabalho*</Label>
-                <Input id="fluxo" value="Fluxo de venda padrão" readOnly className="mt-1" />
+                <Input id="fluxo" value={eventMatrix.workflow_type} readOnly className="mt-1" />
               </div>
               
               <div>
                 <Label htmlFor="tipo-agenda" className="text-sm font-medium text-gray-600">Tipo de Agenda</Label>
                 {isEditing ? (
-                  <Select value={tipoAgenda} onValueChange={setTipoAgenda}>
+                  <Select value={eventMatrix.agenda_type} onValueChange={(value) => handleMatrixChange('agenda_type', value)}>
                     <SelectTrigger className="mt-1">
                       <SelectValue />
                     </SelectTrigger>
@@ -158,7 +214,7 @@ const FluxoPadraoDetalhes: React.FC<FluxoPadraoDetalhesProps> = ({ onBack }) => 
                     </SelectContent>
                   </Select>
                 ) : (
-                  <Input id="tipo-agenda" value={tipoAgenda} readOnly className="mt-1" />
+                  <Input id="tipo-agenda" value={eventMatrix.agenda_type} readOnly className="mt-1" />
                 )}
               </div>
               
@@ -174,111 +230,113 @@ const FluxoPadraoDetalhes: React.FC<FluxoPadraoDetalhesProps> = ({ onBack }) => 
       {/* Eventos Table */}
       <Card>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-gray-50">
-                <TableHead className="font-medium">Eventos</TableHead>
-                <TableHead className="font-medium">Ordem</TableHead>
-                <TableHead className="font-medium">Dias Úteis</TableHead>
-                <TableHead className="font-medium">Gerar Compromisso para</TableHead>
-                <TableHead className="font-medium text-center">Controle</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {eventos.map((evento, index) => (
-                <TableRow key={index} className="border-b">
-                  <TableCell className="font-medium">{evento.nome}</TableCell>
-                  <TableCell>
-                    {isEditing ? (
-                      <Input 
-                        value={evento.ordem} 
-                        onChange={(e) => handleEventoChange(index, 'ordem', parseInt(e.target.value) || 0)}
-                        className="w-16"
-                      />
-                    ) : (
-                      evento.ordem
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {isEditing ? (
-                      <Input 
-                        value={evento.dias} 
-                        onChange={(e) => handleEventoChange(index, 'dias', parseInt(e.target.value) || 0)}
-                        className="w-16"
-                      />
-                    ) : (
-                      evento.dias
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {isEditing ? (
-                        <Select 
-                          value={evento.gera} 
-                          onValueChange={(value) => handleEventoChange(index, 'gera', value)}
-                        >
-                          <SelectTrigger className="w-48">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {compromissoOptions.map((option) => (
-                              <SelectItem key={option} value={option}>
-                                {option}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <Badge variant="outline" className="text-gray-600">
-                          {evento.gera}
-                        </Badge>
-                      )}
-                      
-                      {evento.gera !== 'Não Gera Compromisso' && (
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button variant="outline" size="sm" className="p-1 h-8 w-8">
-                              <Search className="w-4 h-4" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-80">
-                            <div className="space-y-2">
-                              <h4 className="font-medium text-sm">Selecionar Colaboradores</h4>
-                              <div className="max-h-48 overflow-y-auto space-y-1">
-                                {collaborators.map((collaborator) => (
-                                  <div key={collaborator.id} className="flex items-center space-x-2">
-                                    <Checkbox
-                                      checked={selectedCollaborators[index]?.includes(collaborator.id) || false}
-                                      onCheckedChange={() => handleCollaboratorToggle(index, collaborator.id)}
-                                    />
-                                    <span className="text-sm">{collaborator.name}</span>
-                                  </div>
-                                ))}
-                              </div>
-                              {selectedCollaborators[index] && selectedCollaborators[index].length > 0 && (
-                                <div className="pt-2 border-t">
-                                  <p className="text-xs text-gray-500">
-                                    {selectedCollaborators[index].length} colaborador(es) selecionado(s)
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Checkbox 
-                      checked={evento.controle} 
-                      onCheckedChange={(checked) => handleEventoChange(index, 'controle', checked)}
-                      disabled={!isEditing}
-                    />
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50">
+                  <TableHead className="font-medium">Eventos</TableHead>
+                  <TableHead className="font-medium">Ordem</TableHead>
+                  <TableHead className="font-medium">Dias Úteis</TableHead>
+                  <TableHead className="font-medium">Gerar Compromisso para</TableHead>
+                  <TableHead className="font-medium text-center">Controle</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {eventMatrix.events.map((evento, index) => (
+                  <TableRow key={evento.id} className="border-b">
+                    <TableCell className="font-medium">{evento.name}</TableCell>
+                    <TableCell>
+                      {isEditing ? (
+                        <Input 
+                          value={evento.order_sequence} 
+                          onChange={(e) => handleEventoChange(evento.id, 'order_sequence', parseInt(e.target.value) || 0)}
+                          className="w-16"
+                        />
+                      ) : (
+                        evento.order_sequence
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {isEditing ? (
+                        <Input 
+                          value={evento.days} 
+                          onChange={(e) => handleEventoChange(evento.id, 'days', parseInt(e.target.value) || 0)}
+                          className="w-16"
+                        />
+                      ) : (
+                        evento.days
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {isEditing ? (
+                          <Select 
+                            value={evento.generates_commitment} 
+                            onValueChange={(value) => handleEventoChange(evento.id, 'generates_commitment', value)}
+                          >
+                            <SelectTrigger className="w-48">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {compromissoOptions.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge variant="outline" className="text-gray-600">
+                            {evento.generates_commitment}
+                          </Badge>
+                        )}
+                        
+                        {evento.generates_commitment !== 'Não Gera Compromisso' && (
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" size="sm" className="p-1 h-8 w-8">
+                                <Search className="w-4 h-4" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80">
+                              <div className="space-y-2">
+                                <h4 className="font-medium text-sm">Selecionar Colaboradores</h4>
+                                <div className="max-h-48 overflow-y-auto space-y-1">
+                                  {collaborators.map((collaborator) => (
+                                    <div key={collaborator.id} className="flex items-center space-x-2">
+                                      <Checkbox
+                                        checked={selectedCollaborators[index]?.includes(collaborator.id) || false}
+                                        onCheckedChange={() => handleCollaboratorToggle(index, collaborator.id)}
+                                      />
+                                      <span className="text-sm">{collaborator.name}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                                {selectedCollaborators[index] && selectedCollaborators[index].length > 0 && (
+                                  <div className="pt-2 border-t">
+                                    <p className="text-xs text-gray-500">
+                                      {selectedCollaborators[index].length} colaborador(es) selecionado(s)
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Checkbox 
+                        checked={evento.control_enabled} 
+                        onCheckedChange={(checked) => handleEventoChange(evento.id, 'control_enabled', checked)}
+                        disabled={!isEditing}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
