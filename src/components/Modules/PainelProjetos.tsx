@@ -101,16 +101,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ projeto, isDragging = false, 
     }
   };
 
-  const handleCardClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log('Card clicado:', projeto.name);
-    console.log('onProjectClick existe:', !!onProjectClick);
-    if (onProjectClick) {
-      onProjectClick(projeto);
-    }
-  };
-
   return (
     <Card
       ref={setNodeRef}
@@ -118,14 +108,23 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ projeto, isDragging = false, 
       className={`mb-3 hover:shadow-md transition-shadow ${
         isDragging ? 'shadow-lg' : ''
       }`}
+      {...attributes}
+      {...listeners}
     >
-      <CardContent 
-        className="p-4"
-        onClickCapture={handleCardClick}
-        {...attributes}
-        {...listeners}
-      >
-        <div className="space-y-3">
+      <CardContent className="p-4 relative">
+        {/* Área clicável que não interfere com drag */}
+        <div 
+          className="absolute inset-0 z-10 cursor-pointer"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Área clicável ativada para:', projeto.name);
+            onProjectClick?.(projeto);
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+        />
+        
+        <div className="space-y-3 pointer-events-none">
           <div className="flex items-start justify-between">
             <h3 className="font-medium text-sm text-gray-900 line-clamp-2">{projeto.name}</h3>
             <Badge className={`text-xs px-2 py-1 ${getPriorityColor(projeto.priority)}`}>
