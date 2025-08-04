@@ -335,11 +335,38 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
       hasSubmenu: true,
       submenuCategories: [
         {
-          title: 'GERAL',
+          title: 'COMERCIAL',
           items: [
-            { id: 'vendas-stats', label: 'Vendas' },
-            { id: 'projetos-stats', label: 'Projetos' },
-            { id: 'financeiro-stats', label: 'Financeiro' }
+            { id: 'acompanhamento-carteira-stats', label: 'Acompanhamento de Carteira' },
+            { id: 'acompanhamento-pedidos-venda', label: 'Acompanhamento de Pedidos de Venda' },
+            { id: 'analise-taxa-conversao', label: 'Análise de Taxa de Conversão' },
+            { id: 'evolucao-venda', label: 'Evolução de Venda' },
+            { id: 'indices-conversao', label: 'Índices de Conversão' },
+            { id: 'metas-venda-stats', label: 'Metas de Venda' },
+            { id: 'orcamentos-cancelados', label: 'Orçamentos Cancelados' },
+            { id: 'ranking-classificacoes-itens', label: 'Ranking de Classificações de Itens' },
+            { id: 'ranking-pedidos-venda', label: 'Ranking de Pedidos de Venda' },
+            { id: 'ranking-consultores', label: 'Ranking de Consultores' },
+            { id: 'ranking-especificadores', label: 'Ranking de Especificadores' }
+          ]
+        },
+        {
+          title: 'GRÁFICOS GERENCIAIS',
+          items: [
+            { id: 'conversoes', label: 'Conversões' },
+            { id: 'procedencias', label: 'Procedências' },
+            { id: 'ranking-vendas', label: 'Ranking de Vendas' },
+            { id: 'tempo-medio-fechamento', label: 'Tempo Médio de Fechamento' },
+            { id: 'tipos-venda', label: 'Tipos de Venda' },
+            { id: 'distribuicao-pedidos-fornecedores', label: 'Distribuição de Pedidos de Venda por Fornecedores' }
+          ]
+        },
+        {
+          title: 'PÓS VENDA',
+          items: [
+            { id: 'relatorio-faturamento-itens', label: 'Relatório de Faturamento de Itens' },
+            { id: 'curva-abc-fornecedor', label: 'Curva ABC por Fornecedor' },
+            { id: 'valores-pedido-venda', label: 'Valores do Pedido de Venda' }
           ]
         }
       ]
