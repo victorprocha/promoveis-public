@@ -261,6 +261,42 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
       ]
     },
     {
+      id: 'fiscal',
+      label: 'Fiscal',
+      icon: FileText,
+      hasSubmenu: true,
+      submenuCategories: [
+        {
+          title: 'NOTA FISCAL DE ENTRADA',
+          items: [
+            { id: 'nfe-entrada', label: 'Nota Fiscal Eletrônica de Entrada' },
+            { id: 'importar-nfe', label: 'Importar Nota Fiscal Eletrônica' }
+          ]
+        },
+        {
+          title: 'FATURAMENTO',
+          items: [
+            { id: 'nfe-saida', label: 'Nota Fiscal Eletrônica de Saída' },
+            { id: 'console-nfe', label: 'Console de Nota Fiscal Eletrônica' }
+          ]
+        },
+        {
+          title: 'CONFIGURAÇÕES',
+          items: [
+            { id: 'classificacoes-fiscais', label: 'Classificações Fiscais' },
+            { id: 'series-nota-fiscal', label: 'Séries de Nota Fiscal' },
+            { id: 'tipos-nota-fiscal', label: 'Tipos de Nota Fiscal' }
+          ]
+        },
+        {
+          title: 'REGISTROS FISCAIS',
+          items: [
+            { id: 'sintegra', label: 'Sintegra' }
+          ]
+        }
+      ]
+    },
+    {
       id: 'agendas',
       label: 'Agendas',
       icon: Calendar,
