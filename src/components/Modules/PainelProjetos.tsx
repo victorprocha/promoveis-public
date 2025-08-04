@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useEventMatrix } from '@/hooks/useEventMatrix';
 import ProjectHistoryDialog from '@/components/Dialogs/ProjectHistoryDialog';
 
 // Etapas fixas do processo
@@ -61,7 +62,12 @@ interface ProjectCardProps {
 }
 
 // Componente do cartão de projeto
-const ProjectCard: React.FC<ProjectCardProps> = ({ projeto, onProjectClick, onCompleteStage }) => {
+const ProjectCard: React.FC<ProjectCardProps & { etapasHabilitadas: string[] }> = ({ 
+  projeto, 
+  onProjectClick, 
+  onCompleteStage, 
+  etapasHabilitadas 
+}) => {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -84,11 +90,9 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ projeto, onProjectClick, onCo
     }
   };
 
-  const getCurrentStageIndex = () => {
-    return ETAPAS_FIXAS.indexOf(projeto.etapa_atual);
+  const getCurrentStageIndex = (etapasHabilitadas: string[]) => {
+    return etapasHabilitadas.indexOf(projeto.etapa_atual);
   };
-
-  const isLastStage = getCurrentStageIndex() === ETAPAS_FIXAS.length - 1;
 
   return (
     <Card className="mb-3 hover:shadow-md transition-shadow">
@@ -126,7 +130,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ projeto, onProjectClick, onCo
           </div>
 
           {/* Botão para concluir etapa */}
-          {!isLastStage && (
+          {getCurrentStageIndex(etapasHabilitadas) < etapasHabilitadas.length - 1 && (
             <div className="flex justify-end pt-2 border-t border-gray-100">
               <Button
                 size="sm"
@@ -149,7 +153,13 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ projeto, onProjectClick, onCo
 };
 
 // Componente da coluna Kanban
-const KanbanColumn: React.FC<KanbanColumnProps> = ({ etapa, projetos, onProjectClick, onCompleteStage }) => {
+const KanbanColumn: React.FC<KanbanColumnProps & { etapasHabilitadas: string[] }> = ({ 
+  etapa, 
+  projetos, 
+  onProjectClick, 
+  onCompleteStage, 
+  etapasHabilitadas 
+}) => {
   return (
     <div className="flex flex-col bg-gray-50 rounded-lg p-4 min-h-[600px] w-80">
       {/* Cabeçalho da coluna */}
@@ -168,6 +178,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ etapa, projetos, onProjectC
             projeto={projeto} 
             onProjectClick={onProjectClick}
             onCompleteStage={onCompleteStage}
+            etapasHabilitadas={etapasHabilitadas}
           />
         ))}
         
@@ -199,6 +210,7 @@ const PainelProjetos: React.FC<PainelProjetosProps> = ({ onNewProject }) => {
   const [selectedProject, setSelectedProject] = useState<ProjetoDetalhado | null>(null);
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const { toast } = useToast();
+  const { eventMatrix, loading: matrixLoading } = useEventMatrix();
 
   // Carregar dados iniciais
   useEffect(() => {
@@ -254,10 +266,11 @@ const PainelProjetos: React.FC<PainelProjetosProps> = ({ onNewProject }) => {
   };
 
   const handleCompleteStage = async (projeto: ProjetoDetalhado) => {
-    const currentIndex = ETAPAS_FIXAS.indexOf(projeto.etapa_atual);
+    const etapasHabilitadas = getEtapasHabilitadas();
+    const currentIndex = etapasHabilitadas.indexOf(projeto.etapa_atual);
     const nextIndex = currentIndex + 1;
     
-    if (nextIndex >= ETAPAS_FIXAS.length) {
+    if (nextIndex >= etapasHabilitadas.length) {
       toast({
         title: "Projeto já está na última etapa",
         description: "Este projeto já foi concluído.",
@@ -266,7 +279,7 @@ const PainelProjetos: React.FC<PainelProjetosProps> = ({ onNewProject }) => {
       return;
     }
 
-    const novaEtapa = ETAPAS_FIXAS[nextIndex];
+    const novaEtapa = etapasHabilitadas[nextIndex];
 
     try {
       // Atualizar projeto no banco
@@ -312,6 +325,20 @@ const PainelProjetos: React.FC<PainelProjetosProps> = ({ onNewProject }) => {
 
   const getProjetosPorEtapa = (etapa: string) => {
     return projetosFiltrados.filter(projeto => projeto.etapa_atual === etapa);
+  };
+
+  // Obter apenas as etapas que estão habilitadas na matriz de eventos
+  const getEtapasHabilitadas = () => {
+    if (!eventMatrix || matrixLoading) {
+      return ETAPAS_FIXAS; // Fallback para todas as etapas
+    }
+    
+    const eventosHabilitados = eventMatrix.events
+      .filter(event => event.control_enabled)
+      .sort((a, b) => a.order_sequence - b.order_sequence)
+      .map(event => event.name);
+    
+    return eventosHabilitados.length > 0 ? eventosHabilitados : ETAPAS_FIXAS;
   };
 
   if (loading) {
@@ -400,13 +427,16 @@ const PainelProjetos: React.FC<PainelProjetosProps> = ({ onNewProject }) => {
 
       {/* Kanban Board - Visualização Horizontal */}
       <div className="flex-1 p-4 overflow-hidden">
+        {/* Barra de rolagem no topo */}
         <ScrollArea className="w-full h-full">
-          <div className="flex gap-4 pb-4 min-w-max">
-            {ETAPAS_FIXAS.map((etapa) => (
+          <ScrollBar orientation="horizontal" className="mb-4" />
+          <div className="flex gap-4 min-w-max">
+            {getEtapasHabilitadas().map((etapa) => (
               <KanbanColumn
                 key={etapa}
                 etapa={etapa}
                 projetos={getProjetosPorEtapa(etapa)}
+                etapasHabilitadas={getEtapasHabilitadas()}
                 onProjectClick={(projeto) => {
                   console.log('onProjectClick sendo executado para:', projeto.name);
                   console.log('Estado atual - isHistoryDialogOpen:', isHistoryDialogOpen);
@@ -418,7 +448,6 @@ const PainelProjetos: React.FC<PainelProjetosProps> = ({ onNewProject }) => {
               />
             ))}
           </div>
-          <ScrollBar orientation="horizontal" />
         </ScrollArea>
       </div>
 
