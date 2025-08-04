@@ -38,6 +38,8 @@ const ProjectHistoryDialog: React.FC<ProjectHistoryDialogProps> = ({
   onClose,
   projeto
 }) => {
+  console.log('ProjectHistoryDialog renderizando com:', { isOpen, projeto: projeto?.name });
+  
   if (!projeto) return null;
 
   const getEtapaIndex = (etapa: string) => {

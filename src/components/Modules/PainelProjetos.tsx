@@ -101,6 +101,16 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ projeto, isDragging = false, 
     }
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Card clicado:', projeto.name);
+    console.log('onProjectClick existe:', !!onProjectClick);
+    if (onProjectClick) {
+      onProjectClick(projeto);
+    }
+  };
+
   return (
     <Card
       ref={setNodeRef}
@@ -110,18 +120,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ projeto, isDragging = false, 
       }`}
     >
       <CardContent 
-        className="p-4 cursor-pointer"
-        onClick={(e) => {
-          e.stopPropagation();
-          onProjectClick?.(projeto);
-        }}
+        className="p-4"
+        onClickCapture={handleCardClick}
         {...attributes}
         {...listeners}
-        style={{ cursor: 'grab' }}
-        onMouseDown={(e) => {
-          // Permite tanto click quanto drag
-          e.stopPropagation();
-        }}
       >
         <div className="space-y-3">
           <div className="flex items-start justify-between">
@@ -420,8 +422,10 @@ const PainelProjetos: React.FC<PainelProjetosProps> = ({ onNewProject }) => {
                   etapa={etapa}
                   projetos={getProjetosPorEtapa(etapa)}
                   onProjectClick={(projeto) => {
+                    console.log('onProjectClick chamado no KanbanColumn com projeto:', projeto.name);
                     setSelectedProject(projeto);
                     setIsHistoryDialogOpen(true);
+                    console.log('Dialog deve abrir agora. isHistoryDialogOpen:', true);
                   }}
                 />
               ))}
