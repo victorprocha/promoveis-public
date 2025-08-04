@@ -394,12 +394,25 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
       hasSubmenu: true,
       submenuCategories: [
         {
-          title: 'ACESSO',
-          items: [{ id: 'usuarios', label: 'Usuários' }]
+          title: 'USUÁRIOS',
+          items: [
+            { id: 'usuario', label: 'Usuário' },
+            { id: 'cargo', label: 'Cargo' },
+            { id: 'colaborador', label: 'Colaborador' },
+            { id: 'importacao-geral', label: 'Importação Geral' },
+            { id: 'troca-vinculo', label: 'Troca de Vínculo' }
+          ]
         },
         {
-          title: 'EQUIPE',
-          items: [{ id: 'colaborador', label: 'Colaborador' }]
+          title: 'CONFIGURAÇÕES',
+          items: [
+            { id: 'campos-obrigatorios', label: 'Campos Obrigatórios' },
+            { id: 'checklist', label: 'Checklist' },
+            { id: 'compra-config', label: 'Compra' },
+            { id: 'faturamento-config', label: 'Faturamento' },
+            { id: 'financeiro-config', label: 'Financeiro' },
+            { id: 'comercial-config', label: 'Comercial' }
+          ]
         }
       ]
     },
