@@ -3,7 +3,7 @@ import { Plus, Filter, Search, Package, CheckCircle, ArrowRight, ChevronLeft, Ch
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -400,7 +400,7 @@ const PainelProjetos: React.FC<PainelProjetosProps> = ({ onNewProject }) => {
 
       {/* Kanban Board - Visualização Horizontal */}
       <div className="flex-1 p-4 overflow-hidden">
-        <ScrollArea className="w-full">
+        <ScrollArea className="w-full h-full">
           <div className="flex gap-4 pb-4 min-w-max">
             {ETAPAS_FIXAS.map((etapa) => (
               <KanbanColumn
@@ -418,6 +418,7 @@ const PainelProjetos: React.FC<PainelProjetosProps> = ({ onNewProject }) => {
               />
             ))}
           </div>
+          <ScrollBar orientation="horizontal" />
         </ScrollArea>
       </div>
 
