@@ -1,15 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Filter, Search, Package } from 'lucide-react';
+import { Plus, Filter, Search, Package, CheckCircle, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import ProjectHistoryDialog from '@/components/Dialogs/ProjectHistoryDialog';
@@ -53,32 +49,18 @@ interface ProjetoDetalhado extends Projeto {
 interface KanbanColumnProps {
   etapa: string;
   projetos: ProjetoDetalhado[];
-  isOver?: boolean;
+  onProjectClick?: (projeto: ProjetoDetalhado) => void;
+  onCompleteStage?: (projeto: ProjetoDetalhado) => void;
 }
 
 interface ProjectCardProps {
   projeto: ProjetoDetalhado;
-  isDragging?: boolean;
   onProjectClick?: (projeto: ProjetoDetalhado) => void;
+  onCompleteStage?: (projeto: ProjetoDetalhado) => void;
 }
 
 // Componente do cartão de projeto
-const ProjectCard: React.FC<ProjectCardProps> = ({ projeto, isDragging = false, onProjectClick }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging: sortableIsDragging,
-  } = useSortable({ id: projeto.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: sortableIsDragging ? 0.5 : 1,
-  };
-
+const ProjectCard: React.FC<ProjectCardProps> = ({ projeto, onProjectClick, onCompleteStage }) => {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -101,50 +83,59 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ projeto, isDragging = false, 
     }
   };
 
+  const getCurrentStageIndex = () => {
+    return ETAPAS_FIXAS.indexOf(projeto.etapa_atual);
+  };
+
+  const isLastStage = getCurrentStageIndex() === ETAPAS_FIXAS.length - 1;
+
   return (
-    <Card
-      ref={setNodeRef}
-      style={style}
-      className={`mb-3 hover:shadow-md transition-shadow ${
-        isDragging ? 'shadow-lg' : ''
-      }`}
-      {...attributes}
-      {...listeners}
-    >
-      <CardContent className="p-4 relative">
-        {/* Área clicável que não interfere com drag */}
-        <div 
-          className="absolute inset-0 z-10 cursor-pointer"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('Área clicável ativada para:', projeto.name);
-            onProjectClick?.(projeto);
-          }}
-          onMouseDown={(e) => e.stopPropagation()}
-        />
-        
-        <div className="space-y-3 pointer-events-none">
-          <div className="flex items-start justify-between">
-            <h3 className="font-medium text-sm text-gray-900 line-clamp-2">{projeto.name}</h3>
-            <Badge className={`text-xs px-2 py-1 ${getPriorityColor(projeto.priority)}`}>
-              {projeto.priority}
-            </Badge>
-          </div>
-          
-          <div className="space-y-2 text-xs text-gray-600">
-            <div>
-              <span className="font-medium">Cliente:</span> {projeto.client_name}
+    <Card className="mb-3 hover:shadow-md transition-shadow">
+      <CardContent className="p-4">
+        <div className="space-y-3">
+          <div 
+            className="cursor-pointer"
+            onClick={() => onProjectClick?.(projeto)}
+          >
+            <div className="flex items-start justify-between mb-3">
+              <h3 className="font-medium text-sm text-gray-900 line-clamp-2">{projeto.name}</h3>
+              <Badge className={`text-xs px-2 py-1 ${getPriorityColor(projeto.priority)}`}>
+                {projeto.priority}
+              </Badge>
             </div>
-            {projeto.consultor_responsavel && (
+            
+            <div className="space-y-2 text-xs text-gray-600">
               <div>
-                <span className="font-medium">Consultor:</span> {projeto.consultor_responsavel}
+                <span className="font-medium">Cliente:</span> {projeto.client_name}
               </div>
-            )}
-            <div>
-              <span className="font-medium">Valor:</span> {formatCurrency(projeto.valor_venda || projeto.budget || 0)}
+              {projeto.consultor_responsavel && (
+                <div>
+                  <span className="font-medium">Consultor:</span> {projeto.consultor_responsavel}
+                </div>
+              )}
+              <div>
+                <span className="font-medium">Valor:</span> {formatCurrency(projeto.valor_venda || projeto.budget || 0)}
+              </div>
             </div>
           </div>
+
+          {/* Botão para concluir etapa */}
+          {!isLastStage && (
+            <div className="flex justify-end pt-2 border-t border-gray-100">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs gap-1"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCompleteStage?.(projeto);
+                }}
+              >
+                <CheckCircle className="h-3 w-3" />
+                Concluir Etapa
+              </Button>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -152,9 +143,9 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ projeto, isDragging = false, 
 };
 
 // Componente da coluna Kanban
-const KanbanColumn: React.FC<KanbanColumnProps & { onProjectClick?: (projeto: ProjetoDetalhado) => void }> = ({ etapa, projetos, isOver = false, onProjectClick }) => {
+const KanbanColumn: React.FC<KanbanColumnProps> = ({ etapa, projetos, onProjectClick, onCompleteStage }) => {
   return (
-    <div className={`flex flex-col bg-gray-50 rounded-lg p-4 min-h-[600px] w-80 ${isOver ? 'bg-blue-50 border-2 border-blue-300' : ''}`}>
+    <div className="flex flex-col bg-gray-50 rounded-lg p-4 min-h-[600px] w-80">
       {/* Cabeçalho da coluna */}
       <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
         <h3 className="font-medium text-sm text-gray-800 line-clamp-2">{etapa}</h3>
@@ -165,18 +156,14 @@ const KanbanColumn: React.FC<KanbanColumnProps & { onProjectClick?: (projeto: Pr
 
       {/* Lista de projetos */}
       <div className="flex-1 space-y-3">
-        <SortableContext
-          items={projetos.map(p => p.id)}
-          strategy={verticalListSortingStrategy}
-        >
-          {projetos.map((projeto) => (
-            <ProjectCard 
-              key={projeto.id} 
-              projeto={projeto} 
-              onProjectClick={onProjectClick}
-            />
-          ))}
-        </SortableContext>
+        {projetos.map((projeto) => (
+          <ProjectCard 
+            key={projeto.id} 
+            projeto={projeto} 
+            onProjectClick={onProjectClick}
+            onCompleteStage={onCompleteStage}
+          />
+        ))}
         
         {projetos.length === 0 && (
           <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -196,7 +183,6 @@ interface PainelProjetosProps {
 const PainelProjetos: React.FC<PainelProjetosProps> = ({ onNewProject }) => {
   const [projetos, setProjetos] = useState<ProjetoDetalhado[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeProject, setActiveProject] = useState<ProjetoDetalhado | null>(null);
   const [filtros, setFiltros] = useState({
     cliente: 'todos',
     consultor: 'todos-consultores',
@@ -204,7 +190,6 @@ const PainelProjetos: React.FC<PainelProjetosProps> = ({ onNewProject }) => {
     busca: ''
   });
   const [clientes, setClientes] = useState<any[]>([]);
-  const [consultores, setConsultores] = useState<any[]>([]);
   const [selectedProject, setSelectedProject] = useState<ProjetoDetalhado | null>(null);
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const { toast } = useToast();
@@ -218,7 +203,7 @@ const PainelProjetos: React.FC<PainelProjetosProps> = ({ onNewProject }) => {
     try {
       setLoading(true);
       
-      // Carregar projetos (removido JOIN com clients que não existe)
+      // Carregar projetos
       const { data: projetosData, error: projetosError } = await supabase
         .from('projects')
         .select('*');
@@ -262,45 +247,46 @@ const PainelProjetos: React.FC<PainelProjetosProps> = ({ onNewProject }) => {
     }
   };
 
-  const handleDragStart = (event: DragStartEvent) => {
-    const projeto = projetos.find(p => p.id === event.active.id);
-    setActiveProject(projeto || null);
-  };
+  const handleCompleteStage = async (projeto: ProjetoDetalhado) => {
+    const currentIndex = ETAPAS_FIXAS.indexOf(projeto.etapa_atual);
+    const nextIndex = currentIndex + 1;
+    
+    if (nextIndex >= ETAPAS_FIXAS.length) {
+      toast({
+        title: "Projeto já está na última etapa",
+        description: "Este projeto já foi concluído.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveProject(null);
-
-    if (!over || active.id === over.id) return;
-
-    const projetoId = active.id as string;
-    const novaEtapa = over.id as string;
+    const novaEtapa = ETAPAS_FIXAS[nextIndex];
 
     try {
       // Atualizar projeto no banco
       const { error } = await supabase
         .from('projects')
         .update({ etapa_atual: novaEtapa } as any)
-        .eq('id', projetoId);
+        .eq('id', projeto.id);
 
       if (error) throw error;
 
       // Atualizar estado local
-      setProjetos(prev => prev.map(projeto => 
-        projeto.id === projetoId 
-          ? { ...projeto, etapa_atual: novaEtapa }
-          : projeto
+      setProjetos(prev => prev.map(p => 
+        p.id === projeto.id 
+          ? { ...p, etapa_atual: novaEtapa }
+          : p
       ));
 
       toast({
-        title: "Projeto movido",
+        title: "Etapa concluída",
         description: `Projeto movido para: ${novaEtapa}`,
       });
 
     } catch (error) {
-      console.error('Erro ao mover projeto:', error);
+      console.error('Erro ao concluir etapa:', error);
       toast({
-        title: "Erro ao mover projeto",
+        title: "Erro ao concluir etapa",
         description: "Ocorreu um erro ao atualizar o projeto. Tente novamente.",
         variant: "destructive",
       });
@@ -408,35 +394,22 @@ const PainelProjetos: React.FC<PainelProjetosProps> = ({ onNewProject }) => {
 
       {/* Kanban Board */}
       <div className="flex-1 p-4">
-        <DndContext
-          collisionDetection={closestCenter}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
-          <ScrollArea className="w-full">
-            <div className="flex gap-4 pb-4 min-w-max">
-              {ETAPAS_FIXAS.map((etapa) => (
-                <KanbanColumn
-                  key={etapa}
-                  etapa={etapa}
-                  projetos={getProjetosPorEtapa(etapa)}
-                  onProjectClick={(projeto) => {
-                    console.log('onProjectClick chamado no KanbanColumn com projeto:', projeto.name);
-                    setSelectedProject(projeto);
-                    setIsHistoryDialogOpen(true);
-                    console.log('Dialog deve abrir agora. isHistoryDialogOpen:', true);
-                  }}
-                />
-              ))}
-            </div>
-          </ScrollArea>
-          
-          <DragOverlay>
-            {activeProject ? (
-              <ProjectCard projeto={activeProject} isDragging />
-            ) : null}
-          </DragOverlay>
-        </DndContext>
+        <ScrollArea className="w-full">
+          <div className="flex gap-4 pb-4 min-w-max">
+            {ETAPAS_FIXAS.map((etapa) => (
+              <KanbanColumn
+                key={etapa}
+                etapa={etapa}
+                projetos={getProjetosPorEtapa(etapa)}
+                onProjectClick={(projeto) => {
+                  setSelectedProject(projeto);
+                  setIsHistoryDialogOpen(true);
+                }}
+                onCompleteStage={handleCompleteStage}
+              />
+            ))}
+          </div>
+        </ScrollArea>
       </div>
 
       {/* Dialog de Histórico do Projeto */}
