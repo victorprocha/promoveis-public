@@ -1,13 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Edit, Upload, Plus, Receipt, Calendar, Users, Paperclip, TrendingUp, Save, X } from 'lucide-react';
+import { ArrowLeft, User, Edit, Upload, Plus, Receipt, Calendar, Users, Paperclip, TrendingUp, Save, X, CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import {
   Table,
   TableBody,
@@ -35,6 +40,9 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editedProject, setEditedProject] = useState<any>(null);
+  const [specifiers, setSpecifiers] = useState<any[]>([]);
+  const [collaborators, setCollaborators] = useState<any[]>([]);
+  const [clients, setClients] = useState<any[]>([]);
   
   const id = projectId || params.id;
 
@@ -83,6 +91,43 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
             }
           }
         }
+
+        // Buscar especificadores para dropdown
+        const { data: specifiersData, error: specifiersError } = await supabase
+          .from('specifiers')
+          .select('*')
+          .order('nome');
+
+        if (specifiersError) {
+          console.error('Erro ao buscar especificadores:', specifiersError);
+        } else {
+          setSpecifiers(specifiersData || []);
+        }
+
+        // Buscar colaboradores para dropdown
+        const { data: collaboratorsData, error: collaboratorsError } = await supabase
+          .from('collaborators')
+          .select('*')
+          .order('name');
+
+        if (collaboratorsError) {
+          console.error('Erro ao buscar colaboradores:', collaboratorsError);
+        } else {
+          setCollaborators(collaboratorsData || []);
+        }
+
+        // Buscar clientes para dropdown
+        const { data: clientsData, error: clientsError } = await supabase
+          .from('clients')
+          .select('*')
+          .order('name');
+
+        if (clientsError) {
+          console.error('Erro ao buscar clientes:', clientsError);
+        } else {
+          setClients(clientsData || []);
+        }
+
       } catch (error) {
         console.error('Erro ao buscar dados:', error);
       } finally {
@@ -155,17 +200,44 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
 
   const handleSaveEdit = async () => {
     try {
+      // Preparar dados para atualização
+      const updateData: any = {
+        name: editedProject.name,
+        description: editedProject.description,
+        delivery_deadline: editedProject.delivery_deadline
+      };
+
+      // Se o especificador foi alterado
+      if (editedProject.specifier_id !== project.specifier_id) {
+        updateData.specifier_id = editedProject.specifier_id;
+      }
+
+      // Se o cliente foi alterado, atualizar client_name
+      if (editedProject.client_name !== project.client_name) {
+        updateData.client_name = editedProject.client_name;
+        
+        // Buscar dados do novo cliente
+        const selectedClient = clients.find(c => c.name === editedProject.client_name);
+        if (selectedClient) {
+          updateData.client_email = selectedClient.email;
+          updateData.client_phone = selectedClient.phone;
+          setClient(selectedClient);
+        }
+      }
+
       const { error } = await supabase
         .from('projects')
-        .update({
-          name: editedProject.name,
-          description: editedProject.description,
-          delivery_deadline: editedProject.delivery_deadline
-        })
+        .update(updateData)
         .eq('id', project.id);
 
       if (error) {
         throw error;
+      }
+
+      // Atualizar especificador se foi alterado
+      if (editedProject.specifier_id !== project.specifier_id) {
+        const selectedSpecifier = specifiers.find(s => s.id === editedProject.specifier_id);
+        setSpecifier(selectedSpecifier);
       }
 
       setProject(editedProject);
@@ -312,29 +384,130 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                       )}
                     </div>
                     <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
+                      {isEditing ? (
+                        <Select value={editedProject?.client_name || ''} onValueChange={(value) => handleInputChange('client_name', value)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione um cliente" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {clients.map((client) => (
+                              <SelectItem key={client.id} value={client.name}>
+                                {client.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <div className="p-3 bg-gray-50 rounded-md">{project.client_name}</div>
+                      )}
+                    </div>
+                    <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Consultor Responsável</label>
-                      <div className="p-3 bg-gray-50 rounded-md">{user?.name || 'Usuário'}</div>
+                      {isEditing ? (
+                        <Select value={editedProject?.consultor_responsavel || user?.name || ''} onValueChange={(value) => handleInputChange('consultor_responsavel', value)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione um consultor" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {collaborators.map((collaborator) => (
+                              <SelectItem key={collaborator.id} value={collaborator.name}>
+                                {collaborator.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <div className="p-3 bg-gray-50 rounded-md">{editedProject?.consultor_responsavel || user?.name || 'Usuário'}</div>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Consultor Executor</label>
-                      <div className="p-3 bg-gray-50 rounded-md">{user?.name || 'Usuário'}</div>
+                      {isEditing ? (
+                        <Select value={editedProject?.consultor_executor || user?.name || ''} onValueChange={(value) => handleInputChange('consultor_executor', value)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione um consultor" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {collaborators.map((collaborator) => (
+                              <SelectItem key={collaborator.id} value={collaborator.name}>
+                                {collaborator.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <div className="p-3 bg-gray-50 rounded-md">{editedProject?.consultor_executor || user?.name || 'Usuário'}</div>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Projetista</label>
-                      <div className="p-3 bg-gray-50 rounded-md">{user?.name || 'Usuário'}</div>
+                      {isEditing ? (
+                        <Select value={editedProject?.projetista || user?.name || ''} onValueChange={(value) => handleInputChange('projetista', value)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione um projetista" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {collaborators.map((collaborator) => (
+                              <SelectItem key={collaborator.id} value={collaborator.name}>
+                                {collaborator.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <div className="p-3 bg-gray-50 rounded-md">{editedProject?.projetista || user?.name || 'Usuário'}</div>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Especificador</label>
-                      <div className="p-3 bg-gray-50 rounded-md">{specifier?.nome || 'Não informado'}</div>
+                      {isEditing ? (
+                        <Select value={editedProject?.specifier_id || ''} onValueChange={(value) => handleInputChange('specifier_id', value)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione um especificador" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">Nenhum especificador</SelectItem>
+                            {specifiers.map((spec) => (
+                              <SelectItem key={spec.id} value={spec.id}>
+                                {spec.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <div className="p-3 bg-gray-50 rounded-md">{specifier?.nome || 'Não informado'}</div>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Prazo de Entrega</label>
                       {isEditing ? (
-                        <Input
-                          type="date"
-                          value={editedProject?.delivery_deadline || ''}
-                          onChange={(e) => handleInputChange('delivery_deadline', e.target.value)}
-                        />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !editedProject?.delivery_deadline && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {editedProject?.delivery_deadline ? 
+                                format(new Date(editedProject.delivery_deadline), "dd/MM/yyyy") : 
+                                "Selecione uma data"
+                              }
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <CalendarComponent
+                              mode="single"
+                              selected={editedProject?.delivery_deadline ? new Date(editedProject.delivery_deadline) : undefined}
+                              onSelect={(date) => handleInputChange('delivery_deadline', date ? date.toISOString().split('T')[0] : '')}
+                              initialFocus
+                              className="pointer-events-auto"
+                            />
+                          </PopoverContent>
+                        </Popover>
                       ) : (
                         <div className="p-3 bg-gray-50 rounded-md">
                           {project.delivery_deadline ? new Date(project.delivery_deadline).toLocaleDateString('pt-BR') : 'Não definido'}
@@ -343,9 +516,20 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Endereço de Entrega</label>
-                      <div className="p-3 bg-gray-50 rounded-md">
-                        {client?.address ? `${client.address}, ${client.city || ''} - ${client.state || ''}` : 'Endereço não informado'}
-                      </div>
+                      {isEditing ? (
+                        <Input
+                          value={editedProject?.endereco_entrega || client?.address || ''}
+                          onChange={(e) => handleInputChange('endereco_entrega', e.target.value)}
+                          placeholder="Digite o endereço de entrega"
+                        />
+                      ) : (
+                        <div className="p-3 bg-gray-50 rounded-md">
+                          {editedProject?.endereco_entrega || client?.address ? 
+                            `${editedProject?.endereco_entrega || client?.address}, ${client?.city || ''} - ${client?.state || ''}` : 
+                            'Endereço não informado'
+                          }
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div>
