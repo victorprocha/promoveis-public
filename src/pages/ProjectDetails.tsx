@@ -405,11 +405,12 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Consultor Responsável</label>
                       {isEditing ? (
-                        <Select value={editedProject?.consultor_responsavel || user?.name || ''} onValueChange={(value) => handleInputChange('consultor_responsavel', value)}>
+                        <Select value={editedProject?.consultor_responsavel || user?.name || 'none'} onValueChange={(value) => handleInputChange('consultor_responsavel', value)}>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione um consultor" />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="none">Nenhum consultor</SelectItem>
                             {collaborators.map((collaborator) => (
                               <SelectItem key={collaborator.id} value={collaborator.name}>
                                 {collaborator.name}
@@ -424,11 +425,12 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Consultor Executor</label>
                       {isEditing ? (
-                        <Select value={editedProject?.consultor_executor || user?.name || ''} onValueChange={(value) => handleInputChange('consultor_executor', value)}>
+                        <Select value={editedProject?.consultor_executor || user?.name || 'none'} onValueChange={(value) => handleInputChange('consultor_executor', value)}>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione um consultor" />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="none">Nenhum consultor</SelectItem>
                             {collaborators.map((collaborator) => (
                               <SelectItem key={collaborator.id} value={collaborator.name}>
                                 {collaborator.name}
@@ -443,11 +445,12 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Projetista</label>
                       {isEditing ? (
-                        <Select value={editedProject?.projetista || user?.name || ''} onValueChange={(value) => handleInputChange('projetista', value)}>
+                        <Select value={editedProject?.projetista || user?.name || 'none'} onValueChange={(value) => handleInputChange('projetista', value)}>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione um projetista" />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="none">Nenhum projetista</SelectItem>
                             {collaborators.map((collaborator) => (
                               <SelectItem key={collaborator.id} value={collaborator.name}>
                                 {collaborator.name}
@@ -462,12 +465,12 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Especificador</label>
                       {isEditing ? (
-                        <Select value={editedProject?.specifier_id || ''} onValueChange={(value) => handleInputChange('specifier_id', value)}>
+                        <Select value={editedProject?.specifier_id || 'none'} onValueChange={(value) => handleInputChange('specifier_id', value === 'none' ? null : value)}>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione um especificador" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">Nenhum especificador</SelectItem>
+                            <SelectItem value="none">Nenhum especificador</SelectItem>
                             {specifiers.map((spec) => (
                               <SelectItem key={spec.id} value={spec.id}>
                                 {spec.nome}
