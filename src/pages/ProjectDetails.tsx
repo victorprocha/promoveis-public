@@ -1,9 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Edit, Upload, Plus, Receipt, Calendar, Users, Paperclip, TrendingUp } from 'lucide-react';
+import { ArrowLeft, User, Edit, Upload, Plus, Receipt, Calendar, Users, Paperclip, TrendingUp, Save, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { toast } from '@/hooks/use-toast';
 import {
   Table,
   TableBody,
@@ -29,6 +33,8 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
   const [client, setClient] = useState<any>(null);
   const [specifier, setSpecifier] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedProject, setEditedProject] = useState<any>(null);
   
   const id = projectId || params.id;
 
@@ -56,6 +62,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
           console.error('Erro ao buscar projeto:', projectError);
         } else {
           setProject(projectData);
+          setEditedProject(projectData);
           
           if (projectData?.specifiers) {
             setSpecifier(projectData.specifiers);
@@ -137,6 +144,80 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditedProject(project);
+  };
+
+  const handleSaveEdit = async () => {
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({
+          name: editedProject.name,
+          description: editedProject.description,
+          delivery_deadline: editedProject.delivery_deadline
+        })
+        .eq('id', project.id);
+
+      if (error) {
+        throw error;
+      }
+
+      setProject(editedProject);
+      setIsEditing(false);
+      toast({
+        title: "Sucesso",
+        description: "Projeto atualizado com sucesso!"
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar projeto:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar projeto. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', project.id);
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Projeto excluído com sucesso!"
+      });
+      
+      handleBack();
+    } catch (error) {
+      console.error('Erro ao excluir projeto:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir projeto. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setEditedProject((prev: any) => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#ECF0F5] flex items-center justify-center">
@@ -206,10 +287,29 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {isEditing && (
+                    <div className="flex items-center justify-end gap-2 mb-4">
+                      <Button variant="outline" size="sm" onClick={handleCancelEdit}>
+                        <X className="h-4 w-4 mr-1" />
+                        Cancelar
+                      </Button>
+                      <Button size="sm" onClick={handleSaveEdit}>
+                        <Save className="h-4 w-4 mr-1" />
+                        Salvar
+                      </Button>
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Nome do Projeto</label>
-                      <div className="p-3 bg-gray-50 rounded-md">{project.name}</div>
+                      {isEditing ? (
+                        <Input
+                          value={editedProject?.name || ''}
+                          onChange={(e) => handleInputChange('name', e.target.value)}
+                        />
+                      ) : (
+                        <div className="p-3 bg-gray-50 rounded-md">{project.name}</div>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Consultor Responsável</label>
@@ -229,9 +329,17 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Prazo de Entrega</label>
-                      <div className="p-3 bg-gray-50 rounded-md">
-                        {project.delivery_deadline ? new Date(project.delivery_deadline).toLocaleDateString('pt-BR') : 'Não definido'}
-                      </div>
+                      {isEditing ? (
+                        <Input
+                          type="date"
+                          value={editedProject?.delivery_deadline || ''}
+                          onChange={(e) => handleInputChange('delivery_deadline', e.target.value)}
+                        />
+                      ) : (
+                        <div className="p-3 bg-gray-50 rounded-md">
+                          {project.delivery_deadline ? new Date(project.delivery_deadline).toLocaleDateString('pt-BR') : 'Não definido'}
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Endereço de Entrega</label>
@@ -242,7 +350,15 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Observações</label>
-                    <div className="p-3 bg-gray-50 rounded-md">{project.description || 'Nenhuma observação'}</div>
+                    {isEditing ? (
+                      <Textarea
+                        value={editedProject?.description || ''}
+                        onChange={(e) => handleInputChange('description', e.target.value)}
+                        rows={3}
+                      />
+                    ) : (
+                      <div className="p-3 bg-gray-50 rounded-md">{project.description || 'Nenhuma observação'}</div>
+                    )}
                   </div>
                   
                   {/* File Upload Area */}
@@ -373,10 +489,31 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="destructive">
-                EXCLUIR
-              </Button>
-              <Button className="bg-blue-600 hover:bg-blue-700">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive">
+                    EXCLUIR
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Excluir Projeto</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta ação não poderá ser desfeita. Tem certeza que deseja excluir este projeto permanentemente?
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                      Sim, excluir
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              <Button 
+                onClick={handleEdit}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
                 EDITAR
               </Button>
             </div>

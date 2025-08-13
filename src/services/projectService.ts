@@ -211,5 +211,72 @@ export const projectService = {
       console.error('Erro ao atualizar status do projeto:', error);
       throw error;
     }
+  },
+
+  async updateProject(projectId: string, data: UpdateProjectData): Promise<ApiResponse<Project>> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      const { data: project, error } = await supabase
+        .from('projects')
+        .update({
+          name: data.title,
+          description: data.description,
+          priority: data.priority,
+          delivery_deadline: data.deliveryDeadline || null,
+          specifier_id: data.specifierId || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', projectId)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return {
+        data: mapDatabaseToProject(project),
+        message: 'Projeto atualizado com sucesso',
+        success: true
+      };
+    } catch (error) {
+      console.error('Erro ao atualizar projeto:', error);
+      throw error;
+    }
+  },
+
+  async deleteProject(projectId: string): Promise<ApiResponse<void>> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return {
+        data: undefined,
+        message: 'Projeto excluído com sucesso',
+        success: true
+      };
+    } catch (error) {
+      console.error('Erro ao excluir projeto:', error);
+      throw error;
+    }
   }
 };
