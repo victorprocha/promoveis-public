@@ -432,6 +432,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
             { id: 'faturamento-config', label: 'Faturamento' },
             { id: 'financeiro-config', label: 'Financeiro' },
             { id: 'comercial-config', label: 'Comercial' },
+            { id: 'contrato', label: 'Contrato' },
             { id: 'minha-empresa', label: 'Minha Empresa' }
           ]
         }

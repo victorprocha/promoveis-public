@@ -27,6 +27,7 @@ import MinhaEmpresa from '@/pages/MinhaEmpresa';
 import EmitenteNFe from '@/pages/EmitenteNFe';
 import Usuarios from '@/pages/Usuarios';
 import CadastroUsuario from '@/pages/CadastroUsuario';
+import ContratoEditor from '@/pages/ContratoEditor';
 import { Toaster } from '@/components/ui/toaster';
 import { ProjectProvider } from '@/contexts/ProjectContext';
 
@@ -42,6 +43,8 @@ const Index = () => {
   const [selectedContractId, setSelectedContractId] = useState<string | null>(null);
   const [showMatrizEventos, setShowMatrizEventos] = useState(false);
   const [showFluxoPadrao, setShowFluxoPadrao] = useState(false);
+  const [showContrato, setShowContrato] = useState(false);
+  const [showCadastroUsuario, setShowCadastroUsuario] = useState(false);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -50,18 +53,24 @@ const Index = () => {
   const handleModuleChange = (module: string) => {
     setActiveModule(module);
     setShowProjectDetails(false);
-    setSelectedProjectId(null);
     setShowNovoColaborador(false);
     setShowClientDetails(false);
-    setSelectedClientId(null);
     setShowContractDetails(false);
-    setSelectedContractId(null);
     setShowMatrizEventos(false);
     setShowFluxoPadrao(false);
+    setShowCadastroUsuario(false);
+    setShowContrato(false);
+    setSelectedProjectId(null);
+    setSelectedClientId(null);
+    setSelectedContractId(null);
     
     // Handle special navigation cases
     if (module === 'configuracao-matriz') {
       setShowMatrizEventos(true);
+    } else if (module === 'contrato') {
+      setShowContrato(true);
+    } else if (module === 'cadastro-usuario') {
+      setShowCadastroUsuario(true);
     }
     
     // Close sidebar on mobile when selecting a module
@@ -122,7 +131,19 @@ const Index = () => {
     setShowMatrizEventos(false);
   };
 
+  const handleBackFromContrato = () => {
+    setShowContrato(false);
+  };
+
   const renderModule = () => {
+    if (showContrato) {
+      return <ContratoEditor onBack={handleBackFromContrato} />;
+    }
+
+    if (showCadastroUsuario) {
+      return <CadastroUsuario onNavigate={handleModuleChange} />;
+    }
+
     if (showFluxoPadrao) {
       return <FluxoPadraoDetalhes onBack={handleBackFromFluxoPadrao} />;
     }
