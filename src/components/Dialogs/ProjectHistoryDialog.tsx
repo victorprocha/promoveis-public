@@ -38,14 +38,7 @@ const ProjectHistoryDialog: React.FC<ProjectHistoryDialogProps> = ({
   onClose,
   projeto
 }) => {
-  console.log('ProjectHistoryDialog renderizando com:', { 
-    isOpen, 
-    projeto: projeto?.name,
-    projetoCompleto: !!projeto 
-  });
-  
   if (!projeto) {
-    console.log('Projeto é null/undefined, não renderizando dialog');
     return null;
   }
 

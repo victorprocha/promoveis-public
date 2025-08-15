@@ -39,7 +39,6 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
   onOpenChange, 
   onProjectCreated 
 }) => {
-  console.log('NewProjectWithClientDialog renderizando com open:', open);
 
   const [formData, setFormData] = useState({
     projectName: '',
@@ -178,12 +177,6 @@ const NewProjectWithClientDialog: React.FC<NewProjectWithClientDialogProps> = ({
     }
   };
 
-  // Log quando o dialog deveria estar aberto
-  useEffect(() => {
-    console.log('Dialog open state changed:', open);
-  }, [open]);
-
-  console.log('Renderizando Dialog com open:', open);
 
   return (
     <>

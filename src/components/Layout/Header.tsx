@@ -57,15 +57,12 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   };
 
   const handleProjectCreated = () => {
-    console.log('Projeto criado com sucesso');
+    // Project created successfully
   };
 
   const handleProjectDialogChange = (open: boolean) => {
-    console.log('Dialog de projeto mudou para:', open);
     setShowNewProjectDialog(open);
   };
-
-  console.log('Header renderizando - showNewProjectDialog:', showNewProjectDialog);
 
   return (
     <>
