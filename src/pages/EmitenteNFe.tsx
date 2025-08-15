@@ -135,8 +135,10 @@ export default function EmitenteNFe() {
       }
 
       const submitData = {
-        ...data,
         user_id: user.id,
+        cnpj: data.cnpj || '',
+        razao_social: data.razao_social || '',
+        ...data,
         ...(certificateUrl && { certificado_url: certificateUrl }),
       };
 
