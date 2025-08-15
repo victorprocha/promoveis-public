@@ -5,7 +5,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Usuario {
@@ -18,9 +17,12 @@ interface Usuario {
   created_at: string;
 }
 
-const Usuarios: React.FC = () => {
+interface UsuariosProps {
+  onNavigate?: (module: string) => void;
+}
+
+const Usuarios: React.FC<UsuariosProps> = ({ onNavigate }) => {
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [users, setUsers] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -67,7 +69,9 @@ const Usuarios: React.FC = () => {
   }, []);
 
   const handleAddUser = () => {
-    navigate('/cadastro-usuario');
+    if (onNavigate) {
+      onNavigate('cadastro-usuario');
+    }
   };
 
   const handleDeleteUser = async (userId: string) => {

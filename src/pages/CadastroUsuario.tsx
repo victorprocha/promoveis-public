@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+
 import { supabase } from '@/integrations/supabase/client';
 
 interface UserFormData {
@@ -25,9 +25,12 @@ interface UserFormData {
   permission: string;
 }
 
-const CadastroUsuario: React.FC = () => {
+interface CadastroUsuarioProps {
+  onNavigate?: (module: string) => void;
+}
+
+const CadastroUsuario: React.FC<CadastroUsuarioProps> = ({ onNavigate }) => {
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<UserFormData>({
     name: '',
@@ -106,7 +109,9 @@ const CadastroUsuario: React.FC = () => {
         description: "Usuário cadastrado com sucesso!"
       });
 
-      navigate('/usuarios');
+      if (onNavigate) {
+        onNavigate('usuario');
+      }
     } catch (error) {
       console.error('Erro ao cadastrar usuário:', error);
       toast({
@@ -128,7 +133,7 @@ const CadastroUsuario: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate('/usuarios')}
+              onClick={() => onNavigate && onNavigate('usuario')}
               className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -290,13 +295,13 @@ const CadastroUsuario: React.FC = () => {
               </div>
 
               <div className="flex justify-end gap-2 pt-6">
-                <Button 
-                  type="button"
-                  variant="outline" 
-                  onClick={() => navigate('/usuarios')}
-                >
-                  Cancelar
-                </Button>
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    onClick={() => onNavigate && onNavigate('usuario')}
+                  >
+                    Cancelar
+                  </Button>
                 <Button 
                   type="submit"
                   className="bg-green-600 hover:bg-green-700"

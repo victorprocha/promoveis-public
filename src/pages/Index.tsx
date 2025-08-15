@@ -219,9 +219,9 @@ const Index = () => {
         case 'emitente-nfe':
           return <EmitenteNFe />;
         case 'usuario':
-          return <Usuarios />;
+          return <Usuarios onNavigate={handleModuleChange} />;
         case 'cadastro-usuario':
-          return <CadastroUsuario />;
+          return <CadastroUsuario onNavigate={handleModuleChange} />;
       
       // Treinamentos
       case 'comercial-treinamento':
