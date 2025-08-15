@@ -9,11 +9,11 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Building, Upload, Loader2 } from 'lucide-react';
+import { Building, Upload, Loader2, Edit } from 'lucide-react';
 
 const companySchema = z.object({
   razao_social: z.string().min(1, 'Razão Social é obrigatória'),
-  cnpj: z.string().min(1, 'CNPJ é obrigatório'),
+  cnpj: z.string().regex(/^\d{14}$/, 'CNPJ deve conter exatamente 14 números'),
   ie: z.string().min(1, 'IE é obrigatória'),
   logradouro: z.string().min(1, 'Logradouro é obrigatório'),
   numero: z.string().min(1, 'Número é obrigatório'),
@@ -39,6 +39,7 @@ const MinhaEmpresa: React.FC = () => {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const form = useForm<CompanyFormData>({
     resolver: zodResolver(companySchema),
@@ -75,6 +76,7 @@ const MinhaEmpresa: React.FC = () => {
 
       if (data) {
         setCompanyInfo(data);
+        setIsEditMode(false);
         form.reset({
           razao_social: data.razao_social,
           cnpj: data.cnpj,
@@ -90,6 +92,8 @@ const MinhaEmpresa: React.FC = () => {
         if (data.logo_url) {
           setLogoPreview(data.logo_url);
         }
+      } else {
+        setIsEditMode(true);
       }
     } catch (error) {
       console.error('Erro ao carregar informações da empresa:', error);
@@ -209,6 +213,8 @@ const MinhaEmpresa: React.FC = () => {
       if (result.error) throw result.error;
 
       setCompanyInfo(result.data);
+      setIsEditMode(false);
+      setLogoFile(null);
       toast({
         title: 'Sucesso',
         description: 'Informações da empresa salvas com sucesso!',
@@ -275,6 +281,7 @@ const MinhaEmpresa: React.FC = () => {
                       type="file"
                       accept="image/*"
                       onChange={handleLogoChange}
+                      disabled={!isEditMode}
                       className="mb-2"
                     />
                     <p className="text-sm text-gray-500">
@@ -293,7 +300,7 @@ const MinhaEmpresa: React.FC = () => {
                     <FormItem className="md:col-span-2">
                       <FormLabel>Razão Social *</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="Digite a razão social" />
+                        <Input {...field} placeholder="Digite a razão social" disabled={!isEditMode} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -307,7 +314,7 @@ const MinhaEmpresa: React.FC = () => {
                     <FormItem>
                       <FormLabel>CNPJ *</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="00.000.000/0000-00" />
+                        <Input {...field} placeholder="00.000.000/0000-00" disabled={!isEditMode} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -321,7 +328,7 @@ const MinhaEmpresa: React.FC = () => {
                     <FormItem>
                       <FormLabel>Inscrição Estadual *</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="Digite a IE" />
+                        <Input {...field} placeholder="Digite a IE" disabled={!isEditMode} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -335,7 +342,7 @@ const MinhaEmpresa: React.FC = () => {
                     <FormItem>
                       <FormLabel>Logradouro *</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="Rua, Avenida, etc." />
+                        <Input {...field} placeholder="Rua, Avenida, etc." disabled={!isEditMode} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -349,7 +356,7 @@ const MinhaEmpresa: React.FC = () => {
                     <FormItem>
                       <FormLabel>Número *</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="Número" />
+                        <Input {...field} placeholder="Número" disabled={!isEditMode} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -363,7 +370,7 @@ const MinhaEmpresa: React.FC = () => {
                     <FormItem>
                       <FormLabel>Bairro *</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="Bairro" />
+                        <Input {...field} placeholder="Bairro" disabled={!isEditMode} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -377,7 +384,7 @@ const MinhaEmpresa: React.FC = () => {
                     <FormItem>
                       <FormLabel>Cidade *</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="Cidade" />
+                        <Input {...field} placeholder="Cidade" disabled={!isEditMode} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -391,7 +398,7 @@ const MinhaEmpresa: React.FC = () => {
                     <FormItem>
                       <FormLabel>UF *</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="SP" maxLength={2} />
+                        <Input {...field} placeholder="SP" maxLength={2} disabled={!isEditMode} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -405,7 +412,7 @@ const MinhaEmpresa: React.FC = () => {
                     <FormItem>
                       <FormLabel>Telefone *</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="(11) 99999-9999" />
+                        <Input {...field} placeholder="(11) 99999-9999" disabled={!isEditMode} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -419,7 +426,7 @@ const MinhaEmpresa: React.FC = () => {
                     <FormItem>
                       <FormLabel>E-mail *</FormLabel>
                       <FormControl>
-                        <Input {...field} type="email" placeholder="empresa@exemplo.com" />
+                        <Input {...field} type="email" placeholder="empresa@exemplo.com" disabled={!isEditMode} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -428,16 +435,29 @@ const MinhaEmpresa: React.FC = () => {
               </div>
 
               <div className="flex justify-end gap-4 pt-6">
-                <Button
-                  type="submit"
-                  disabled={loading || uploadingLogo}
-                  className="min-w-[120px]"
-                >
-                  {loading || uploadingLogo ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : null}
-                  Salvar
-                </Button>
+                {!isEditMode && companyInfo && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsEditMode(true)}
+                    className="min-w-[120px] mr-4"
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Editar
+                  </Button>
+                )}
+                {isEditMode && (
+                  <Button
+                    type="submit"
+                    disabled={loading || uploadingLogo}
+                    className="min-w-[120px]"
+                  >
+                    {loading || uploadingLogo ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : null}
+                    Salvar
+                  </Button>
+                )}
               </div>
             </form>
           </Form>
