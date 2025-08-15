@@ -492,6 +492,66 @@ export type Database = {
         }
         Relationships: []
       }
+      users: {
+        Row: {
+          city: string | null
+          cpf: string | null
+          created_at: string
+          email: string
+          id: string
+          mobile: string | null
+          name: string
+          neighborhood: string | null
+          number: string | null
+          password_hash: string
+          permission: string
+          phone: string | null
+          rg: string | null
+          state: string | null
+          street: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          city?: string | null
+          cpf?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          mobile?: string | null
+          name: string
+          neighborhood?: string | null
+          number?: string | null
+          password_hash: string
+          permission?: string
+          phone?: string | null
+          rg?: string | null
+          state?: string | null
+          street?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          city?: string | null
+          cpf?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          mobile?: string | null
+          name?: string
+          neighborhood?: string | null
+          number?: string | null
+          password_hash?: string
+          permission?: string
+          phone?: string | null
+          rg?: string | null
+          state?: string | null
+          street?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
