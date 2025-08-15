@@ -26,6 +26,7 @@ import FluxoPadraoDetalhes from '@/pages/FluxoPadraoDetalhes';
 import MinhaEmpresa from '@/pages/MinhaEmpresa';
 import EmitenteNFe from '@/pages/EmitenteNFe';
 import Usuarios from '@/pages/Usuarios';
+import CadastroUsuario from '@/pages/CadastroUsuario';
 import { Toaster } from '@/components/ui/toaster';
 import { ProjectProvider } from '@/contexts/ProjectContext';
 
@@ -219,6 +220,8 @@ const Index = () => {
           return <EmitenteNFe />;
         case 'usuario':
           return <Usuarios />;
+        case 'cadastro-usuario':
+          return <CadastroUsuario />;
       
       // Treinamentos
       case 'comercial-treinamento':
