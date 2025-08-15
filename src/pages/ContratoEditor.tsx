@@ -1,7 +1,8 @@
-import React, { useState, useRef } from 'react';
-import { ArrowLeft, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, Save } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { ArrowLeft, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, Save, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ContratoEditorProps {
   onBack: () => void;
@@ -37,23 +38,94 @@ e) Danos decorrentes de transportar, desenvolver natural, bem como ecolado do pe
   
   const [fontSize, setFontSize] = useState('14');
   const [fontFamily, setFontFamily] = useState('Arial');
+  const [contractId, setContractId] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const editorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    loadContract();
+  }, []);
+
+  const loadContract = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('contracts')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      if (data) {
+        setContent(data.content);
+        setContractId(data.id);
+        setIsEditing(false);
+      } else {
+        setIsEditing(true);
+      }
+    } catch (error) {
+      console.error('Error loading contract:', error);
+      setIsEditing(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSave = async () => {
     try {
-      // Here you would typically save to database
-      // For now, just show success message
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Erro",
+          description: "Usuário não autenticado.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (contractId) {
+        // Update existing contract
+        const { error } = await supabase
+          .from('contracts')
+          .update({ content })
+          .eq('id', contractId);
+
+        if (error) throw error;
+      } else {
+        // Create new contract
+        const { data, error } = await supabase
+          .from('contracts')
+          .insert({ user_id: user.id, content })
+          .select()
+          .single();
+
+        if (error) throw error;
+        setContractId(data.id);
+      }
+
+      setIsEditing(false);
       toast({
         title: "Contrato salvo com sucesso",
         description: "O conteúdo do contrato foi salvo.",
       });
     } catch (error) {
+      console.error('Error saving contract:', error);
       toast({
         title: "Erro ao salvar",
         description: "Ocorreu um erro ao salvar o contrato.",
         variant: "destructive",
       });
     }
+  };
+
+  const handleEdit = () => {
+    setIsEditing(true);
   };
 
   const formatText = (command: string, value?: string) => {
@@ -81,11 +153,12 @@ e) Danos decorrentes de transportar, desenvolver natural, bem como ecolado do pe
         {/* Editor Container */}
         <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden">
           {/* Toolbar */}
-          <div className="flex items-center gap-2 p-4 border-b border-slate-200 flex-wrap">
+          <div className={`flex items-center gap-2 p-4 border-b border-slate-200 flex-wrap ${!isEditing ? 'opacity-50 pointer-events-none' : ''}`}>
             <select 
               value={fontFamily}
               onChange={(e) => setFontFamily(e.target.value)}
               className="px-3 py-1 rounded border border-slate-300 text-sm"
+              disabled={!isEditing}
             >
               <option value="Arial">Arial</option>
               <option value="Times New Roman">Times New Roman</option>
@@ -97,6 +170,7 @@ e) Danos decorrentes de transportar, desenvolver natural, bem como ecolado do pe
               value={fontSize}
               onChange={(e) => setFontSize(e.target.value)}
               className="px-3 py-1 rounded border border-slate-300 text-sm w-16"
+              disabled={!isEditing}
             >
               <option value="12">12</option>
               <option value="14">14</option>
@@ -112,6 +186,7 @@ e) Danos decorrentes de transportar, desenvolver natural, bem como ecolado do pe
               onClick={() => formatText('bold')}
               className="p-2 rounded hover:bg-slate-100 transition-colors"
               title="Negrito"
+              disabled={!isEditing}
             >
               <Bold className="h-4 w-4" />
             </button>
@@ -120,6 +195,7 @@ e) Danos decorrentes de transportar, desenvolver natural, bem como ecolado do pe
               onClick={() => formatText('italic')}
               className="p-2 rounded hover:bg-slate-100 transition-colors"
               title="Itálico"
+              disabled={!isEditing}
             >
               <Italic className="h-4 w-4" />
             </button>
@@ -128,6 +204,7 @@ e) Danos decorrentes de transportar, desenvolver natural, bem como ecolado do pe
               onClick={() => formatText('underline')}
               className="p-2 rounded hover:bg-slate-100 transition-colors"
               title="Sublinhado"
+              disabled={!isEditing}
             >
               <Underline className="h-4 w-4" />
             </button>
@@ -138,6 +215,7 @@ e) Danos decorrentes de transportar, desenvolver natural, bem como ecolado do pe
               onClick={() => formatText('justifyLeft')}
               className="p-2 rounded hover:bg-slate-100 transition-colors"
               title="Alinhar à esquerda"
+              disabled={!isEditing}
             >
               <AlignLeft className="h-4 w-4" />
             </button>
@@ -146,6 +224,7 @@ e) Danos decorrentes de transportar, desenvolver natural, bem como ecolado do pe
               onClick={() => formatText('justifyCenter')}
               className="p-2 rounded hover:bg-slate-100 transition-colors"
               title="Centralizar"
+              disabled={!isEditing}
             >
               <AlignCenter className="h-4 w-4" />
             </button>
@@ -154,6 +233,7 @@ e) Danos decorrentes de transportar, desenvolver natural, bem como ecolado do pe
               onClick={() => formatText('justifyRight')}
               className="p-2 rounded hover:bg-slate-100 transition-colors"
               title="Alinhar à direita"
+              disabled={!isEditing}
             >
               <AlignRight className="h-4 w-4" />
             </button>
@@ -161,19 +241,29 @@ e) Danos decorrentes de transportar, desenvolver natural, bem como ecolado do pe
 
           {/* Editor */}
           <div className="p-6">
-            <div
-              ref={editorRef}
-              contentEditable
-              suppressContentEditableWarning
-              className="min-h-[500px] w-full p-4 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 leading-relaxed"
-              style={{ 
-                fontFamily: fontFamily,
-                fontSize: fontSize + 'px',
-                lineHeight: '1.6'
-              }}
-              onInput={(e) => setContent(e.currentTarget.innerHTML)}
-              dangerouslySetInnerHTML={{ __html: content }}
-            />
+            {loading ? (
+              <div className="min-h-[500px] w-full p-4 border border-slate-200 rounded-lg bg-white flex items-center justify-center">
+                <div className="text-slate-500">Carregando contrato...</div>
+              </div>
+            ) : (
+              <div
+                ref={editorRef}
+                contentEditable={isEditing}
+                suppressContentEditableWarning
+                className={`min-h-[500px] w-full p-4 border border-slate-200 rounded-lg bg-white leading-relaxed ${
+                  isEditing 
+                    ? 'focus:outline-none focus:ring-2 focus:ring-blue-500' 
+                    : 'cursor-default opacity-90'
+                }`}
+                style={{ 
+                  fontFamily: fontFamily,
+                  fontSize: fontSize + 'px',
+                  lineHeight: '1.6'
+                }}
+                onInput={(e) => setContent(e.currentTarget.innerHTML)}
+                dangerouslySetInnerHTML={{ __html: content }}
+              />
+            )}
           </div>
 
           {/* Actions */}
@@ -184,13 +274,25 @@ e) Danos decorrentes de transportar, desenvolver natural, bem como ecolado do pe
             >
               Voltar
             </Button>
-            <Button
-              onClick={handleSave}
-              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white"
-            >
-              <Save className="h-4 w-4 mr-2" />
-              Salvar
-            </Button>
+            {!isEditing && contractId && (
+              <Button
+                onClick={handleEdit}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Edit className="h-4 w-4" />
+                Editar
+              </Button>
+            )}
+            {isEditing && (
+              <Button
+                onClick={handleSave}
+                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Salvar
+              </Button>
+            )}
           </div>
         </div>
       </div>
