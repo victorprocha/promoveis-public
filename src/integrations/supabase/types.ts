@@ -149,6 +149,96 @@ export type Database = {
         }
         Relationships: []
       }
+      emitente_nfe: {
+        Row: {
+          ambiente: string
+          bairro: string | null
+          cep: string | null
+          certificado_url: string | null
+          cidade: string | null
+          cnae: string | null
+          cnpj: string
+          contato: string | null
+          created_at: string
+          crt: string
+          email: string | null
+          endereco: string | null
+          estado: string | null
+          ibge: string | null
+          id: string
+          inscricao_estadual: string | null
+          inscricao_municipal: string | null
+          nome_fantasia: string | null
+          numero: string | null
+          razao_social: string
+          senha_certificado: string | null
+          serie_nfe: number | null
+          situacao: string | null
+          telefone: string | null
+          ultima_nfe: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ambiente?: string
+          bairro?: string | null
+          cep?: string | null
+          certificado_url?: string | null
+          cidade?: string | null
+          cnae?: string | null
+          cnpj: string
+          contato?: string | null
+          created_at?: string
+          crt?: string
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          ibge?: string | null
+          id?: string
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          nome_fantasia?: string | null
+          numero?: string | null
+          razao_social: string
+          senha_certificado?: string | null
+          serie_nfe?: number | null
+          situacao?: string | null
+          telefone?: string | null
+          ultima_nfe?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ambiente?: string
+          bairro?: string | null
+          cep?: string | null
+          certificado_url?: string | null
+          cidade?: string | null
+          cnae?: string | null
+          cnpj?: string
+          contato?: string | null
+          created_at?: string
+          crt?: string
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          ibge?: string | null
+          id?: string
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          nome_fantasia?: string | null
+          numero?: string | null
+          razao_social?: string
+          senha_certificado?: string | null
+          serie_nfe?: number | null
+          situacao?: string | null
+          telefone?: string | null
+          ultima_nfe?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       event_matrix: {
         Row: {
           agenda_type: string
