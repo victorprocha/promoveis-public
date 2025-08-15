@@ -24,6 +24,7 @@ import ClientDetails from '@/pages/ClientDetails';
 import CadastroMatrizEventos from '@/pages/CadastroMatrizEventos';
 import FluxoPadraoDetalhes from '@/pages/FluxoPadraoDetalhes';
 import MinhaEmpresa from '@/pages/MinhaEmpresa';
+import EmitenteNFe from '@/pages/EmitenteNFe';
 import { Toaster } from '@/components/ui/toaster';
 import { ProjectProvider } from '@/contexts/ProjectContext';
 
@@ -213,6 +214,8 @@ const Index = () => {
         return <AgendaEntrega />;
       case 'minha-empresa':
         return <MinhaEmpresa />;
+      case 'emitente-nfe':
+        return <EmitenteNFe />;
       
       // Treinamentos
       case 'comercial-treinamento':

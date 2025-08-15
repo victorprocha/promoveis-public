@@ -428,9 +428,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
         {
           title: 'CONFIGURAÇÕES',
           items: [
-            { id: 'campos-obrigatorios', label: 'Campos Obrigatórios' },
-            { id: 'checklist', label: 'Checklist' },
-            { id: 'compra-config', label: 'Compra' },
+            { id: 'emitente-nfe', label: 'Emitente NF-e' },
             { id: 'faturamento-config', label: 'Faturamento' },
             { id: 'financeiro-config', label: 'Financeiro' },
             { id: 'comercial-config', label: 'Comercial' },
