@@ -23,6 +23,7 @@ import AgendaEntrega from '@/pages/AgendaEntrega';
 import ClientDetails from '@/pages/ClientDetails';
 import CadastroMatrizEventos from '@/pages/CadastroMatrizEventos';
 import FluxoPadraoDetalhes from '@/pages/FluxoPadraoDetalhes';
+import MinhaEmpresa from '@/pages/MinhaEmpresa';
 import { Toaster } from '@/components/ui/toaster';
 import { ProjectProvider } from '@/contexts/ProjectContext';
 
@@ -210,6 +211,8 @@ const Index = () => {
         return <Colaboradores onNewColaborador={handleNewColaborador} />;
       case 'agenda-entrega':
         return <AgendaEntrega />;
+      case 'minha-empresa':
+        return <MinhaEmpresa />;
       
       // Treinamentos
       case 'comercial-treinamento':
