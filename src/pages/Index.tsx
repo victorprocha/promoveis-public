@@ -31,6 +31,8 @@ import ContratoEditor from '@/pages/ContratoEditor';
 import Estoque from '@/pages/Estoque';
 import CadastroProduto from '@/pages/CadastroProduto';
 import HistoricoLancamentos from '@/pages/HistoricoLancamentos';
+import PedidosCompra from '@/pages/PedidosCompra';
+import NovoPedidoCompra from '@/pages/NovoPedidoCompra';
 import { Toaster } from '@/components/ui/toaster';
 import { ProjectProvider } from '@/contexts/ProjectContext';
 
@@ -51,6 +53,7 @@ const Index = () => {
   const [showCadastroProduto, setShowCadastroProduto] = useState(false);
   const [showHistoricoLancamentos, setShowHistoricoLancamentos] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [showNovoPedidoCompra, setShowNovoPedidoCompra] = useState(false);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -68,6 +71,7 @@ const Index = () => {
     setShowContrato(false);
     setShowCadastroProduto(false);
     setShowHistoricoLancamentos(false);
+    setShowNovoPedidoCompra(false);
     setSelectedProjectId(null);
     setSelectedClientId(null);
     setSelectedContractId(null);
@@ -162,7 +166,19 @@ const Index = () => {
     setSelectedProductId(null);
   };
 
+  const handleAddPedidoCompra = () => {
+    setShowNovoPedidoCompra(true);
+  };
+
+  const handleBackFromNovoPedidoCompra = () => {
+    setShowNovoPedidoCompra(false);
+  };
+
   const renderModule = () => {
+    if (showNovoPedidoCompra) {
+      return <NovoPedidoCompra onBack={handleBackFromNovoPedidoCompra} />;
+    }
+
     if (showHistoricoLancamentos) {
       return <HistoricoLancamentos productId={selectedProductId} onBack={handleBackFromHistoricoLancamentos} />;
     }
@@ -266,6 +282,8 @@ const Index = () => {
       // Compras
       case 'estoque':
         return <Estoque onAddProduct={handleAddProduct} onViewHistory={handleViewHistoricoLancamentos} />;
+      case 'pedidos-compra':
+        return <PedidosCompra onAddPedido={handleAddPedidoCompra} />;
       
       // Sistema
       case 'usuarios':
