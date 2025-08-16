@@ -8,20 +8,52 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CalendarIcon, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { usePurchaseOrders } from "@/hooks/usePurchaseOrders";
+import { useToast } from "@/hooks/use-toast";
 
 interface NovoPedidoCompraProps {
   onBack: () => void;
+  onOrderCreated: (orderId: string) => void;
 }
 
-const NovoPedidoCompra: React.FC<NovoPedidoCompraProps> = ({ onBack }) => {
+const NovoPedidoCompra: React.FC<NovoPedidoCompraProps> = ({ onBack, onOrderCreated }) => {
   const [dataPedido, setDataPedido] = useState<Date>();
   const [fornecedor, setFornecedor] = useState('');
   const [responsavel, setResponsavel] = useState('');
+  const { createPurchaseOrder, loading } = usePurchaseOrders();
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission here
-    console.log('Submitting:', { dataPedido, fornecedor, responsavel });
+    
+    if (!dataPedido || !fornecedor || !responsavel) {
+      toast({
+        title: "Erro",
+        description: "Por favor, preencha todos os campos obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const order = await createPurchaseOrder({
+      order_date: format(dataPedido, "yyyy-MM-dd"),
+      supplier: fornecedor,
+      responsible: responsavel,
+    });
+
+    if (order) {
+      toast({
+        title: "Sucesso",
+        description: "Pedido de compra criado com sucesso!",
+      });
+      onOrderCreated(order.id);
+    } else {
+      toast({
+        title: "Erro",
+        description: "Erro ao criar pedido de compra.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -125,9 +157,10 @@ const NovoPedidoCompra: React.FC<NovoPedidoCompraProps> = ({ onBack }) => {
                 </Button>
                 <Button
                   type="submit"
+                  disabled={loading}
                   className="bg-success hover:bg-success/90 text-white px-8"
                 >
-                  Continuar
+                  {loading ? 'Salvando...' : 'Continuar'}
                 </Button>
               </div>
             </form>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Filter, Eye, Edit, Trash2 } from "lucide-react";
@@ -10,24 +10,51 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-interface PedidoCompra {
-  id: string;
-  codigo: string;
-  data_pedido: string;
-  fornecedor: string;
-  favoravel: string;
-  tipo: string;
-  valor: number;
-}
+import { usePurchaseOrders, PurchaseOrder } from "@/hooks/usePurchaseOrders";
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface PedidosCompraProps {
   onAddPedido: () => void;
+  onEditPedido?: (orderId: string) => void;
 }
 
-const PedidosCompra: React.FC<PedidosCompraProps> = ({ onAddPedido }) => {
+const PedidosCompra: React.FC<PedidosCompraProps> = ({ onAddPedido, onEditPedido }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [pedidos] = useState<PedidoCompra[]>([]);
+  const [pedidos, setPedidos] = useState<PurchaseOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    loadPedidos();
+  }, [user]);
+
+  const loadPedidos = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('purchase_orders')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPedidos(data || []);
+    } catch (error) {
+      console.error('Error loading purchase orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredPedidos = pedidos.filter(pedido => 
+    pedido.order_number.toString().includes(searchTerm) ||
+    pedido.supplier.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -110,27 +137,32 @@ const PedidosCompra: React.FC<PedidosCompraProps> = ({ onAddPedido }) => {
                   <TableHead>Código</TableHead>
                   <TableHead>Data do Pedido</TableHead>
                   <TableHead>Fornecedor</TableHead>
-                  <TableHead>Favorável</TableHead>
-                  <TableHead>Tipo</TableHead>
+                  <TableHead>Responsável</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Valor</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pedidos.map((pedido) => (
+                {filteredPedidos.map((pedido) => (
                   <TableRow key={pedido.id}>
-                    <TableCell>{pedido.codigo}</TableCell>
-                    <TableCell>{pedido.data_pedido}</TableCell>
-                    <TableCell>{pedido.fornecedor}</TableCell>
-                    <TableCell>{pedido.favoravel}</TableCell>
-                    <TableCell>{pedido.tipo}</TableCell>
-                    <TableCell>R$ {pedido.valor.toFixed(2)}</TableCell>
+                    <TableCell>{pedido.order_number}</TableCell>
+                    <TableCell>{format(new Date(pedido.order_date), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
+                    <TableCell>{pedido.supplier}</TableCell>
+                    <TableCell>{pedido.responsible}</TableCell>
+                    <TableCell>{pedido.status}</TableCell>
+                    <TableCell>R$ {pedido.total_amount?.toFixed(2) || '0.00'}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Button variant="ghost" size="sm" className="text-success hover:text-success/80">
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-primary hover:text-primary/80"
+                          onClick={() => onEditPedido?.(pedido.id)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive/80">

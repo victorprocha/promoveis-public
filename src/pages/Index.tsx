@@ -33,6 +33,7 @@ import CadastroProduto from '@/pages/CadastroProduto';
 import HistoricoLancamentos from '@/pages/HistoricoLancamentos';
 import PedidosCompra from '@/pages/PedidosCompra';
 import NovoPedidoCompra from '@/pages/NovoPedidoCompra';
+import EditarPedido from '@/pages/EditarPedido';
 import { Toaster } from '@/components/ui/toaster';
 import { ProjectProvider } from '@/contexts/ProjectContext';
 
@@ -54,6 +55,8 @@ const Index = () => {
   const [showHistoricoLancamentos, setShowHistoricoLancamentos] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [showNovoPedidoCompra, setShowNovoPedidoCompra] = useState(false);
+  const [showEditarPedido, setShowEditarPedido] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -72,6 +75,7 @@ const Index = () => {
     setShowCadastroProduto(false);
     setShowHistoricoLancamentos(false);
     setShowNovoPedidoCompra(false);
+    setShowEditarPedido(false);
     setSelectedProjectId(null);
     setSelectedClientId(null);
     setSelectedContractId(null);
@@ -174,9 +178,24 @@ const Index = () => {
     setShowNovoPedidoCompra(false);
   };
 
+  const handleOrderCreated = (orderId: string) => {
+    setSelectedOrderId(orderId);
+    setShowNovoPedidoCompra(false);
+    setShowEditarPedido(true);
+  };
+
+  const handleBackFromEditarPedido = () => {
+    setShowEditarPedido(false);
+    setSelectedOrderId(null);
+  };
+
   const renderModule = () => {
+    if (showEditarPedido) {
+      return <EditarPedido orderId={selectedOrderId!} onBack={handleBackFromEditarPedido} />;
+    }
+
     if (showNovoPedidoCompra) {
-      return <NovoPedidoCompra onBack={handleBackFromNovoPedidoCompra} />;
+      return <NovoPedidoCompra onBack={handleBackFromNovoPedidoCompra} onOrderCreated={handleOrderCreated} />;
     }
 
     if (showHistoricoLancamentos) {
@@ -283,7 +302,10 @@ const Index = () => {
       case 'estoque':
         return <Estoque onAddProduct={handleAddProduct} onViewHistory={handleViewHistoricoLancamentos} />;
       case 'pedidos-compra':
-        return <PedidosCompra onAddPedido={handleAddPedidoCompra} />;
+        return <PedidosCompra onAddPedido={handleAddPedidoCompra} onEditPedido={(orderId) => {
+          setSelectedOrderId(orderId);
+          setShowEditarPedido(true);
+        }} />;
       
       // Sistema
       case 'usuarios':
