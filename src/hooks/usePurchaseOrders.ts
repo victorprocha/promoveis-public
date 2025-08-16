@@ -227,6 +227,69 @@ export const usePurchaseOrders = () => {
     }
   };
 
+  const updateInventoryFromOrder = async (purchaseOrderId: string): Promise<boolean> => {
+    if (!user) {
+      setError('User not authenticated');
+      return false;
+    }
+
+    try {
+      // Get purchase order items
+      const items = await getPurchaseOrderItems(purchaseOrderId);
+      
+      // Update inventory for each item
+      for (const item of items) {
+        // Find product by name
+        const { data: products, error: findError } = await supabase
+          .from('products')
+          .select('id, estoque')
+          .eq('user_id', user.id)
+          .eq('descricao', item.product_name)
+          .maybeSingle();
+
+        if (findError) {
+          console.error('Error finding product:', findError);
+          continue;
+        }
+
+        if (products) {
+          // Update existing product inventory
+          const newInventory = (products.estoque || 0) + item.quantity;
+          const { error: updateError } = await supabase
+            .from('products')
+            .update({ estoque: newInventory })
+            .eq('id', products.id);
+
+          if (updateError) {
+            console.error('Error updating inventory:', updateError);
+          }
+        } else {
+          // Create new product if it doesn't exist
+          const { error: createError } = await supabase
+            .from('products')
+            .insert({
+              user_id: user.id,
+              descricao: item.product_name,
+              estoque: item.quantity,
+              estoque_minimo: 0,
+              preco_compra: item.unit_price || 0,
+              unidade: 'UN - UNIDADE',
+            });
+
+          if (createError) {
+            console.error('Error creating product:', createError);
+          }
+        }
+      }
+
+      return true;
+    } catch (err) {
+      console.error('Error updating inventory:', err);
+      setError(err instanceof Error ? err.message : 'Error updating inventory');
+      return false;
+    }
+  };
+
   const billPurchaseOrder = async (billingData: {
     purchase_order_id: string;
     reference: string;
@@ -270,6 +333,9 @@ export const usePurchaseOrders = () => {
         .eq('id', billingData.purchase_order_id);
 
       if (updateError) throw updateError;
+
+      // Update inventory
+      await updateInventoryFromOrder(billingData.purchase_order_id);
 
       return true;
     } catch (err) {

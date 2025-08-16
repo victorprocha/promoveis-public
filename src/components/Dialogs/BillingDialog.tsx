@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,11 +39,19 @@ const BillingDialog: React.FC<BillingDialogProps> = ({
   const [installments, setInstallments] = useState<number>(1);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [billingDate, setBillingDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [totalAmount, setTotalAmount] = useState(orderData.total_amount.toString());
+
+  // Update total amount when orderData changes
+  useEffect(() => {
+    setTotalAmount(orderData.total_amount.toString());
+  }, [orderData.total_amount]);
 
   const handleSubmit = () => {
     if (!paymentCondition || !paymentMethod) {
       return;
     }
+
+    const parsedAmount = parseFloat(totalAmount) || 0;
 
     onBill({
       reference,
@@ -52,7 +60,7 @@ const BillingDialog: React.FC<BillingDialogProps> = ({
       installments: paymentCondition === 'a_prazo' ? installments : undefined,
       payment_method: paymentMethod,
       billing_date: billingDate,
-      total_amount: orderData.total_amount,
+      total_amount: parsedAmount,
     });
   };
 
@@ -99,9 +107,11 @@ const BillingDialog: React.FC<BillingDialogProps> = ({
             <Label htmlFor="total">Total R$</Label>
             <Input
               id="total" 
-              value={orderData.total_amount?.toFixed(2) || '0.00'}
-              disabled
-              className="mt-1 bg-gray-50"
+              type="number"
+              step="0.01"
+              value={totalAmount}
+              onChange={(e) => setTotalAmount(e.target.value)}
+              className="mt-1"
             />
           </div>
 
