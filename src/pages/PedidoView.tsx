@@ -4,6 +4,21 @@ import { Printer } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { usePurchaseOrders, PurchaseOrder, PurchaseOrderItem } from "@/hooks/usePurchaseOrders";
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+
+interface CompanyInfo {
+  razao_social: string;
+  cnpj: string;
+  logradouro: string;
+  numero: string;
+  bairro: string;
+  cidade: string;
+  uf: string;
+  telefone: string;
+  email: string;
+  logo_url?: string;
+}
 
 interface PedidoViewProps {
   orderId: string;
@@ -12,10 +27,13 @@ interface PedidoViewProps {
 const PedidoView: React.FC<PedidoViewProps> = ({ orderId }) => {
   const [order, setOrder] = useState<PurchaseOrder | null>(null);
   const [items, setItems] = useState<PurchaseOrderItem[]>([]);
+  const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
   const { getPurchaseOrder, getPurchaseOrderItems } = usePurchaseOrders();
+  const { user } = useAuth();
 
   useEffect(() => {
     loadOrderData();
+    loadCompanyInfo();
   }, [orderId]);
 
   const loadOrderData = async () => {
@@ -24,6 +42,27 @@ const PedidoView: React.FC<PedidoViewProps> = ({ orderId }) => {
       setOrder(orderData);
       const itemsData = await getPurchaseOrderItems(orderId);
       setItems(itemsData);
+    }
+  };
+
+  const loadCompanyInfo = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('company_info')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error loading company info:', error);
+        return;
+      }
+      
+      setCompanyInfo(data);
+    } catch (error) {
+      console.error('Error loading company info:', error);
     }
   };
 
@@ -42,8 +81,8 @@ const PedidoView: React.FC<PedidoViewProps> = ({ orderId }) => {
   return (
     <div className="min-h-screen bg-white">
       {/* Print Button - Hidden in print */}
-      <div className="fixed top-4 right-4 print:hidden">
-        <Button onClick={handlePrint} className="bg-primary hover:bg-primary/90">
+      <div className="fixed top-4 right-4 print:hidden z-10">
+        <Button onClick={handlePrint} className="bg-black text-white hover:bg-black/90 shadow-lg">
           <Printer className="h-4 w-4 mr-2" />
           Imprimir
         </Button>
@@ -54,15 +93,32 @@ const PedidoView: React.FC<PedidoViewProps> = ({ orderId }) => {
         {/* Header */}
         <div className="flex items-start justify-between mb-8">
           <div className="flex items-center gap-4">
-            <div className="w-20 h-20 bg-gray-200 rounded flex items-center justify-center">
-              <span className="text-xs font-bold text-gray-600">SEU LOGO<br />AQUI</span>
+            <div className="w-20 h-20 bg-gray-200 rounded flex items-center justify-center overflow-hidden">
+              {companyInfo?.logo_url ? (
+                <img 
+                  src={companyInfo.logo_url} 
+                  alt="Logo da empresa" 
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <span className="text-xs font-bold text-gray-600 text-center">SEU LOGO<br />AQUI</span>
+              )}
             </div>
           </div>
           <div className="text-right text-sm text-gray-600">
-            <p className="font-bold text-lg text-black">Nome da sua empresa</p>
-            <p>00.000.000/0001-00</p>
-            <p>Rua São João, nº 123 A Tupi - Natal - RN</p>
-            <p>E-mail: email@gmail.com - Fone: 0000-0000</p>
+            <p className="font-bold text-lg text-black">
+              {companyInfo?.razao_social || 'Nome da sua empresa'}
+            </p>
+            <p>{companyInfo?.cnpj || '00.000.000/0001-00'}</p>
+            <p>
+              {companyInfo ? 
+                `${companyInfo.logradouro}, nº ${companyInfo.numero} ${companyInfo.bairro} - ${companyInfo.cidade} - ${companyInfo.uf}` : 
+                'Rua São João, nº 123 A Tupi - Natal - RN'
+              }
+            </p>
+            <p>
+              E-mail: {companyInfo?.email || 'email@gmail.com'} - Fone: {companyInfo?.telefone || '0000-0000'}
+            </p>
           </div>
         </div>
 
