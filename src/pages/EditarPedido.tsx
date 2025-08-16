@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/table";
 import { usePurchaseOrders, PurchaseOrder, PurchaseOrderItem } from "@/hooks/usePurchaseOrders";
 import { useToast } from "@/hooks/use-toast";
+import BillingDialog from "@/components/Dialogs/BillingDialog";
 
 interface EditarPedidoProps {
   orderId: string;
@@ -27,11 +28,13 @@ const EditarPedido: React.FC<EditarPedidoProps> = ({ orderId, onBack, onViewPedi
   const [items, setItems] = useState<PurchaseOrderItem[]>([]);
   const [newProductName, setNewProductName] = useState('');
   const [newQuantity, setNewQuantity] = useState('');
+  const [billingDialogOpen, setBillingDialogOpen] = useState(false);
   const { 
     getPurchaseOrder, 
     getPurchaseOrderItems, 
     addPurchaseOrderItem, 
     deletePurchaseOrderItem,
+    billPurchaseOrder,
     loading 
   } = usePurchaseOrders();
   const { toast } = useToast();
@@ -109,6 +112,31 @@ const EditarPedido: React.FC<EditarPedidoProps> = ({ orderId, onBack, onViewPedi
     }
   };
 
+  const handleBilling = async (billingData: {
+    reference: string;
+    bank: string;
+    payment_condition: string;
+    installments?: number;
+    payment_method: string;
+    billing_date: string;
+    total_amount: number;
+  }) => {
+    const success = await billPurchaseOrder({
+      purchase_order_id: orderId,
+      ...billingData,
+    });
+
+    if (success) {
+      toast({
+        title: "Sucesso",
+        description: "Pedido Almoxarifado faturado com sucesso!",
+      });
+      setBillingDialogOpen(false);
+      // Reload order data to get updated status
+      loadOrderData();
+    }
+  };
+
   if (!order) {
     return (
       <div className="flex flex-col h-full bg-background">
@@ -179,9 +207,13 @@ const EditarPedido: React.FC<EditarPedidoProps> = ({ orderId, onBack, onViewPedi
 
             {/* Action Buttons */}
             <div className="flex gap-4 mb-6">
-              <Button className="bg-success hover:bg-success/90 text-white">
+              <Button 
+                className="bg-success hover:bg-success/90 text-white"
+                onClick={() => setBillingDialogOpen(true)}
+                disabled={order.billing_status === 'billed'}
+              >
                 <FileText className="h-4 w-4 mr-2" />
-                Faturar
+                {order.billing_status === 'billed' ? 'Faturado' : 'Faturar'}
               </Button>
               <Button variant="outline" className="bg-primary hover:bg-primary/90 text-white border-primary">
                 <Edit className="h-4 w-4 mr-2" />
@@ -281,6 +313,21 @@ const EditarPedido: React.FC<EditarPedidoProps> = ({ orderId, onBack, onViewPedi
           </div>
         </div>
       </div>
+
+      {/* Billing Dialog */}
+      {order && (
+        <BillingDialog
+          open={billingDialogOpen}
+          onOpenChange={setBillingDialogOpen}
+          orderData={{
+            id: order.id,
+            order_number: order.order_number,
+            total_amount: order.total_amount || 0,
+          }}
+          onBill={handleBilling}
+          loading={loading}
+        />
+      )}
     </div>
   );
 };

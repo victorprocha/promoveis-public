@@ -11,6 +11,7 @@ export interface PurchaseOrder {
   responsible: string;
   total_amount: number;
   status: string;
+  billing_status?: string;
   created_at: string;
   updated_at: string;
 }
@@ -226,6 +227,59 @@ export const usePurchaseOrders = () => {
     }
   };
 
+  const billPurchaseOrder = async (billingData: {
+    purchase_order_id: string;
+    reference: string;
+    bank: string;
+    payment_condition: string;
+    installments?: number;
+    payment_method: string;
+    billing_date: string;
+    total_amount: number;
+  }): Promise<boolean> => {
+    if (!user) {
+      setError('User not authenticated');
+      return false;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Create billing record
+      const { error: billingError } = await supabase
+        .from('billing_info')
+        .insert({
+          user_id: user.id,
+          purchase_order_id: billingData.purchase_order_id,
+          reference: billingData.reference,
+          bank: billingData.bank,
+          payment_condition: billingData.payment_condition,
+          installments: billingData.installments,
+          payment_method: billingData.payment_method,
+          billing_date: billingData.billing_date,
+          total_amount: billingData.total_amount,
+        });
+
+      if (billingError) throw billingError;
+
+      // Update purchase order status to billed
+      const { error: updateError } = await supabase
+        .from('purchase_orders')
+        .update({ billing_status: 'billed' })
+        .eq('id', billingData.purchase_order_id);
+
+      if (updateError) throw updateError;
+
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     loading,
     error,
@@ -234,5 +288,6 @@ export const usePurchaseOrders = () => {
     getPurchaseOrderItems,
     addPurchaseOrderItem,
     deletePurchaseOrderItem,
+    billPurchaseOrder,
   };
 };
