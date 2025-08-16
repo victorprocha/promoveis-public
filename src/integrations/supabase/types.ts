@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      billing_info: {
+        Row: {
+          bank: string | null
+          billing_date: string
+          created_at: string
+          id: string
+          installments: number | null
+          payment_condition: string
+          payment_method: string
+          purchase_order_id: string
+          reference: string
+          total_amount: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bank?: string | null
+          billing_date: string
+          created_at?: string
+          id?: string
+          installments?: number | null
+          payment_condition: string
+          payment_method: string
+          purchase_order_id: string
+          reference: string
+          total_amount: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bank?: string | null
+          billing_date?: string
+          created_at?: string
+          id?: string
+          installments?: number | null
+          payment_condition?: string
+          payment_method?: string
+          purchase_order_id?: string
+          reference?: string
+          total_amount?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_info_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
@@ -532,6 +585,7 @@ export type Database = {
       }
       purchase_orders: {
         Row: {
+          billing_status: string | null
           created_at: string
           id: string
           order_date: string
@@ -544,6 +598,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          billing_status?: string | null
           created_at?: string
           id?: string
           order_date: string
@@ -556,6 +611,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          billing_status?: string | null
           created_at?: string
           id?: string
           order_date?: string
