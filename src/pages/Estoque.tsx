@@ -4,17 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Search } from "lucide-react";
 import DataTable from "@/components/Common/DataTable";
-
-interface Product {
-  id: string;
-  codigo: string;
-  nome: string;
-  preco: number;
-  estoque: number;
-  estoqueMinimo: number;
-  localizacao: string;
-  marca: string;
-}
+import { useProducts } from "@/hooks/useProducts";
 
 interface EstoqueProps {
   onAddProduct: () => void;
@@ -22,25 +12,26 @@ interface EstoqueProps {
 
 const Estoque: React.FC<EstoqueProps> = ({ onAddProduct }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  
-  // Mock data - em uma aplicação real, isso viria do banco de dados
-  const [products] = useState<Product[]>([
-    // Array vazio inicialmente - "Nenhum Produto Cadastrado"
-  ]);
+  const { products, loading, deleteProduct } = useProducts();
 
   const columns = [
     {
-      key: 'codigo',
-      header: 'Código',
+      key: 'descricao',
+      header: 'Descrição',
       sortable: true
     },
     {
-      key: 'nome',
-      header: 'Nome',
+      key: 'unidade',
+      header: 'Unidade',
       sortable: true
     },
     {
-      key: 'preco',
+      key: 'marca',
+      header: 'Marca',
+      sortable: true
+    },
+    {
+      key: 'preco_compra',
       header: 'Preço',
       sortable: true,
       render: (value: number) => `R$ ${value.toFixed(2)}`
@@ -51,7 +42,7 @@ const Estoque: React.FC<EstoqueProps> = ({ onAddProduct }) => {
       sortable: true
     },
     {
-      key: 'estoqueMinimo',
+      key: 'estoque_minimo',
       header: 'Estoque Mínimo',
       sortable: true
     },
@@ -61,20 +52,19 @@ const Estoque: React.FC<EstoqueProps> = ({ onAddProduct }) => {
       sortable: true
     },
     {
-      key: 'marca',
-      header: 'Marca',
-      sortable: true
-    },
-    {
       key: 'actions',
       header: 'Ações',
       sortable: false,
-      render: () => (
+      render: (_: any, product: any) => (
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
             Editar
           </Button>
-          <Button variant="destructive" size="sm">
+          <Button 
+            variant="destructive" 
+            size="sm"
+            onClick={() => deleteProduct(product.id)}
+          >
             Excluir
           </Button>
         </div>
@@ -83,9 +73,9 @@ const Estoque: React.FC<EstoqueProps> = ({ onAddProduct }) => {
   ];
 
   const filteredProducts = products.filter(product =>
-    product.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.codigo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.marca.toLowerCase().includes(searchQuery.toLowerCase())
+    product.descricao.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (product.marca && product.marca.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (product.fornecedor && product.fornecedor.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
@@ -99,7 +89,7 @@ const Estoque: React.FC<EstoqueProps> = ({ onAddProduct }) => {
       <div className="flex justify-between items-center">
         <Button 
           onClick={onAddProduct}
-          className="bg-success text-white hover:bg-success/90"
+          className="bg-success text-success-foreground hover:bg-success/90"
         >
           <Plus className="w-4 h-4 mr-2" />
           Adicionar Produto
@@ -130,7 +120,11 @@ const Estoque: React.FC<EstoqueProps> = ({ onAddProduct }) => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {products.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Carregando produtos...
+            </div>
+          ) : products.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               Nenhum Produto Cadastrado
             </div>

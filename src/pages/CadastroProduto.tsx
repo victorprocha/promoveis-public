@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeft, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useProducts, ProductFormData } from "@/hooks/useProducts";
 
 interface CadastroProdutoProps {
   onBack: () => void;
@@ -14,16 +15,19 @@ interface CadastroProdutoProps {
 
 const CadastroProduto: React.FC<CadastroProdutoProps> = ({ onBack }) => {
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
+  const { createProduct } = useProducts();
+  const [formData, setFormData] = useState<ProductFormData>({
     descricao: '',
-    unidade: 'UN - UNIDADE',
+    unidade: 'unidade',
     marca: '',
     acabamento: '',
     fornecedor: '',
     estoque: '',
-    estoqueMinimo: '',
-    precoCompra: '0,00',
-    localizacao: 'Ex: corredor D'
+    estoque_minimo: '',
+    preco_compra: '0,00',
+    localizacao: 'Ex: corredor D',
+    altura_metros: '',
+    largura_metros: ''
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -33,7 +37,7 @@ const CadastroProduto: React.FC<CadastroProdutoProps> = ({ onBack }) => {
     }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Validação básica
     if (!formData.descricao.trim()) {
       toast({
@@ -53,7 +57,7 @@ const CadastroProduto: React.FC<CadastroProdutoProps> = ({ onBack }) => {
       return;
     }
 
-    if (!formData.estoqueMinimo.trim()) {
+    if (!formData.estoque_minimo.trim()) {
       toast({
         title: "Erro",
         description: "Estoque Mínimo é obrigatório",
@@ -62,25 +66,44 @@ const CadastroProduto: React.FC<CadastroProdutoProps> = ({ onBack }) => {
       return;
     }
 
-    // Aqui seria feita a chamada para salvar no banco de dados
-    toast({
-      title: "Sucesso",
-      description: "Produto cadastrado com sucesso!",
-      variant: "default",
-    });
+    if (formData.unidade === 'chapa') {
+      if (!formData.altura_metros?.trim()) {
+        toast({
+          title: "Erro",
+          description: "Altura em metros é obrigatória para unidade chapa",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    // Limpar formulário
-    setFormData({
-      descricao: '',
-      unidade: 'UN - UNIDADE',
-      marca: '',
-      acabamento: '',
-      fornecedor: '',
-      estoque: '',
-      estoqueMinimo: '',
-      precoCompra: '0,00',
-      localizacao: 'Ex: corredor D'
-    });
+      if (!formData.largura_metros?.trim()) {
+        toast({
+          title: "Erro",
+          description: "Largura em metros é obrigatória para unidade chapa",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    const success = await createProduct(formData);
+    
+    if (success) {
+      // Limpar formulário
+      setFormData({
+        descricao: '',
+        unidade: 'unidade',
+        marca: '',
+        acabamento: '',
+        fornecedor: '',
+        estoque: '',
+        estoque_minimo: '',
+        preco_compra: '0,00',
+        localizacao: 'Ex: corredor D',
+        altura_metros: '',
+        largura_metros: ''
+      });
+    }
   };
 
   return (
@@ -135,11 +158,9 @@ const CadastroProduto: React.FC<CadastroProdutoProps> = ({ onBack }) => {
                   <SelectValue placeholder="Selecione a unidade" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="UN - UNIDADE">UN - UNIDADE</SelectItem>
-                  <SelectItem value="KG - QUILOGRAMA">KG - QUILOGRAMA</SelectItem>
-                  <SelectItem value="M - METRO">M - METRO</SelectItem>
-                  <SelectItem value="M2 - METRO QUADRADO">M2 - METRO QUADRADO</SelectItem>
-                  <SelectItem value="L - LITRO">L - LITRO</SelectItem>
+                  <SelectItem value="unidade">Unidade</SelectItem>
+                  <SelectItem value="chapa">Chapa</SelectItem>
+                  <SelectItem value="metro">Metro</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -205,8 +226,8 @@ const CadastroProduto: React.FC<CadastroProdutoProps> = ({ onBack }) => {
               <Input
                 id="estoqueMinimo"
                 type="number"
-                value={formData.estoqueMinimo}
-                onChange={(e) => handleInputChange('estoqueMinimo', e.target.value)}
+                value={formData.estoque_minimo}
+                onChange={(e) => handleInputChange('estoque_minimo', e.target.value)}
                 placeholder="0"
               />
             </div>
@@ -218,8 +239,8 @@ const CadastroProduto: React.FC<CadastroProdutoProps> = ({ onBack }) => {
               </Label>
               <Input
                 id="precoCompra"
-                value={formData.precoCompra}
-                onChange={(e) => handleInputChange('precoCompra', e.target.value)}
+                value={formData.preco_compra}
+                onChange={(e) => handleInputChange('preco_compra', e.target.value)}
                 placeholder="0,00"
               />
             </div>
@@ -234,6 +255,41 @@ const CadastroProduto: React.FC<CadastroProdutoProps> = ({ onBack }) => {
                 placeholder="Ex: corredor D"
               />
             </div>
+
+            {/* Campos condicionais para chapa */}
+            {formData.unidade === 'chapa' && (
+              <>
+                {/* Altura em metros */}
+                <div className="space-y-2">
+                  <Label htmlFor="altura_metros">
+                    Altura em Metros <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="altura_metros"
+                    type="number"
+                    step="0.01"
+                    value={formData.altura_metros}
+                    onChange={(e) => handleInputChange('altura_metros', e.target.value)}
+                    placeholder="0.00"
+                  />
+                </div>
+
+                {/* Largura em metros */}
+                <div className="space-y-2">
+                  <Label htmlFor="largura_metros">
+                    Largura em Metros <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="largura_metros"
+                    type="number"
+                    step="0.01"
+                    value={formData.largura_metros}
+                    onChange={(e) => handleInputChange('largura_metros', e.target.value)}
+                    placeholder="0.00"
+                  />
+                </div>
+              </>
+            )}
           </div>
 
           {/* Botões */}
@@ -248,7 +304,7 @@ const CadastroProduto: React.FC<CadastroProdutoProps> = ({ onBack }) => {
             </Button>
             <Button
               onClick={handleSubmit}
-              className="bg-success text-white hover:bg-success/90 flex items-center gap-2"
+              className="bg-success text-success-foreground hover:bg-success/90 flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
               Adicionar

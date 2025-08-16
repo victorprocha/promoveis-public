@@ -346,6 +346,60 @@ export type Database = {
           },
         ]
       }
+      products: {
+        Row: {
+          acabamento: string | null
+          altura_metros: number | null
+          created_at: string
+          descricao: string
+          estoque: number
+          estoque_minimo: number
+          fornecedor: string | null
+          id: string
+          largura_metros: number | null
+          localizacao: string | null
+          marca: string | null
+          preco_compra: number
+          unidade: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          acabamento?: string | null
+          altura_metros?: number | null
+          created_at?: string
+          descricao: string
+          estoque?: number
+          estoque_minimo?: number
+          fornecedor?: string | null
+          id?: string
+          largura_metros?: number | null
+          localizacao?: string | null
+          marca?: string | null
+          preco_compra?: number
+          unidade?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          acabamento?: string | null
+          altura_metros?: number | null
+          created_at?: string
+          descricao?: string
+          estoque?: number
+          estoque_minimo?: number
+          fornecedor?: string | null
+          id?: string
+          largura_metros?: number | null
+          localizacao?: string | null
+          marca?: string | null
+          preco_compra?: number
+          unidade?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
