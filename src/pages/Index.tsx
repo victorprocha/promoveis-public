@@ -28,6 +28,8 @@ import EmitenteNFe from '@/pages/EmitenteNFe';
 import Usuarios from '@/pages/Usuarios';
 import CadastroUsuario from '@/pages/CadastroUsuario';
 import ContratoEditor from '@/pages/ContratoEditor';
+import Estoque from '@/pages/Estoque';
+import CadastroProduto from '@/pages/CadastroProduto';
 import { Toaster } from '@/components/ui/toaster';
 import { ProjectProvider } from '@/contexts/ProjectContext';
 
@@ -45,6 +47,7 @@ const Index = () => {
   const [showFluxoPadrao, setShowFluxoPadrao] = useState(false);
   const [showContrato, setShowContrato] = useState(false);
   const [showCadastroUsuario, setShowCadastroUsuario] = useState(false);
+  const [showCadastroProduto, setShowCadastroProduto] = useState(false);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -60,6 +63,7 @@ const Index = () => {
     setShowFluxoPadrao(false);
     setShowCadastroUsuario(false);
     setShowContrato(false);
+    setShowCadastroProduto(false);
     setSelectedProjectId(null);
     setSelectedClientId(null);
     setSelectedContractId(null);
@@ -135,7 +139,19 @@ const Index = () => {
     setShowContrato(false);
   };
 
+  const handleAddProduct = () => {
+    setShowCadastroProduto(true);
+  };
+
+  const handleBackFromCadastroProduto = () => {
+    setShowCadastroProduto(false);
+  };
+
   const renderModule = () => {
+    if (showCadastroProduto) {
+      return <CadastroProduto onBack={handleBackFromCadastroProduto} />;
+    }
+
     if (showContrato) {
       return <ContratoEditor onBack={handleBackFromContrato} />;
     }
@@ -227,6 +243,10 @@ const Index = () => {
       // Enterprise
       case 'cadastro-produtos':
         return <div className="p-6"><h1 className="text-2xl font-bold">Cadastro de Produtos</h1></div>;
+      
+      // Compras
+      case 'estoque':
+        return <Estoque onAddProduct={handleAddProduct} />;
       
       // Sistema
       case 'usuarios':

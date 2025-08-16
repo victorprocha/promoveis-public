@@ -182,8 +182,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
         {
           title: 'ESTOQUE',
           items: [
+            { id: 'estoque', label: 'Estoque e Geração de Inventário' },
             { id: 'movimentacao', label: 'Movimentação' },
-            { id: 'geracao-inventario', label: 'Geração de Inventário' },
             { id: 'armazenados', label: 'Armazenados' },
             { id: 'importacao-estoque', label: 'Importação de Estoque' },
             { id: 'reserva-estoque', label: 'Reserva de Estoque' },
