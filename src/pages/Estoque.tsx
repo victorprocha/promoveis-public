@@ -8,9 +8,10 @@ import { useProducts } from "@/hooks/useProducts";
 
 interface EstoqueProps {
   onAddProduct: () => void;
+  onViewHistory?: (productId: string) => void;
 }
 
-const Estoque: React.FC<EstoqueProps> = ({ onAddProduct }) => {
+const Estoque: React.FC<EstoqueProps> = ({ onAddProduct, onViewHistory }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const { products, loading, deleteProduct } = useProducts();
 
@@ -56,16 +57,29 @@ const Estoque: React.FC<EstoqueProps> = ({ onAddProduct }) => {
       header: 'Ações',
       sortable: false,
       render: (_: any, product: any) => (
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            Editar
+        <div className="flex gap-1">
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="w-8 h-8 p-0 bg-success hover:bg-success/80 border-success"
+            onClick={() => onViewHistory?.(product.id)}
+          >
+            <Plus className="w-4 h-4 text-white" />
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="w-8 h-8 p-0 bg-primary hover:bg-primary/80 border-primary"
+          >
+            <Search className="w-4 h-4 text-white" />
           </Button>
           <Button 
             variant="destructive" 
             size="sm"
+            className="w-8 h-8 p-0"
             onClick={() => deleteProduct(product.id)}
           >
-            Excluir
+            <Plus className="w-4 h-4 rotate-45" />
           </Button>
         </div>
       )

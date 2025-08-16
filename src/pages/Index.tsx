@@ -30,6 +30,7 @@ import CadastroUsuario from '@/pages/CadastroUsuario';
 import ContratoEditor from '@/pages/ContratoEditor';
 import Estoque from '@/pages/Estoque';
 import CadastroProduto from '@/pages/CadastroProduto';
+import HistoricoLancamentos from '@/pages/HistoricoLancamentos';
 import { Toaster } from '@/components/ui/toaster';
 import { ProjectProvider } from '@/contexts/ProjectContext';
 
@@ -48,6 +49,8 @@ const Index = () => {
   const [showContrato, setShowContrato] = useState(false);
   const [showCadastroUsuario, setShowCadastroUsuario] = useState(false);
   const [showCadastroProduto, setShowCadastroProduto] = useState(false);
+  const [showHistoricoLancamentos, setShowHistoricoLancamentos] = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -64,9 +67,11 @@ const Index = () => {
     setShowCadastroUsuario(false);
     setShowContrato(false);
     setShowCadastroProduto(false);
+    setShowHistoricoLancamentos(false);
     setSelectedProjectId(null);
     setSelectedClientId(null);
     setSelectedContractId(null);
+    setSelectedProductId(null);
     
     // Handle special navigation cases
     if (module === 'configuracao-matriz') {
@@ -147,7 +152,21 @@ const Index = () => {
     setShowCadastroProduto(false);
   };
 
+  const handleViewHistoricoLancamentos = (productId: string) => {
+    setSelectedProductId(productId);
+    setShowHistoricoLancamentos(true);
+  };
+
+  const handleBackFromHistoricoLancamentos = () => {
+    setShowHistoricoLancamentos(false);
+    setSelectedProductId(null);
+  };
+
   const renderModule = () => {
+    if (showHistoricoLancamentos) {
+      return <HistoricoLancamentos productId={selectedProductId} onBack={handleBackFromHistoricoLancamentos} />;
+    }
+
     if (showCadastroProduto) {
       return <CadastroProduto onBack={handleBackFromCadastroProduto} />;
     }
@@ -246,7 +265,7 @@ const Index = () => {
       
       // Compras
       case 'estoque':
-        return <Estoque onAddProduct={handleAddProduct} />;
+        return <Estoque onAddProduct={handleAddProduct} onViewHistory={handleViewHistoricoLancamentos} />;
       
       // Sistema
       case 'usuarios':
