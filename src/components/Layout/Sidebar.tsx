@@ -173,7 +173,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
           title: 'PEDIDOS DE COMPRA',
           items: [
             { id: 'geracao-envio', label: 'Geração e Envio' },
-            { id: 'pedido-compras', label: 'Pedido de Compras' },
+            { id: 'pedidos-compra', label: 'Pedidos de Compra' },
             { id: 'atendimento', label: 'Atendimento' },
             { id: 'cancelamento', label: 'Cancelamento' },
             { id: 'comparativo', label: 'Comparativo' }
