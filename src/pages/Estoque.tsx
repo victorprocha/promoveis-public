@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Search } from "lucide-react";
-import DataTable from "@/components/Common/DataTable";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useProducts } from "@/hooks/useProducts";
 
 interface EstoqueProps {
@@ -15,76 +15,6 @@ const Estoque: React.FC<EstoqueProps> = ({ onAddProduct, onViewHistory }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const { products, loading, deleteProduct } = useProducts();
 
-  const columns = [
-    {
-      key: 'descricao',
-      header: 'Descrição',
-      sortable: true
-    },
-    {
-      key: 'unidade',
-      header: 'Unidade',
-      sortable: true
-    },
-    {
-      key: 'marca',
-      header: 'Marca',
-      sortable: true
-    },
-    {
-      key: 'preco_compra',
-      header: 'Preço',
-      sortable: true,
-      render: (value: number) => `R$ ${value.toFixed(2)}`
-    },
-    {
-      key: 'estoque',
-      header: 'Estoque',
-      sortable: true
-    },
-    {
-      key: 'estoque_minimo',
-      header: 'Estoque Mínimo',
-      sortable: true
-    },
-    {
-      key: 'localizacao',
-      header: 'Localização',
-      sortable: true
-    },
-    {
-      key: 'actions',
-      header: 'Ações',
-      sortable: false,
-      render: (_: any, product: any) => (
-        <div className="flex gap-1">
-          <Button 
-            variant="outline" 
-            size="sm"
-            className="w-8 h-8 p-0 bg-success hover:bg-success/80 border-success"
-            onClick={() => onViewHistory?.(product.id)}
-          >
-            <Plus className="w-4 h-4 text-white" />
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            className="w-8 h-8 p-0 bg-primary hover:bg-primary/80 border-primary"
-          >
-            <Search className="w-4 h-4 text-white" />
-          </Button>
-          <Button 
-            variant="destructive" 
-            size="sm"
-            className="w-8 h-8 p-0"
-            onClick={() => deleteProduct(product.id)}
-          >
-            <Plus className="w-4 h-4 rotate-45" />
-          </Button>
-        </div>
-      )
-    }
-  ];
 
   const filteredProducts = products.filter(product =>
     product.descricao.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -143,10 +73,60 @@ const Estoque: React.FC<EstoqueProps> = ({ onAddProduct, onViewHistory }) => {
               Nenhum Produto Cadastrado
             </div>
           ) : (
-            <DataTable
-              data={filteredProducts}
-              columns={columns}
-            />
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead>Unidade</TableHead>
+                  <TableHead>Marca</TableHead>
+                  <TableHead>Preço</TableHead>
+                  <TableHead>Estoque</TableHead>
+                  <TableHead>Estoque Mínimo</TableHead>
+                  <TableHead>Localização</TableHead>
+                  <TableHead>Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredProducts.map((product) => (
+                  <TableRow key={product.id}>
+                    <TableCell>{product.descricao}</TableCell>
+                    <TableCell>{product.unidade}</TableCell>
+                    <TableCell>{product.marca || '-'}</TableCell>
+                    <TableCell>R$ {product.preco_compra.toFixed(2)}</TableCell>
+                    <TableCell>{product.estoque}</TableCell>
+                    <TableCell>{product.estoque_minimo}</TableCell>
+                    <TableCell>{product.localizacao || '-'}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="w-8 h-8 p-0 bg-success hover:bg-success/80 border-success"
+                          onClick={() => onViewHistory?.(product.id)}
+                        >
+                          <Plus className="w-4 h-4 text-white" />
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="w-8 h-8 p-0 bg-primary hover:bg-primary/80 border-primary"
+                        >
+                          <Search className="w-4 h-4 text-white" />
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          size="sm"
+                          className="w-8 h-8 p-0"
+                          onClick={() => deleteProduct(product.id)}
+                        >
+                          <Plus className="w-4 h-4 rotate-45" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>
