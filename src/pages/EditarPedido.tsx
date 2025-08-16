@@ -19,9 +19,10 @@ import { useToast } from "@/hooks/use-toast";
 interface EditarPedidoProps {
   orderId: string;
   onBack: () => void;
+  onViewPedido?: (orderId: string) => void;
 }
 
-const EditarPedido: React.FC<EditarPedidoProps> = ({ orderId, onBack }) => {
+const EditarPedido: React.FC<EditarPedidoProps> = ({ orderId, onBack, onViewPedido }) => {
   const [order, setOrder] = useState<PurchaseOrder | null>(null);
   const [items, setItems] = useState<PurchaseOrderItem[]>([]);
   const [newProductName, setNewProductName] = useState('');
@@ -186,7 +187,11 @@ const EditarPedido: React.FC<EditarPedidoProps> = ({ orderId, onBack }) => {
                 <Edit className="h-4 w-4 mr-2" />
                 Alterar
               </Button>
-              <Button variant="outline" className="border-secondary text-secondary hover:bg-secondary/10">
+              <Button 
+                variant="outline" 
+                className="bg-black text-white border-black hover:bg-black/90"
+                onClick={() => onViewPedido?.(orderId)}
+              >
                 <Eye className="h-4 w-4 mr-2" />
                 Visualizar Pedido
               </Button>

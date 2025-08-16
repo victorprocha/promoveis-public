@@ -34,6 +34,7 @@ import HistoricoLancamentos from '@/pages/HistoricoLancamentos';
 import PedidosCompra from '@/pages/PedidosCompra';
 import NovoPedidoCompra from '@/pages/NovoPedidoCompra';
 import EditarPedido from '@/pages/EditarPedido';
+import PedidoView from '@/pages/PedidoView';
 import { Toaster } from '@/components/ui/toaster';
 import { ProjectProvider } from '@/contexts/ProjectContext';
 
@@ -56,6 +57,7 @@ const Index = () => {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [showNovoPedidoCompra, setShowNovoPedidoCompra] = useState(false);
   const [showEditarPedido, setShowEditarPedido] = useState(false);
+  const [showPedidoView, setShowPedidoView] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   const toggleSidebar = () => {
@@ -76,6 +78,7 @@ const Index = () => {
     setShowHistoricoLancamentos(false);
     setShowNovoPedidoCompra(false);
     setShowEditarPedido(false);
+    setShowPedidoView(false);
     setSelectedProjectId(null);
     setSelectedClientId(null);
     setSelectedContractId(null);
@@ -189,9 +192,23 @@ const Index = () => {
     setSelectedOrderId(null);
   };
 
+  const handleViewPedido = (orderId: string) => {
+    setSelectedOrderId(orderId);
+    setShowPedidoView(true);
+  };
+
+  const handleBackFromPedidoView = () => {
+    setShowPedidoView(false);
+    setSelectedOrderId(null);
+  };
+
   const renderModule = () => {
+    if (showPedidoView) {
+      return <PedidoView orderId={selectedOrderId!} />;
+    }
+
     if (showEditarPedido) {
-      return <EditarPedido orderId={selectedOrderId!} onBack={handleBackFromEditarPedido} />;
+      return <EditarPedido orderId={selectedOrderId!} onBack={handleBackFromEditarPedido} onViewPedido={handleViewPedido} />;
     }
 
     if (showNovoPedidoCompra) {
