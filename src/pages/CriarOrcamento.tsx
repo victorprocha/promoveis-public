@@ -21,6 +21,9 @@ const CriarOrcamento = ({ onNavigate }: CriarOrcamentoProps) => {
   const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [customEnvironment, setCustomEnvironment] = useState('');
   const [environmentDescription, setEnvironmentDescription] = useState('');
+  const [quantity, setQuantity] = useState('1');
+  const [price, setPrice] = useState('');
+  const [addedEnvironments, setAddedEnvironments] = useState<any[]>([]);
   
   const { data: clientsData, loading: clientsLoading } = useClients();
   
@@ -36,6 +39,42 @@ const CriarOrcamento = ({ onNavigate }: CriarOrcamentoProps) => {
     } else {
       // Fallback for direct access
       window.history.back();
+    }
+  };
+
+  const handleAddEnvironment = () => {
+    if (!customEnvironment.trim()) return;
+    
+    const newEnvironment = {
+      id: Date.now(),
+      name: customEnvironment,
+      description: environmentDescription,
+      quantity: parseInt(quantity),
+      price: parseFloat(price) || 0,
+      subtotal: (parseInt(quantity) * (parseFloat(price) || 0))
+    };
+    
+    setAddedEnvironments([...addedEnvironments, newEnvironment]);
+    
+    // Reset form
+    setCustomEnvironment('');
+    setEnvironmentDescription('');
+    setQuantity('1');
+    setPrice('');
+  };
+
+  const removeEnvironment = (id: number) => {
+    setAddedEnvironments(addedEnvironments.filter(env => env.id !== id));
+  };
+
+  const editEnvironment = (id: number) => {
+    const env = addedEnvironments.find(e => e.id === id);
+    if (env) {
+      setCustomEnvironment(env.name);
+      setEnvironmentDescription(env.description);
+      setQuantity(env.quantity.toString());
+      setPrice(env.price.toString());
+      removeEnvironment(id);
     }
   };
 
@@ -246,7 +285,7 @@ const CriarOrcamento = ({ onNavigate }: CriarOrcamentoProps) => {
                       <div className="lg:col-span-4 space-y-4">
                         <div className="space-y-2">
                           <Label htmlFor="quantidade">Quantidade</Label>
-                          <Select>
+                          <Select value={quantity} onValueChange={setQuantity}>
                             <SelectTrigger>
                               <SelectValue placeholder="1" />
                             </SelectTrigger>
@@ -261,12 +300,17 @@ const CriarOrcamento = ({ onNavigate }: CriarOrcamentoProps) => {
                         <div className="space-y-2">
                           <Label htmlFor="preco">Preço</Label>
                           <Input
+                            value={price}
+                            onChange={(e) => setPrice(e.target.value)}
                             placeholder="Preço"
+                            type="number"
+                            step="0.01"
                             className="w-full"
                           />
                         </div>
 
                         <Button 
+                          onClick={handleAddEnvironment}
                           className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
                         >
                           <Plus className="mr-2 h-4 w-4" />
@@ -275,6 +319,82 @@ const CriarOrcamento = ({ onNavigate }: CriarOrcamentoProps) => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Added Environments Display */}
+                  {addedEnvironments.map((env) => (
+                    <Card key={env.id} className="mt-6">
+                      <CardHeader className="pb-3">
+                        <div className="flex justify-between items-center">
+                          <CardTitle className="text-lg font-medium">{env.name}</CardTitle>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">Quantidade: {env.quantity}</span>
+                            <span className="text-sm text-muted-foreground">Preço: R$ {env.price.toFixed(2)}</span>
+                            <span className="text-sm font-medium">Sub-total: R$ {env.subtotal.toFixed(2)}</span>
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => editEnvironment(env.id)}
+                                className="h-8 w-8 p-0 hover:bg-blue-100"
+                              >
+                                ✏️
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 p-0 hover:bg-green-100"
+                              >
+                                💾
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => removeEnvironment(env.id)}
+                                className="h-8 w-8 p-0 hover:bg-red-100"
+                              >
+                                ❌
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="font-medium mb-2">Itens:</h4>
+                            <div className="bg-muted/30 p-3 rounded text-sm">
+                              {env.description ? (
+                                <div dangerouslySetInnerHTML={{ __html: env.description.replace(/\n/g, '<br>') }} />
+                              ) : (
+                                <span className="text-muted-foreground">Nenhuma descrição adicionada</span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                              <h4 className="font-medium mb-2">Observações do orçamento</h4>
+                              <RichTextEditor
+                                placeholder="Digite suas observações..."
+                                className="w-full"
+                              />
+                            </div>
+
+                            <div>
+                              <h4 className="font-medium mb-2">Considerações finais</h4>
+                              <RichTextEditor
+                                value="[garantia] de garantia para produtos fornecidos e fabricados pela contratada.
+Toda ferragem usada na fabricação e montagem é de primeira linha.
+Prazo de entrega: [dias_uteis_entrega] dias úteis após assinatura do projeto final.
+Validade do orçamento: 7 dias úteis."
+                                className="w-full"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               </CardContent>
             </Card>
