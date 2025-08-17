@@ -29,6 +29,7 @@ import Usuarios from '@/pages/Usuarios';
 import CadastroUsuario from '@/pages/CadastroUsuario';
 import PedidosSaida from '@/pages/PedidosSaida';
 import NovoPedidoSaida from '@/pages/NovoPedidoSaida';
+import EditarPedidoSaida from '@/pages/EditarPedidoSaida';
 import ContratoEditor from '@/pages/ContratoEditor';
 import Estoque from '@/pages/Estoque';
 import CadastroProduto from '@/pages/CadastroProduto';
@@ -63,6 +64,8 @@ const Index = () => {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [showPedidosSaida, setShowPedidosSaida] = useState(false);
   const [showNovoPedidoSaida, setShowNovoPedidoSaida] = useState(false);
+  const [showEditarPedidoSaida, setShowEditarPedidoSaida] = useState(false);
+  const [selectedPedidoSaidaId, setSelectedPedidoSaidaId] = useState<string | null>(null);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -85,6 +88,7 @@ const Index = () => {
     setShowPedidoView(false);
     setShowPedidosSaida(false);
     setShowNovoPedidoSaida(false);
+    setShowEditarPedidoSaida(false);
     setSelectedProjectId(null);
     setSelectedClientId(null);
     setSelectedContractId(null);
@@ -216,9 +220,24 @@ const Index = () => {
     setShowNovoPedidoSaida(false);
   };
 
+  const handlePedidoSaidaCreated = (pedidoId: string) => {
+    setSelectedPedidoSaidaId(pedidoId);
+    setShowNovoPedidoSaida(false);
+    setShowEditarPedidoSaida(true);
+  };
+
+  const handleBackFromEditarPedidoSaida = () => {
+    setShowEditarPedidoSaida(false);
+    setSelectedPedidoSaidaId(null);
+  };
+
   const renderModule = () => {
+    if (showEditarPedidoSaida && selectedPedidoSaidaId) {
+      return <EditarPedidoSaida pedidoId={selectedPedidoSaidaId} onBack={handleBackFromEditarPedidoSaida} />;
+    }
+
     if (showNovoPedidoSaida) {
-      return <NovoPedidoSaida onBack={handleBackFromNovoPedidoSaida} />;
+      return <NovoPedidoSaida onBack={handleBackFromNovoPedidoSaida} onPedidoCreated={handlePedidoSaidaCreated} />;
     }
 
     if (showPedidoView) {

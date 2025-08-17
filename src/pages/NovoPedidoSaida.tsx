@@ -7,12 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+import { usePedidosSaida } from '@/hooks/usePedidosSaida';
+
 interface NovoPedidoSaidaProps {
   onBack: () => void;
+  onPedidoCreated?: (pedidoId: string) => void;
 }
 
-export default function NovoPedidoSaida({ onBack }: NovoPedidoSaidaProps) {
+export default function NovoPedidoSaida({ onBack, onPedidoCreated }: NovoPedidoSaidaProps) {
   const { toast } = useToast();
+  const { createPedido } = usePedidosSaida();
   const [formData, setFormData] = useState({
     dataSaida: '',
     responsavel: '',
@@ -43,8 +47,12 @@ export default function NovoPedidoSaida({ onBack }: NovoPedidoSaidaProps) {
     setIsLoading(true);
     
     try {
-      // Here you would save the data to your database
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      const pedido = await createPedido({
+        data_saida: formData.dataSaida,
+        responsavel_id: formData.responsavel,
+        cliente_id: formData.cliente,
+        referencia_contrato: formData.referenciaContrato || undefined
+      });
       
       toast({
         title: "Sucesso",
@@ -52,7 +60,10 @@ export default function NovoPedidoSaida({ onBack }: NovoPedidoSaidaProps) {
         variant: "default"
       });
       
-      onBack();
+      // Redirect to edit page with the new pedido ID
+      if (onPedidoCreated) {
+        onPedidoCreated(pedido.id);
+      }
     } catch (error) {
       toast({
         title: "Erro",

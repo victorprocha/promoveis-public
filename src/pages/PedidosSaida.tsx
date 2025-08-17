@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Search, Package } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { usePedidosSaida } from '@/hooks/usePedidosSaida';
 
 interface PedidosSaidaProps {
   onAddPedidoSaida: () => void;
@@ -14,45 +15,38 @@ interface PedidosSaidaProps {
 export default function PedidosSaida({ onAddPedidoSaida }: PedidosSaidaProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('todos');
+  const { pedidos, loading, deletePedido } = usePedidosSaida();
 
-  // Mock data for demonstration
-  const pedidosSaida = [
-    {
-      id: '1',
-      codigo: 'PS001',
-      dataSaida: '2024-01-15',
-      responsavel: 'João Silva',
-      cliente: 'Cliente A',
-      tipo: 'Material',
-      referenciaContrato: 'CONT-001',
-      status: 'Pendente'
-    },
-    {
-      id: '2',
-      codigo: 'PS002',
-      dataSaida: '2024-01-16',
-      responsavel: 'Maria Santos',
-      cliente: 'Cliente B',
-      tipo: 'Equipamento',
-      referenciaContrato: 'CONT-002',
-      status: 'Entregue'
-    }
-  ];
-
-  const filteredPedidos = pedidosSaida.filter(pedido =>
-    pedido.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    pedido.responsavel.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    pedido.cliente.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter pedidos based on search term and status
+  const filteredPedidos = pedidos.filter(pedido => {
+    const matchesSearch = pedido.numero_pedido.toString().includes(searchTerm) ||
+                         pedido.responsavel_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         pedido.cliente_id.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = filterStatus === 'todos' || 
+                         pedido.status.toLowerCase() === filterStatus.toLowerCase();
+    
+    return matchesSearch && matchesStatus;
+  });
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      'Pendente': 'default',
-      'Entregue': 'secondary',
+      'Em Edição': 'default',
+      'Finalizado': 'secondary',
       'Cancelado': 'destructive'
     } as const;
     
     return <Badge variant={variants[status as keyof typeof variants] || 'default'}>{status}</Badge>;
+  };
+
+  const handleDeletePedido = async (pedidoId: string) => {
+    if (confirm('Tem certeza que deseja excluir este pedido?')) {
+      try {
+        await deletePedido(pedidoId);
+      } catch (error) {
+        console.error('Erro ao excluir pedido:', error);
+      }
+    }
   };
 
   return (
@@ -82,8 +76,8 @@ export default function PedidosSaida({ onAddPedidoSaida }: PedidosSaidaProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
-                <SelectItem value="pendente">Pendente</SelectItem>
-                <SelectItem value="entregue">Entregue</SelectItem>
+                <SelectItem value="em edição">Em Edição</SelectItem>
+                <SelectItem value="finalizado">Finalizado</SelectItem>
                 <SelectItem value="cancelado">Cancelado</SelectItem>
               </SelectContent>
             </Select>
@@ -121,7 +115,11 @@ export default function PedidosSaida({ onAddPedidoSaida }: PedidosSaidaProps) {
             <CardTitle>Pedidos de Saída</CardTitle>
           </CardHeader>
           <CardContent>
-            {filteredPedidos.length === 0 ? (
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : filteredPedidos.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-muted-foreground mb-4">Nenhum pedido cadastrado</p>
                 <Button onClick={onAddPedidoSaida}>
@@ -146,12 +144,12 @@ export default function PedidosSaida({ onAddPedidoSaida }: PedidosSaidaProps) {
                   <tbody>
                     {filteredPedidos.map((pedido) => (
                       <tr key={pedido.id} className="border-b hover:bg-muted/50">
-                        <td className="p-2">{pedido.codigo}</td>
-                        <td className="p-2">{new Date(pedido.dataSaida).toLocaleDateString('pt-BR')}</td>
-                        <td className="p-2">{pedido.responsavel}</td>
-                        <td className="p-2">{pedido.cliente}</td>
-                        <td className="p-2">{pedido.tipo}</td>
-                        <td className="p-2">{pedido.referenciaContrato}</td>
+                        <td className="p-2">PS{pedido.numero_pedido.toString().padStart(3, '0')}</td>
+                        <td className="p-2">{new Date(pedido.data_saida).toLocaleDateString('pt-BR')}</td>
+                        <td className="p-2">{pedido.responsavel_id}</td>
+                        <td className="p-2">{pedido.cliente_id}</td>
+                        <td className="p-2">Material</td>
+                        <td className="p-2">{pedido.referencia_contrato || '-'}</td>
                         <td className="p-2">{getStatusBadge(pedido.status)}</td>
                         <td className="p-2">
                           <div className="flex gap-2">
@@ -161,7 +159,12 @@ export default function PedidosSaida({ onAddPedidoSaida }: PedidosSaidaProps) {
                             <Button size="sm" variant="outline">
                               Editar
                             </Button>
-                            <Button size="sm" variant="outline">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleDeletePedido(pedido.id)}
+                              className="text-red-600 hover:text-red-700"
+                            >
                               Excluir
                             </Button>
                           </div>

@@ -399,6 +399,83 @@ export type Database = {
           },
         ]
       }
+      pedidos_saida: {
+        Row: {
+          cliente_id: string
+          created_at: string
+          data_saida: string
+          id: string
+          numero_pedido: number
+          referencia_contrato: string | null
+          responsavel_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string
+          data_saida: string
+          id?: string
+          numero_pedido?: number
+          referencia_contrato?: string | null
+          responsavel_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string
+          data_saida?: string
+          id?: string
+          numero_pedido?: number
+          referencia_contrato?: string | null
+          responsavel_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      pedidos_saida_items: {
+        Row: {
+          created_at: string
+          id: string
+          observacoes: string | null
+          pedido_saida_id: string
+          produto_nome: string
+          quantidade: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          observacoes?: string | null
+          pedido_saida_id: string
+          produto_nome: string
+          quantidade?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          observacoes?: string | null
+          pedido_saida_id?: string
+          produto_nome?: string
+          quantidade?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedidos_saida_items_pedido_saida_id_fkey"
+            columns: ["pedido_saida_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos_saida"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           acabamento: string | null
