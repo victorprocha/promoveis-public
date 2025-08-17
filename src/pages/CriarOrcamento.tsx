@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,13 +6,38 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { ChevronDown, Plus, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useClients } from '@/hooks/useClients';
 
-const CriarOrcamento = () => {
-  const navigate = useNavigate();
+interface CriarOrcamentoProps {
+  onNavigate?: (module: string) => void;
+}
+
+const CriarOrcamento = ({ onNavigate }: CriarOrcamentoProps) => {
   const [activeTab, setActiveTab] = useState('dados');
   const [showEnvironmentDropdown, setShowEnvironmentDropdown] = useState(false);
+  const [clientSearch, setClientSearch] = useState('');
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
+  const [customEnvironment, setCustomEnvironment] = useState('');
+  const [environmentDescription, setEnvironmentDescription] = useState('');
+  
+  const { data: clientsData, loading: clientsLoading } = useClients();
+  
+  // Filter clients based on search
+  const filteredClients = clientsData?.data?.filter(client => 
+    client.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
+    client.email?.toLowerCase().includes(clientSearch.toLowerCase())
+  ) || [];
+
+  const handleBackNavigation = () => {
+    if (onNavigate) {
+      onNavigate('orcamentos');
+    } else {
+      // Fallback for direct access
+      window.history.back();
+    }
+  };
 
   const environments = [
     'Ambiente manual',
@@ -33,7 +58,7 @@ const CriarOrcamento = () => {
           <Button 
             variant="ghost" 
             size="icon"
-            onClick={() => navigate('/orcamentos')}
+            onClick={handleBackNavigation}
             className="hover:bg-muted"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -54,16 +79,41 @@ const CriarOrcamento = () => {
             <Card>
               <CardContent className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                  <div className="space-y-2">
+                  <div className="space-y-2 relative">
                     <Label htmlFor="cliente">Cliente*</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="RN RASTREAMENTO LTDA | Telefone: (84) 3272-3351" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="cliente1">RN RASTREAMENTO LTDA | Telefone: (84) 3272-3351</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Input
+                      value={clientSearch}
+                      onChange={(e) => {
+                        setClientSearch(e.target.value);
+                        setShowClientDropdown(e.target.value.length > 0);
+                      }}
+                      onFocus={() => setShowClientDropdown(clientSearch.length > 0)}
+                      onBlur={() => setTimeout(() => setShowClientDropdown(false), 200)}
+                      placeholder="Digite o nome do cliente..."
+                      className="w-full"
+                    />
+                    
+                    {showClientDropdown && filteredClients.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-background border rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+                        {filteredClients.slice(0, 5).map((client) => (
+                          <button
+                            key={client.id}
+                            className="w-full text-left px-3 py-2 hover:bg-muted text-sm border-b last:border-b-0 focus:bg-muted focus:outline-none"
+                            onClick={() => {
+                              setClientSearch(`${client.name} | ${client.phone || client.email || ''}`);
+                              setShowClientDropdown(false);
+                            }}
+                          >
+                            <div className="font-medium">{client.name}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {client.phone && `Tel: ${client.phone}`}
+                              {client.phone && client.email && ' | '}
+                              {client.email && `Email: ${client.email}`}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -91,7 +141,12 @@ const CriarOrcamento = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="data-inicial">Data inicial*</Label>
+                    <Input type="date" defaultValue={new Date().toISOString().split('T')[0]} />
+                  </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="status">Status*</Label>
                     <Select>
@@ -131,6 +186,18 @@ const CriarOrcamento = () => {
                   </div>
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="ambiente">Ambiente</Label>
+                    <Input
+                      value={customEnvironment}
+                      onChange={(e) => setCustomEnvironment(e.target.value)}
+                      placeholder="Digite o nome do ambiente..."
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-4">
                   <Label>Adicione ambiente/serviço</Label>
                   <div className="relative">
@@ -162,10 +229,12 @@ const CriarOrcamento = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
                   <div className="space-y-2">
-                    <Label>Observações do orçamento</Label>
-                    <Textarea 
-                      className="min-h-32 resize-none"
-                      placeholder="Digite suas observações..."
+                    <Label>Descrição do Ambiente</Label>
+                    <RichTextEditor
+                      value={environmentDescription}
+                      onChange={setEnvironmentDescription}
+                      placeholder="Digite a descrição do ambiente..."
+                      className="min-h-32"
                     />
                   </div>
 
@@ -250,7 +319,7 @@ Validade do orçamento: 7 dias úteis."
                 <Button variant="destructive" className="bg-red-600 hover:bg-red-700">
                   ❌ Perder
                 </Button>
-                <Button variant="outline" onClick={() => navigate('/orcamentos')}>
+                <Button variant="outline" onClick={handleBackNavigation}>
                   ← Voltar
                 </Button>
               </div>

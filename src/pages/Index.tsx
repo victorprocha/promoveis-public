@@ -311,7 +311,7 @@ const Index = () => {
         case 'orcamentos':
           return <Orcamentos onNavigate={handleModuleChange} />;
         case 'criar-orcamento':
-          return <CriarOrcamento />;
+          return <CriarOrcamento onNavigate={handleModuleChange} />;
       case 'clientes':
         return <Clients />;
       case 'especificadores':
