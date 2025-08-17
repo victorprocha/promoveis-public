@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, Clock, Target, DollarSign, BarChart3 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 
 // Mock data for the charts
 const billingHistory = [
@@ -17,7 +17,39 @@ const statusData = [
 ];
 
 const tableData = [
-  { month: '10/2023', value: 'R$ 28.840,71', evolutionMonth: '0,00%', evolutionYear: '-' }
+  { month: '09/2023', value: 'R$ 78.840,74', evolutionMonth: '0,00%', evolutionYear: '0,00%' },
+  { month: '10/2023', value: 'R$ 54.139,57', evolutionMonth: '-31,33%', evolutionYear: '0,00%' },
+  { month: '11/2023', value: 'R$ 258.597,88', evolutionMonth: '+377,65%', evolutionYear: '0,00%' }
+];
+
+// Additional chart data
+const winsLossesData = [
+  { month: '09/2023', ganhos: 80000, perdidos: 15000 },
+  { month: '10/2023', ganhos: 55000, perdidos: 290000 },
+  { month: '11/2023', ganhos: 260000, perdidos: 55000 }
+];
+
+const quantityData = [
+  { month: '08/2023', total: 32, criados: 32, ganhos: 0, perdidos: 0 },
+  { month: '09/2023', total: 23, criados: 23, ganhos: 2, perdidos: 1 },
+  { month: '10/2023', total: 30, criados: 30, ganhos: 7, perdidos: 6 },
+  { month: '11/2023', total: 13, criados: 13, ganhos: 10, perdidos: 3 }
+];
+
+const lossReasonsData = [
+  { reason: 'Preço', quantidade: 2 },
+  { reason: 'Prazo', quantidade: 4 },
+  { reason: 'Produto', quantidade: 2 },
+  { reason: 'Outros', quantidade: 2 }
+];
+
+const winReasonsData = [
+  { reason: 'Qualidade', quantidade: 9 }
+];
+
+const salesRankingData = [
+  { rank: 1, vendedor: 'Daniel Augusto', faturamento: 'R$ 376.534,74', qtd: 17, ticketMedio: 'R$ 22.149,10' },
+  { rank: 2, vendedor: 'Richardson', faturamento: 'R$ 15.043,45', qtd: 2, ticketMedio: 'R$ 7.521,73' }
 ];
 
 const Orcamentos = () => {
@@ -225,38 +257,235 @@ const Orcamentos = () => {
           </Card>
         </div>
 
-        {/* Data Table */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
+        {/* Additional Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Wins and Losses Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">Orçamentos ganhos e perdidos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={winsLossesData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.1} />
+                    <XAxis 
+                      dataKey="month" 
+                      stroke="currentColor" 
+                      fontSize={12}
+                      opacity={0.7}
+                    />
+                    <YAxis 
+                      stroke="currentColor" 
+                      fontSize={12}
+                      opacity={0.7}
+                      tickFormatter={(value) => `${value/1000}k`}
+                    />
+                    <Tooltip 
+                      formatter={(value, name) => [
+                        `R$ ${Number(value).toLocaleString('pt-BR')}`, 
+                        name === 'ganhos' ? 'Ganhos' : 'Perdidos'
+                      ]}
+                      labelStyle={{ color: 'hsl(var(--foreground))' }}
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--background))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Bar dataKey="ganhos" fill="#3b82f6" />
+                    <Bar dataKey="perdidos" fill="#ef4444" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Quantity Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">Quantidade de orçamentos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={quantityData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.1} />
+                    <XAxis 
+                      dataKey="month" 
+                      stroke="currentColor" 
+                      fontSize={12}
+                      opacity={0.7}
+                    />
+                    <YAxis 
+                      stroke="currentColor" 
+                      fontSize={12}
+                      opacity={0.7}
+                    />
+                    <Tooltip 
+                      formatter={(value, name) => [value, name === 'total' ? 'Total' : name === 'criados' ? 'Criados' : name === 'ganhos' ? 'Ganhos' : 'Perdidos']}
+                      labelStyle={{ color: 'hsl(var(--foreground))' }}
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--background))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Bar dataKey="total" fill="#6b7280" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Loss and Win Reasons Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Loss Reasons Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">Motivos de perda</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={lossReasonsData} layout="horizontal">
+                    <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.1} />
+                    <XAxis 
+                      type="number"
+                      stroke="currentColor" 
+                      fontSize={12}
+                      opacity={0.7}
+                    />
+                    <YAxis 
+                      type="category"
+                      dataKey="reason"
+                      stroke="currentColor" 
+                      fontSize={12}
+                      opacity={0.7}
+                    />
+                    <Tooltip 
+                      formatter={(value) => [value, 'Quantidade']}
+                      labelStyle={{ color: 'hsl(var(--foreground))' }}
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--background))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Bar dataKey="quantidade" fill="#ef4444" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Win Reasons Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">Motivos de ganho</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={winReasonsData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.1} />
+                    <XAxis 
+                      dataKey="reason"
+                      stroke="currentColor" 
+                      fontSize={12}
+                      opacity={0.7}
+                    />
+                    <YAxis 
+                      stroke="currentColor" 
+                      fontSize={12}
+                      opacity={0.7}
+                    />
+                    <Tooltip 
+                      formatter={(value) => [value, 'Quantidade']}
+                      labelStyle={{ color: 'hsl(var(--foreground))' }}
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--background))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Bar dataKey="quantidade" fill="#3b82f6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Data Tables */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Monthly Data Table */}
+          <Card>
+            <CardHeader>
               <CardTitle className="text-lg font-semibold">Dados Mensais</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b bg-primary text-primary-foreground">
-                    <th className="text-left p-3 font-medium">Mês/Ano</th>
-                    <th className="text-left p-3 font-medium">Valor</th>
-                    <th className="text-left p-3 font-medium">Evolução sobre o mês anterior</th>
-                    <th className="text-left p-3 font-medium">Evolução sobre o ano anterior</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tableData.map((row, index) => (
-                    <tr key={index} className="border-b hover:bg-muted/50">
-                      <td className="p-3">{row.month}</td>
-                      <td className="p-3">{row.value}</td>
-                      <td className="p-3">{row.evolutionMonth}</td>
-                      <td className="p-3">{row.evolutionYear}</td>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b bg-primary text-primary-foreground">
+                      <th className="text-left p-3 font-medium">Mês/Ano</th>
+                      <th className="text-left p-3 font-medium">Valor</th>
+                      <th className="text-left p-3 font-medium">Evolução mês</th>
+                      <th className="text-left p-3 font-medium">Evolução ano</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                  </thead>
+                  <tbody>
+                    {tableData.map((row, index) => (
+                      <tr key={index} className="border-b hover:bg-muted/50">
+                        <td className="p-3">{row.month}</td>
+                        <td className="p-3">{row.value}</td>
+                        <td className={`p-3 ${row.evolutionMonth.includes('-') ? 'text-red-600' : row.evolutionMonth.includes('+') ? 'text-green-600' : ''}`}>
+                          {row.evolutionMonth}
+                        </td>
+                        <td className="p-3">{row.evolutionYear}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Sales Ranking Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">Ranking de Vendedores</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b bg-primary text-primary-foreground">
+                      <th className="text-left p-3 font-medium">Rank</th>
+                      <th className="text-left p-3 font-medium">Vendedor</th>
+                      <th className="text-left p-3 font-medium">Faturamento</th>
+                      <th className="text-left p-3 font-medium">Qtd</th>
+                      <th className="text-left p-3 font-medium">Ticket médio</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {salesRankingData.map((row, index) => (
+                      <tr key={index} className="border-b hover:bg-muted/50">
+                        <td className="p-3 font-medium">{row.rank}</td>
+                        <td className="p-3">{row.vendedor}</td>
+                        <td className="p-3 font-medium text-green-600">{row.faturamento}</td>
+                        <td className="p-3">{row.qtd}</td>
+                        <td className="p-3">{row.ticketMedio}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
