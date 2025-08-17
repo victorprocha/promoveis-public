@@ -186,67 +186,94 @@ const CriarOrcamento = ({ onNavigate }: CriarOrcamentoProps) => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="ambiente">Ambiente</Label>
-                    <Input
-                      value={customEnvironment}
-                      onChange={(e) => setCustomEnvironment(e.target.value)}
-                      placeholder="Digite o nome do ambiente..."
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <Label>Adicione ambiente/serviço</Label>
-                  <div className="relative">
-                    <Button 
-                      onClick={() => setShowEnvironmentDropdown(!showEnvironmentDropdown)}
-                      className="bg-primary text-primary-foreground hover:bg-primary/90"
-                    >
-                      Adicionar <ChevronDown className="ml-2 h-4 w-4" />
-                    </Button>
+                <div className="space-y-6">
+                  {/* Adicione ambiente/serviço Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-base font-medium">Adicione ambiente/serviço</Label>
+                    </div>
                     
-                    {showEnvironmentDropdown && (
-                      <div className="absolute top-full left-0 mt-2 w-64 bg-background border rounded-lg shadow-lg z-10">
-                        {environments.map((env, index) => (
-                          <button
-                            key={index}
-                            className="w-full text-left px-4 py-2 hover:bg-muted text-sm border-b last:border-b-0"
-                            onClick={() => {
-                              console.log(`Selected: ${env}`);
-                              setShowEnvironmentDropdown(false);
-                            }}
-                          >
-                            {env}
-                          </button>
-                        ))}
+                    <div className="relative">
+                      <Button 
+                        onClick={() => setShowEnvironmentDropdown(!showEnvironmentDropdown)}
+                        className="bg-primary text-primary-foreground hover:bg-primary/90"
+                      >
+                        Adicionar <ChevronDown className="ml-2 h-4 w-4" />
+                      </Button>
+                      
+                      {showEnvironmentDropdown && (
+                        <div className="absolute top-full left-0 mt-2 w-64 bg-background border rounded-lg shadow-lg z-10">
+                          {environments.map((env, index) => (
+                            <button
+                              key={index}
+                              className="w-full text-left px-4 py-2 hover:bg-muted text-sm border-b last:border-b-0"
+                              onClick={() => {
+                                console.log(`Selected: ${env}`);
+                                setShowEnvironmentDropdown(false);
+                              }}
+                            >
+                              {env}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Environment Form */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+                      <div className="lg:col-span-8 space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="ambiente">Ambiente</Label>
+                          <Input
+                            value={customEnvironment}
+                            onChange={(e) => setCustomEnvironment(e.target.value)}
+                            placeholder="Suíte master"
+                            className="w-full"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Descrição do ambiente</Label>
+                          <RichTextEditor
+                            value={environmentDescription}
+                            onChange={setEnvironmentDescription}
+                            placeholder="Digite a descrição do ambiente..."
+                            className="w-full"
+                          />
+                        </div>
                       </div>
-                    )}
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-                  <div className="space-y-2">
-                    <Label>Descrição do Ambiente</Label>
-                    <RichTextEditor
-                      value={environmentDescription}
-                      onChange={setEnvironmentDescription}
-                      placeholder="Digite a descrição do ambiente..."
-                      className="min-h-32"
-                    />
-                  </div>
+                      <div className="lg:col-span-4 space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="quantidade">Quantidade</Label>
+                          <Select>
+                            <SelectTrigger>
+                              <SelectValue placeholder="1" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {[1,2,3,4,5,6,7,8,9,10].map(num => (
+                                <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-                  <div className="space-y-2">
-                    <Label>Considerações finais</Label>
-                    <Textarea 
-                      className="min-h-32 resize-none"
-                      defaultValue="[garantia] de garantia para produtos fornecidos e fabricados pela contratada.
-Toda ferragem usada na fabricação e montagem é de primeira linha.
-Prazo de entrega: [dias_uteis_entrega] dias úteis após assinatura do projeto final.
-Validade do orçamento: 7 dias úteis."
-                    />
+                        <div className="space-y-2">
+                          <Label htmlFor="preco">Preço</Label>
+                          <Input
+                            placeholder="Preço"
+                            className="w-full"
+                          />
+                        </div>
+
+                        <Button 
+                          className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Adicionar
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
