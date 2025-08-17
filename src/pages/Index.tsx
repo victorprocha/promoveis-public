@@ -39,6 +39,7 @@ import NovoPedidoCompra from '@/pages/NovoPedidoCompra';
 import EditarPedido from '@/pages/EditarPedido';
 import PedidoView from '@/pages/PedidoView';
 import Orcamentos from '@/pages/Orcamentos';
+import CriarOrcamento from '@/pages/CriarOrcamento';
 import { Toaster } from '@/components/ui/toaster';
 import { ProjectProvider } from '@/contexts/ProjectContext';
 
@@ -307,8 +308,10 @@ const Index = () => {
       // Comercial
       case 'vendas':
         return <Sales />;
-      case 'orcamentos':
-        return <Orcamentos />;
+        case 'orcamentos':
+          return <Orcamentos />;
+        case 'criar-orcamento':
+          return <CriarOrcamento />;
       case 'clientes':
         return <Clients />;
       case 'especificadores':

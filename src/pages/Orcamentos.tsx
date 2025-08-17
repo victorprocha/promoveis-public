@@ -25,7 +25,7 @@ const Orcamentos = () => {
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold text-foreground">Orçamentos</h1>
           <div className="flex items-center gap-4">
             <select className="px-4 py-2 rounded-lg border bg-background">
@@ -36,6 +36,22 @@ const Orcamentos = () => {
               <option>3 meses</option>
             </select>
           </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-4 mb-8">
+          <button 
+            onClick={() => window.location.href = '/criar-orcamento'}
+            className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
+          >
+            Criar Orçamento
+          </button>
+          <button className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
+            Faturados
+          </button>
+          <button className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium">
+            Perdidos
+          </button>
         </div>
 
         {/* Stats Cards */}
