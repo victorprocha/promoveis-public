@@ -191,6 +191,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
           ]
         },
         {
+          title: 'PEDIDOS DE SAÍDA',
+          items: [
+            { id: 'pedidos-saida', label: 'Pedidos de Saída' }
+          ]
+        },
+        {
           title: 'CADASTROS GERAIS',
           items: [
             { id: 'fornecedores', label: 'Fornecedores' },

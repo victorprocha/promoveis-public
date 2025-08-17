@@ -27,6 +27,8 @@ import MinhaEmpresa from '@/pages/MinhaEmpresa';
 import EmitenteNFe from '@/pages/EmitenteNFe';
 import Usuarios from '@/pages/Usuarios';
 import CadastroUsuario from '@/pages/CadastroUsuario';
+import PedidosSaida from '@/pages/PedidosSaida';
+import NovoPedidoSaida from '@/pages/NovoPedidoSaida';
 import ContratoEditor from '@/pages/ContratoEditor';
 import Estoque from '@/pages/Estoque';
 import CadastroProduto from '@/pages/CadastroProduto';
@@ -59,6 +61,8 @@ const Index = () => {
   const [showEditarPedido, setShowEditarPedido] = useState(false);
   const [showPedidoView, setShowPedidoView] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [showPedidosSaida, setShowPedidosSaida] = useState(false);
+  const [showNovoPedidoSaida, setShowNovoPedidoSaida] = useState(false);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -79,6 +83,8 @@ const Index = () => {
     setShowNovoPedidoCompra(false);
     setShowEditarPedido(false);
     setShowPedidoView(false);
+    setShowPedidosSaida(false);
+    setShowNovoPedidoSaida(false);
     setSelectedProjectId(null);
     setSelectedClientId(null);
     setSelectedContractId(null);
@@ -202,7 +208,19 @@ const Index = () => {
     setSelectedOrderId(null);
   };
 
+  const handleAddPedidoSaida = () => {
+    setShowNovoPedidoSaida(true);
+  };
+
+  const handleBackFromNovoPedidoSaida = () => {
+    setShowNovoPedidoSaida(false);
+  };
+
   const renderModule = () => {
+    if (showNovoPedidoSaida) {
+      return <NovoPedidoSaida onBack={handleBackFromNovoPedidoSaida} />;
+    }
+
     if (showPedidoView) {
       return <PedidoView orderId={selectedOrderId!} />;
     }
@@ -323,6 +341,8 @@ const Index = () => {
           setSelectedOrderId(orderId);
           setShowEditarPedido(true);
         }} />;
+      case 'pedidos-saida':
+        return <PedidosSaida onAddPedidoSaida={handleAddPedidoSaida} />;
       
       // Sistema
       case 'usuarios':
