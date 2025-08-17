@@ -52,9 +52,15 @@ const salesRankingData = [
   { rank: 2, vendedor: 'Richardson', faturamento: 'R$ 15.043,45', qtd: 2, ticketMedio: 'R$ 7.521,73' }
 ];
 
-const Orcamentos = () => {
+interface OrcamentosProps {
+  onNavigate?: (module: string) => void;
+}
+
+const Orcamentos = ({ onNavigate }: OrcamentosProps) => {
   const navigate = (page: string) => {
-    window.dispatchEvent(new CustomEvent('navigate', { detail: page }));
+    if (onNavigate) {
+      onNavigate(page);
+    }
   };
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-6">

@@ -309,7 +309,7 @@ const Index = () => {
       case 'vendas':
         return <Sales />;
         case 'orcamentos':
-          return <Orcamentos />;
+          return <Orcamentos onNavigate={handleModuleChange} />;
         case 'criar-orcamento':
           return <CriarOrcamento />;
       case 'clientes':
