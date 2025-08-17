@@ -21,6 +21,9 @@ const tableData = [
 ];
 
 const Orcamentos = () => {
+  const navigate = (page: string) => {
+    window.dispatchEvent(new CustomEvent('navigate', { detail: page }));
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -41,7 +44,7 @@ const Orcamentos = () => {
         {/* Action Buttons */}
         <div className="flex items-center gap-4 mb-8">
           <button 
-            onClick={() => window.location.href = '/criar-orcamento'}
+            onClick={() => navigate('criar-orcamento')}
             className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
           >
             Criar Orçamento
