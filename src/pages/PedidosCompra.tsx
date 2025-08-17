@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Filter, Eye, Edit, Trash2 } from "lucide-react";
+import { ImportXMLDialog } from "@/components/Dialogs/ImportXMLDialog";
+import { ImportedProductsReview } from "@/pages/ImportedProductsReview";
 import {
   Table,
   TableBody,
@@ -25,6 +27,9 @@ const PedidosCompra: React.FC<PedidosCompraProps> = ({ onAddPedido, onEditPedido
   const [searchTerm, setSearchTerm] = useState('');
   const [pedidos, setPedidos] = useState<PurchaseOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showProductsReview, setShowProductsReview] = useState(false);
+  const [importedProducts, setImportedProducts] = useState<any[]>([]);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -56,6 +61,34 @@ const PedidosCompra: React.FC<PedidosCompraProps> = ({ onAddPedido, onEditPedido
     pedido.supplier.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleImportXML = (products: any[]) => {
+    setImportedProducts(products);
+    setShowProductsReview(true);
+  };
+
+  const handleConfirmProducts = (products: any[]) => {
+    // Aqui você pode processar os produtos confirmados
+    console.log('Produtos confirmados:', products);
+    setShowProductsReview(false);
+    setImportedProducts([]);
+    loadPedidos(); // Recarrega a lista
+  };
+
+  const handleBackFromReview = () => {
+    setShowProductsReview(false);
+    setImportedProducts([]);
+  };
+
+  if (showProductsReview) {
+    return (
+      <ImportedProductsReview
+        products={importedProducts}
+        onBack={handleBackFromReview}
+        onConfirm={handleConfirmProducts}
+      />
+    );
+  }
+
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
@@ -80,7 +113,11 @@ const PedidosCompra: React.FC<PedidosCompraProps> = ({ onAddPedido, onEditPedido
             <Plus className="h-4 w-4 mr-2" />
             Adicionar Pedido
           </Button>
-          <Button variant="outline" className="bg-primary hover:bg-primary/90 text-white border-primary">
+          <Button 
+            variant="outline" 
+            className="bg-primary hover:bg-primary/90 text-white border-primary"
+            onClick={() => setShowImportDialog(true)}
+          >
             Importar XML de Pedido
           </Button>
         </div>
@@ -177,6 +214,12 @@ const PedidosCompra: React.FC<PedidosCompraProps> = ({ onAddPedido, onEditPedido
           </div>
         )}
       </div>
+
+      <ImportXMLDialog
+        open={showImportDialog}
+        onOpenChange={setShowImportDialog}
+        onImport={handleImportXML}
+      />
     </div>
   );
 };
