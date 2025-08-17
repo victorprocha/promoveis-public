@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Check, Edit2, Save, X } from "lucide-react";
+import { usePurchaseOrders } from "@/hooks/usePurchaseOrders";
+import { useNavigate } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -37,7 +40,16 @@ export const ImportedProductsReview: React.FC<ImportedProductsReviewProps> = ({
   const [products, setProducts] = useState<ImportedProduct[]>(initialProducts);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<ImportedProduct>>({});
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { createPurchaseOrder, addPurchaseOrderItem } = usePurchaseOrders();
+  const navigate = useNavigate();
+
+  const unitOptions = [
+    { value: "UN - UNIDADE", label: "UN - Unidade" },
+    { value: "CH - CHAPA", label: "CH - Chapa" },
+    { value: "M - METRO", label: "M - Metro" }
+  ];
 
   const handleEdit = (product: ImportedProduct) => {
     setEditingId(product.id);
@@ -76,7 +88,7 @@ export const ImportedProductsReview: React.FC<ImportedProductsReviewProps> = ({
     }));
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     // Verifica se algum produto está sendo editado
     if (editingId) {
       toast({
@@ -87,7 +99,52 @@ export const ImportedProductsReview: React.FC<ImportedProductsReviewProps> = ({
       return;
     }
 
-    onConfirm(products);
+    setLoading(true);
+    
+    try {
+      // Cria o pedido de compra
+      const orderData = {
+        order_date: new Date().toISOString().split('T')[0],
+        supplier: "Importado via XML",
+        responsible: "Sistema",
+        total_amount: products.reduce((total, product) => total + (product.quantidade * product.preco_unitario), 0),
+        status: "Pendente" as const
+      };
+
+      const purchaseOrder = await createPurchaseOrder(orderData);
+      
+      if (!purchaseOrder) {
+        throw new Error("Erro ao criar pedido de compra");
+      }
+
+      // Adiciona os itens ao pedido
+      for (const product of products) {
+        await addPurchaseOrderItem({
+          purchase_order_id: purchaseOrder.id,
+          product_name: product.descricao,
+          quantity: product.quantidade,
+          unit_price: product.preco_unitario
+        });
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Pedido de compra criado com sucesso!",
+      });
+
+      // Redireciona para a página de detalhes do pedido
+      navigate(`/pedido/${purchaseOrder.id}`);
+      
+    } catch (error) {
+      console.error("Erro ao criar pedido:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao criar pedido de compra. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -111,10 +168,11 @@ export const ImportedProductsReview: React.FC<ImportedProductsReviewProps> = ({
         <div className="flex items-center gap-2">
           <Button 
             onClick={handleConfirm}
+            disabled={loading}
             className="bg-success hover:bg-success/90 text-white"
           >
             <Check className="h-4 w-4 mr-2" />
-            Confirmar
+            {loading ? "Processando..." : "Confirmar"}
           </Button>
           <Button variant="outline">
             Voltar
@@ -174,17 +232,27 @@ export const ImportedProductsReview: React.FC<ImportedProductsReviewProps> = ({
                       product.quantidade
                     )}
                   </TableCell>
-                  <TableCell>
-                    {editingId === product.id ? (
-                      <Input
-                        value={editData.unidade || ''}
-                        onChange={(e) => handleInputChange('unidade', e.target.value)}
-                        className="w-16"
-                      />
-                    ) : (
-                      product.unidade
-                    )}
-                  </TableCell>
+                   <TableCell>
+                     {editingId === product.id ? (
+                       <Select 
+                         value={editData.unidade || product.unidade}
+                         onValueChange={(value) => handleInputChange('unidade', value)}
+                       >
+                         <SelectTrigger className="w-32">
+                           <SelectValue />
+                         </SelectTrigger>
+                         <SelectContent>
+                           {unitOptions.map((option) => (
+                             <SelectItem key={option.value} value={option.value}>
+                               {option.label}
+                             </SelectItem>
+                           ))}
+                         </SelectContent>
+                       </Select>
+                     ) : (
+                       product.unidade
+                     )}
+                   </TableCell>
                   <TableCell>
                     {editingId === product.id ? (
                       <Input
