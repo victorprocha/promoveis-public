@@ -4,10 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Plus, Eye, Edit, Trash2, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, Eye, Edit, Trash2, FileText, Check, ChevronsUpDown } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { usePedidosSaida, PedidoSaida, PedidoSaidaItem } from '@/hooks/usePedidosSaida';
+import { useProducts } from '@/hooks/useProducts';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface EditarPedidoSaidaProps {
   pedidoId: string;
@@ -22,15 +27,19 @@ export default function EditarPedidoSaida({ pedidoId, onBack }: EditarPedidoSaid
     addPedidoItem, 
     updatePedidoItem, 
     deletePedidoItem, 
-    updatePedido 
+    updatePedido,
+    finalizePedido
   } = usePedidosSaida();
+  const { products } = useProducts();
   
   const [pedido, setPedido] = useState<PedidoSaida | null>(null);
   const [items, setItems] = useState<PedidoSaidaItem[]>([]);
-  const [newProductName, setNewProductName] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState('');
+  const [productSearchOpen, setProductSearchOpen] = useState(false);
   const [newQuantity, setNewQuantity] = useState('1');
   const [loading, setLoading] = useState(true);
   const [isAddingItem, setIsAddingItem] = useState(false);
+  const [isFinalizingPedido, setIsFinalizingPedido] = useState(false);
 
   useEffect(() => {
     loadPedidoData();
@@ -57,19 +66,34 @@ export default function EditarPedidoSaida({ pedidoId, onBack }: EditarPedidoSaid
     }
   };
 
+  const availableProducts = products.filter(product => product.estoque > 0);
+
   const handleAddItem = async () => {
-    if (!newProductName.trim() || !pedido) return;
+    if (!selectedProduct || !pedido) return;
+
+    const product = availableProducts.find(p => p.id === selectedProduct);
+    if (!product) return;
+
+    const quantity = parseInt(newQuantity) || 1;
+    if (quantity > product.estoque) {
+      toast({
+        title: "Erro",
+        description: `Quantidade solicitada (${quantity}) é maior que o estoque disponível (${product.estoque})`,
+        variant: "destructive"
+      });
+      return;
+    }
 
     setIsAddingItem(true);
     try {
       const newItem = await addPedidoItem({
         pedido_saida_id: pedido.id,
-        produto_nome: newProductName.trim(),
-        quantidade: parseInt(newQuantity) || 1
+        produto_nome: product.descricao,
+        quantidade: quantity
       });
 
       setItems(prev => [...prev, newItem]);
-      setNewProductName('');
+      setSelectedProduct('');
       setNewQuantity('1');
       
       toast({
@@ -106,15 +130,23 @@ export default function EditarPedidoSaida({ pedidoId, onBack }: EditarPedidoSaid
   };
 
   const handleFinalizarPedido = async () => {
-    if (!pedido) return;
+    if (!pedido || items.length === 0) {
+      toast({
+        title: "Erro",
+        description: "Adicione pelo menos um produto antes de finalizar o pedido",
+        variant: "destructive"
+      });
+      return;
+    }
 
+    setIsFinalizingPedido(true);
     try {
-      await updatePedido(pedido.id, { status: 'Finalizado' });
+      await finalizePedido(pedido.id, items);
       setPedido(prev => prev ? { ...prev, status: 'Finalizado' } : null);
       
       toast({
         title: "Sucesso",
-        description: "Pedido finalizado com sucesso",
+        description: "Pedido finalizado com sucesso e estoque atualizado",
       });
     } catch (error) {
       toast({
@@ -122,6 +154,8 @@ export default function EditarPedidoSaida({ pedidoId, onBack }: EditarPedidoSaid
         description: "Erro ao finalizar pedido",
         variant: "destructive"
       });
+    } finally {
+      setIsFinalizingPedido(false);
     }
   };
 
@@ -217,13 +251,36 @@ export default function EditarPedidoSaida({ pedidoId, onBack }: EditarPedidoSaid
 
               {/* Action Buttons */}
               <div className="flex justify-start gap-3">
-                <Button 
-                  onClick={handleFinalizarPedido}
-                  disabled={pedido.status === 'Finalizado'}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  Finalizar Pedido
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      disabled={pedido.status === 'Finalizado' || items.length === 0}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      Finalizar Pedido
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Finalizar Pedido de Saída Almoxarifado</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Deseja Realmente Finalizar este Pedido de Saída?
+                        <br />
+                        Após finalizar você não poderá mais adicionar produtos neste pedido!
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={handleFinalizarPedido}
+                        disabled={isFinalizingPedido}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        {isFinalizingPedido ? 'Finalizando...' : 'Finalizar'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
                 <Button variant="outline" className="bg-blue-600 hover:bg-blue-700 text-white">
                   <Edit className="h-4 w-4 mr-2" />
                   Alterar
@@ -241,30 +298,71 @@ export default function EditarPedidoSaida({ pedidoId, onBack }: EditarPedidoSaid
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Produto</label>
-                    <Input
-                      placeholder="Digite o nome do produto"
-                      value={newProductName}
-                      onChange={(e) => setNewProductName(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          handleAddItem();
-                        }
-                      }}
-                    />
+                    <label className="text-sm font-medium">Produto (apenas com estoque)</label>
+                    <Popover open={productSearchOpen} onOpenChange={setProductSearchOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={productSearchOpen}
+                          className="w-full justify-between"
+                          disabled={pedido.status === 'Finalizado'}
+                        >
+                          {selectedProduct
+                            ? availableProducts.find(product => product.id === selectedProduct)?.descricao
+                            : "Selecione um produto..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandInput placeholder="Buscar produto..." />
+                          <CommandList>
+                            <CommandEmpty>Nenhum produto encontrado.</CommandEmpty>
+                            <CommandGroup>
+                              {availableProducts.map((product) => (
+                                <CommandItem
+                                  key={product.id}
+                                  value={product.descricao}
+                                  onSelect={() => {
+                                    setSelectedProduct(product.id);
+                                    setProductSearchOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      selectedProduct === product.id ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {product.descricao} (Estoque: {product.estoque})
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Quantidade</label>
                     <Input
                       type="number"
                       min="1"
+                      max={selectedProduct ? availableProducts.find(p => p.id === selectedProduct)?.estoque : undefined}
                       value={newQuantity}
                       onChange={(e) => setNewQuantity(e.target.value)}
+                      disabled={pedido.status === 'Finalizado'}
                     />
+                    {selectedProduct && (
+                      <p className="text-xs text-muted-foreground">
+                        Estoque disponível: {availableProducts.find(p => p.id === selectedProduct)?.estoque}
+                      </p>
+                    )}
                   </div>
                   <Button 
                     onClick={handleAddItem}
-                    disabled={!newProductName.trim() || isAddingItem}
+                    disabled={!selectedProduct || isAddingItem || pedido.status === 'Finalizado'}
                     className="bg-green-600 hover:bg-green-700 text-white"
                   >
                     <Plus className="h-4 w-4 mr-2" />
@@ -293,7 +391,8 @@ export default function EditarPedidoSaida({ pedidoId, onBack }: EditarPedidoSaid
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleDeleteItem(item.id)}
-                                className="text-red-600 hover:text-red-700"
+                                disabled={pedido.status === 'Finalizado'}
+                                className="text-red-600 hover:text-red-700 disabled:opacity-50"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>

@@ -172,6 +172,45 @@ export const usePedidosSaida = () => {
     if (error) throw error;
   };
 
+  const finalizePedido = async (pedidoId: string, items: PedidoSaidaItem[]) => {
+    if (!user) throw new Error('Usuário não autenticado');
+
+    // First, update the pedido status
+    const { error: pedidoError } = await supabase
+      .from('pedidos_saida')
+      .update({ status: 'Finalizado' })
+      .eq('id', pedidoId)
+      .eq('user_id', user.id);
+
+    if (pedidoError) throw pedidoError;
+
+    // Then update the stock for each item
+    for (const item of items) {
+      // Get the product by name to find its ID and current stock
+      const { data: products, error: productSearchError } = await supabase
+        .from('products')
+        .select('id, estoque')
+        .eq('descricao', item.produto_nome)
+        .eq('user_id', user.id);
+
+      if (productSearchError) throw productSearchError;
+      
+      if (products && products.length > 0) {
+        const product = products[0];
+        const newStock = product.estoque - item.quantidade;
+
+        // Update the product stock
+        const { error: stockUpdateError } = await supabase
+          .from('products')
+          .update({ estoque: Math.max(0, newStock) })
+          .eq('id', product.id)
+          .eq('user_id', user.id);
+
+        if (stockUpdateError) throw stockUpdateError;
+      }
+    }
+  };
+
   useEffect(() => {
     fetchPedidos();
   }, [user]);
@@ -188,6 +227,7 @@ export const usePedidosSaida = () => {
     fetchPedidoItems,
     addPedidoItem,
     updatePedidoItem,
-    deletePedidoItem
+    deletePedidoItem,
+    finalizePedido
   };
 };
