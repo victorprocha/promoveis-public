@@ -75,7 +75,6 @@ const CriarOrcamento = ({ onNavigate }: CriarOrcamentoProps) => {
 
     if (budget) {
       setCurrentBudget(budget);
-      toast.success('Orçamento criado com sucesso');
       return budget;
     }
     return null;

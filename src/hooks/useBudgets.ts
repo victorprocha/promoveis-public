@@ -141,7 +141,10 @@ export const useBudgetEnvironments = (budgetId?: string) => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchEnvironments = async () => {
-    if (!user || !budgetId) return;
+    if (!user || !budgetId) {
+      setEnvironments([]);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -241,9 +244,7 @@ export const useBudgetEnvironments = (budgetId?: string) => {
   };
 
   useEffect(() => {
-    if (budgetId) {
-      fetchEnvironments();
-    }
+    fetchEnvironments();
   }, [budgetId, user]);
 
   return {
