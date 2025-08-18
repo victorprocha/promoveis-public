@@ -471,6 +471,112 @@ export type Database = {
           },
         ]
       }
+      payment_installments: {
+        Row: {
+          amount: number
+          created_at: string
+          due_date: string
+          id: string
+          installment_number: number
+          notes: string | null
+          payment_method: string
+          payment_proposal_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          due_date: string
+          id?: string
+          installment_number: number
+          notes?: string | null
+          payment_method?: string
+          payment_proposal_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          due_date?: string
+          id?: string
+          installment_number?: number
+          notes?: string | null
+          payment_method?: string
+          payment_proposal_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_installments_payment_proposal_id_fkey"
+            columns: ["payment_proposal_id"]
+            isOneToOne: false
+            referencedRelation: "payment_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_proposals: {
+        Row: {
+          budget_id: string
+          created_at: string
+          discount_type: string | null
+          discount_value: number | null
+          down_payment_type: string | null
+          down_payment_value: number | null
+          id: string
+          installments_count: number
+          interest_rate: number | null
+          is_selected: boolean | null
+          name: string
+          remaining_amount: number
+          total_amount: number
+          total_with_discount: number
+          updated_at: string
+        }
+        Insert: {
+          budget_id: string
+          created_at?: string
+          discount_type?: string | null
+          discount_value?: number | null
+          down_payment_type?: string | null
+          down_payment_value?: number | null
+          id?: string
+          installments_count?: number
+          interest_rate?: number | null
+          is_selected?: boolean | null
+          name?: string
+          remaining_amount?: number
+          total_amount?: number
+          total_with_discount?: number
+          updated_at?: string
+        }
+        Update: {
+          budget_id?: string
+          created_at?: string
+          discount_type?: string | null
+          discount_value?: number | null
+          down_payment_type?: string | null
+          down_payment_value?: number | null
+          id?: string
+          installments_count?: number
+          interest_rate?: number | null
+          is_selected?: boolean | null
+          name?: string
+          remaining_amount?: number
+          total_amount?: number
+          total_with_discount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_proposals_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pedidos_saida: {
         Row: {
           cliente_id: string

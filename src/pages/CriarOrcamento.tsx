@@ -10,6 +10,9 @@ import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { ChevronDown, Plus, ArrowLeft, Pencil, Trash2 } from 'lucide-react';
 import { useClients } from '@/hooks/useClients';
 import { useBudgets, useBudgetEnvironments } from '@/hooks/useBudgets';
+import { usePaymentProposals } from '@/hooks/usePaymentProposals';
+import { PaymentProposalDialog } from '@/components/Dialogs/PaymentProposalDialog';
+import { PaymentProposalsList } from '@/components/PaymentProposals/PaymentProposalsList';
 import { toast } from 'sonner';
 
 interface CriarOrcamentoProps {
@@ -18,6 +21,7 @@ interface CriarOrcamentoProps {
 
 const CriarOrcamento = ({ onNavigate }: CriarOrcamentoProps) => {
   const [activeTab, setActiveTab] = useState('dados');
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [showEnvironmentDropdown, setShowEnvironmentDropdown] = useState(false);
   const [clientSearch, setClientSearch] = useState('');
   const [showClientDropdown, setShowClientDropdown] = useState(false);
@@ -34,11 +38,31 @@ const CriarOrcamento = ({ onNavigate }: CriarOrcamentoProps) => {
   const { createBudget } = useBudgets();
   const { environments, addEnvironment, updateEnvironment, removeEnvironment } = useBudgetEnvironments(currentBudget?.id);
   
-  // Filter clients based on search
+  // Payment proposals hook
+  const {
+    proposals,
+    loading: proposalsLoading,
+    createProposal,
+    selectProposal,
+    deleteProposal,
+  } = usePaymentProposals(currentBudget?.id);
+  
+  // Calculate total budget amount
+  const totalBudgetAmount = environments.reduce((sum, env) => sum + env.subtotal, 0);
+
   const filteredClients = clientsData?.data?.filter(client => 
     client.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
     client.email?.toLowerCase().includes(clientSearch.toLowerCase())
   ) || [];
+
+  const handleCreateProposal = async (proposalData: any) => {
+    if (totalBudgetAmount <= 0) {
+      toast.error('Adicione pelo menos um ambiente para criar uma proposta de pagamento');
+      return;
+    }
+    
+    await createProposal(totalBudgetAmount, proposalData);
+  };
 
   const environmentOptions = [
     'Ambiente manual',
@@ -529,7 +553,13 @@ const CriarOrcamento = ({ onNavigate }: CriarOrcamentoProps) => {
           <TabsContent value="precificacao">
             <Card>
               <CardContent className="p-6">
-                <p className="text-muted-foreground">Conteúdo da aba Precificação</p>
+                <PaymentProposalsList
+                  proposals={proposals}
+                  onAddProposal={() => setDialogOpen(true)}
+                  onSelectProposal={selectProposal}
+                  onDeleteProposal={deleteProposal}
+                  loading={proposalsLoading}
+                />
               </CardContent>
             </Card>
           </TabsContent>
@@ -558,6 +588,14 @@ const CriarOrcamento = ({ onNavigate }: CriarOrcamentoProps) => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <PaymentProposalDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          onSave={handleCreateProposal}
+          totalAmount={totalBudgetAmount}
+          proposalCount={proposals.length}
+        />
       </div>
     </div>
   );
