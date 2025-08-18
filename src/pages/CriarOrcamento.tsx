@@ -63,7 +63,7 @@ const CriarOrcamento = ({ onNavigate }: CriarOrcamentoProps) => {
   const handleCreateBudget = async () => {
     if (!clientSearch.trim()) {
       toast.error('Selecione um cliente');
-      return;
+      return null;
     }
 
     const budget = await createBudget({
@@ -76,7 +76,9 @@ const CriarOrcamento = ({ onNavigate }: CriarOrcamentoProps) => {
     if (budget) {
       setCurrentBudget(budget);
       toast.success('Orçamento criado com sucesso');
+      return budget;
     }
+    return null;
   };
 
   const handleAddEnvironment = async () => {
@@ -85,9 +87,10 @@ const CriarOrcamento = ({ onNavigate }: CriarOrcamentoProps) => {
       return;
     }
     
-    if (!currentBudget) {
-      await handleCreateBudget();
-      return;
+    let budgetToUse = currentBudget;
+    if (!budgetToUse) {
+      budgetToUse = await handleCreateBudget();
+      if (!budgetToUse) return;
     }
     
     const result = await addEnvironment({
