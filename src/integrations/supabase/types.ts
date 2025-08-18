@@ -67,6 +67,78 @@ export type Database = {
           },
         ]
       }
+      budget_environments: {
+        Row: {
+          budget_id: string
+          created_at: string
+          environment_description: string | null
+          environment_name: string
+          id: string
+          price: number
+          quantity: number
+          subtotal: number
+          updated_at: string
+        }
+        Insert: {
+          budget_id: string
+          created_at?: string
+          environment_description?: string | null
+          environment_name: string
+          id?: string
+          price?: number
+          quantity?: number
+          subtotal?: number
+          updated_at?: string
+        }
+        Update: {
+          budget_id?: string
+          created_at?: string
+          environment_description?: string | null
+          environment_name?: string
+          id?: string
+          price?: number
+          quantity?: number
+          subtotal?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      budgets: {
+        Row: {
+          budget_observations: string | null
+          client_id: string | null
+          client_name: string
+          created_at: string
+          final_considerations: string | null
+          id: string
+          initial_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          budget_observations?: string | null
+          client_id?: string | null
+          client_name: string
+          created_at?: string
+          final_considerations?: string | null
+          id?: string
+          initial_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          budget_observations?: string | null
+          client_id?: string | null
+          client_name?: string
+          created_at?: string
+          final_considerations?: string | null
+          id?: string
+          initial_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           address: string | null
