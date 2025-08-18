@@ -363,6 +363,7 @@ const CriarOrcamento = ({ onNavigate }: CriarOrcamentoProps) => {
                           <table className="w-full">
                             <thead className="bg-muted/30">
                               <tr>
+                                <th className="text-left p-4 border-r">Nome do ambiente</th>
                                 <th className="text-left p-4 border-r">Descrição do ambiente</th>
                                 <th className="text-center p-4 border-r w-24">Quantidade</th>
                                 <th className="text-center p-4 border-r w-32">Preço</th>
@@ -373,17 +374,15 @@ const CriarOrcamento = ({ onNavigate }: CriarOrcamentoProps) => {
                             <tbody>
                               {environments.map((env) => (
                                 <tr key={env.id} className="border-b">
-                                  <td className="p-4 border-r">
-                                    <div>
-                                      <div className="font-bold text-lg mb-2">{env.environment_name}</div>
-                                      <div className="text-sm space-y-1">
-                                        {env.environment_description ? (
-                                          <div dangerouslySetInnerHTML={{ __html: env.environment_description }} />
-                                        ) : (
-                                          <span className="text-muted-foreground">Nenhuma descrição</span>
-                                        )}
-                                      </div>
-                                    </div>
+                                  <td className="p-4 border-r font-bold text-lg">
+                                    {env.environment_name}
+                                  </td>
+                                  <td className="p-4 border-r text-sm">
+                                    {env.environment_description ? (
+                                      <div dangerouslySetInnerHTML={{ __html: env.environment_description }} />
+                                    ) : (
+                                      <span className="text-muted-foreground">Nenhuma descrição</span>
+                                    )}
                                   </td>
                                   <td className="text-center p-4 border-r font-medium">{env.quantity}</td>
                                   <td className="text-center p-4 border-r font-medium">R$ {env.price.toFixed(2)}</td>
