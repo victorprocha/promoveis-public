@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, Clock, Target, DollarSign, BarChart3 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
@@ -52,15 +53,13 @@ const salesRankingData = [
   { rank: 2, vendedor: 'Richardson', faturamento: 'R$ 15.043,45', qtd: 2, ticketMedio: 'R$ 7.521,73' }
 ];
 
-interface OrcamentosProps {
-  onNavigate?: (module: string) => void;
-}
+interface OrcamentosProps {}
 
-const Orcamentos = ({ onNavigate }: OrcamentosProps) => {
-  const navigate = (page: string) => {
-    if (onNavigate) {
-      onNavigate(page);
-    }
+const Orcamentos = ({}: OrcamentosProps) => {
+  const navigate = useNavigate();
+  
+  const handleNavigateToCreate = () => {
+    navigate('/orcamentos/criar');
   };
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-6">
@@ -82,7 +81,7 @@ const Orcamentos = ({ onNavigate }: OrcamentosProps) => {
         {/* Action Buttons */}
         <div className="flex items-center gap-4 mb-8">
           <button 
-            onClick={() => navigate('criar-orcamento')}
+            onClick={handleNavigateToCreate}
             className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
           >
             Criar Orçamento
