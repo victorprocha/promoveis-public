@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   FolderOpen, 
   BarChart3, 
@@ -27,13 +28,13 @@ import { useAuth } from '@/hooks/useAuth';
 
 interface SidebarProps {
   isOpen: boolean;
-  activeModule: string;
-  onModuleChange: (module: string) => void;
+  onToggleSidebar: () => void;
 }
 
 interface SubmenuItem {
   id: string;
   label: string;
+  route?: string;
 }
 
 interface SubmenuCategory {
@@ -54,18 +55,20 @@ interface FlyoutPosition {
   left: number;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggleSidebar }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [activeFlyout, setActiveFlyout] = useState<string | null>(null);
   const [flyoutPosition, setFlyoutPosition] = useState<FlyoutPosition>({ top: 0, left: 0 });
   const sidebarRef = useRef<HTMLDivElement>(null);
   const flyoutRef = useRef<HTMLDivElement>(null);
 
   const quickAccessItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'projetos', label: 'Projetos', icon: FolderOpen },
-    { id: 'carteira', label: 'Acompanhamento de Carteira', icon: BarChart3 },
-    { id: 'painel-projetos', label: 'Painel de Projetos', icon: Kanban },
+    { id: 'dashboard', label: 'Dashboard', icon: Home, route: '/' },
+    { id: 'projetos', label: 'Projetos', icon: FolderOpen, route: '/projetos' },
+    { id: 'carteira', label: 'Acompanhamento de Carteira', icon: BarChart3, route: '/carteira' },
+    { id: 'painel-projetos', label: 'Painel de Projetos', icon: Kanban, route: '/painel-projetos' },
   ];
 
   const navigationItems: MenuItem[] = [
@@ -78,11 +81,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
         {
           title: 'VENDAS',
           items: [
-            { id: 'clientes', label: 'Clientes' },
-            { id: 'especificadores', label: 'Especificadores' },
-            { id: 'vendas', label: 'Vendas' },
-            { id: 'orcamentos', label: 'Orçamentos' },
-            { id: 'pedidos-vendas', label: 'Pedidos de Vendas' },
+            { id: 'clientes', label: 'Clientes', route: '/clientes' },
+            { id: 'especificadores', label: 'Especificadores', route: '/especificadores' },
+            { id: 'vendas', label: 'Vendas', route: '/vendas' },
+            { id: 'orcamentos', label: 'Orçamentos', route: '/orcamentos' },
+            { id: 'contratos', label: 'Contratos', route: '/contratos' },
             { id: 'demonstracao', label: 'Demonstração' },
             { id: 'devolucoes', label: 'Devoluções' }
           ]
@@ -180,23 +183,23 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
             { id: 'comparativo', label: 'Comparativo' }
           ]
         },
-        {
-          title: 'ESTOQUE',
-          items: [
-            { id: 'estoque', label: 'Estoque e Geração de Inventário' },
-            { id: 'movimentacao', label: 'Movimentação' },
-            { id: 'armazenados', label: 'Armazenados' },
-            { id: 'importacao-estoque', label: 'Importação de Estoque' },
-            { id: 'reserva-estoque', label: 'Reserva de Estoque' },
-            { id: 'analise-estoque', label: 'Análise de Estoque' }
-          ]
-        },
-        {
-          title: 'PEDIDOS DE SAÍDA',
-          items: [
-            { id: 'pedidos-saida', label: 'Pedidos de Saída' }
-          ]
-        },
+          {
+            title: 'ESTOQUE',
+            items: [
+              { id: 'estoque', label: 'Estoque e Geração de Inventário', route: '/estoque' },
+              { id: 'movimentacao', label: 'Movimentação' },
+              { id: 'armazenados', label: 'Armazenados' },
+              { id: 'importacao-estoque', label: 'Importação de Estoque' },
+              { id: 'reserva-estoque', label: 'Reserva de Estoque' },
+              { id: 'analise-estoque', label: 'Análise de Estoque' }
+            ]
+          },
+          {
+            title: 'PEDIDOS DE SAÍDA',
+            items: [
+              { id: 'pedidos-saida', label: 'Pedidos de Saída', route: '/pedidos-saida' }
+            ]
+          },
         {
           title: 'CADASTROS GERAIS',
           items: [
@@ -309,13 +312,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
       icon: Calendar,
       hasSubmenu: true,
       submenuCategories: [
-        {
-          title: 'AGENDAMENTOS',
-          items: [
-            { id: 'compromissos', label: 'Compromissos' },
-            { id: 'historicos', label: 'Históricos' }
-          ]
-        },
+            {
+              title: 'AGENDAMENTOS',
+              items: [
+                { id: 'compromissos', label: 'Compromissos', route: '/compromissos' },
+                { id: 'historicos', label: 'Históricos' }
+              ]
+            },
         {
           title: 'CONFIGURAÇÕES',
           items: [
@@ -422,27 +425,27 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
       icon: Settings,
       hasSubmenu: true,
       submenuCategories: [
-        {
-          title: 'USUÁRIOS',
-          items: [
-            { id: 'usuario', label: 'Usuário' },
-            { id: 'cargo', label: 'Cargo' },
-            { id: 'colaborador', label: 'Colaborador' },
-            { id: 'importacao-geral', label: 'Importação Geral' },
-            { id: 'troca-vinculo', label: 'Troca de Vínculo' }
-          ]
-        },
-        {
-          title: 'CONFIGURAÇÕES',
-          items: [
-            { id: 'emitente-nfe', label: 'Emitente NF-e' },
-            { id: 'faturamento-config', label: 'Faturamento' },
-            { id: 'financeiro-config', label: 'Financeiro' },
-            { id: 'comercial-config', label: 'Comercial' },
-            { id: 'contrato', label: 'Contrato' },
-            { id: 'minha-empresa', label: 'Minha Empresa' }
-          ]
-        }
+          {
+            title: 'USUÁRIOS',
+            items: [
+              { id: 'usuario', label: 'Usuário', route: '/usuarios' },
+              { id: 'cargo', label: 'Cargo' },
+              { id: 'colaborador', label: 'Colaborador', route: '/colaboradores' },
+              { id: 'importacao-geral', label: 'Importação Geral' },
+              { id: 'troca-vinculo', label: 'Troca de Vínculo' }
+            ]
+          },
+          {
+            title: 'CONFIGURAÇÕES',
+            items: [
+              { id: 'emitente-nfe', label: 'Emitente NF-e', route: '/emitente-nfe' },
+              { id: 'faturamento-config', label: 'Faturamento' },
+              { id: 'financeiro-config', label: 'Financeiro' },
+              { id: 'comercial-config', label: 'Comercial' },
+              { id: 'contrato', label: 'Contrato', route: '/contrato-editor' },
+              { id: 'minha-empresa', label: 'Minha Empresa', route: '/minha-empresa' }
+            ]
+          }
       ]
     },
     {
@@ -462,13 +465,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
     }
   ];
 
-  // Check if current module belongs to a main navigation item
+  // Check if current path belongs to a main navigation item
   const getActiveMainItem = () => {
+    const pathname = location.pathname;
     for (const item of navigationItems) {
       if (item.submenuCategories) {
         for (const category of item.submenuCategories) {
           for (const subItem of category.items) {
-            if (subItem.id === activeModule) {
+            if (subItem.route && pathname === subItem.route) {
               return item.id;
             }
           }
@@ -498,14 +502,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
         setActiveFlyout(item.id);
       }
     } else {
-      onModuleChange(item.id);
+      // For items without submenu, navigate directly if they have a route
+      if (item.id === 'dashboard') navigate('/');
       setActiveFlyout(null);
     }
   };
 
-  const handleSubmenuItemClick = (itemId: string) => {
-    onModuleChange(itemId);
+  const handleSubmenuItemClick = (item: SubmenuItem) => {
+    if (item.route) {
+      navigate(item.route);
+    }
     setActiveFlyout(null);
+    
+    // Close sidebar on mobile
+    if (window.innerWidth < 1024) {
+      onToggleSidebar();
+    }
   };
 
   const closeFlyouts = () => {
@@ -581,7 +593,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
                     {category.items.map((item) => (
                       <button
                         key={item.id}
-                        onClick={() => handleSubmenuItemClick(item.id)}
+                        onClick={() => handleSubmenuItemClick(item)}
                         className="block w-full text-left text-sm text-gray-200 hover:text-white 
                                  hover:bg-[#2A3F54] rounded-lg px-4 py-3 transition-all duration-200
                                  border border-transparent hover:border-[#007BFF]/30
@@ -604,10 +616,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
     <>
       {/* Mobile backdrop */}
       {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
-          onClick={() => onModuleChange(activeModule)}
-        />
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+            onClick={onToggleSidebar}
+          />
       )}
       
       {/* Sidebar */}
@@ -645,13 +657,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModuleChange 
           <nav className="space-y-1">
             {quickAccessItems.map((item) => {
               const Icon = item.icon;
+              const isActive = location.pathname === item.route;
               return (
                 <button
                   key={item.id}
-                  onClick={() => onModuleChange(item.id)}
+                  onClick={() => navigate(item.route)}
                   className={`
                     w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors
-                    ${activeModule === item.id 
+                    ${isActive 
                       ? 'bg-[#007BFF] text-white' 
                       : 'text-gray-300 hover:bg-[#3A4F64] hover:text-white'
                     }
