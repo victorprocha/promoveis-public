@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, MoreVertical, Edit, Eye, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Filter, MoreVertical, Edit, Eye, Trash2, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import FilterDialog from '@/components/Dialogs/FilterDialog';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useNavigate } from 'react-router-dom';
 
 interface ProjectRegistrationProps {
   onNewProject?: () => void;
@@ -17,6 +18,7 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({
   onViewProject, 
   refreshTrigger 
 }) => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const projectsPerPage = 5;
@@ -48,7 +50,13 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({
   const handleProjectClick = (projectId: string) => {
     if (onViewProject) {
       onViewProject(projectId);
+    } else {
+      navigate(`/projetos/${projectId}`);
     }
+  };
+
+  const handleNewProject = () => {
+    navigate('/projetos/novo');
   };
 
   const handleClearFilters = () => {
@@ -130,8 +138,14 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({
         </div>
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900">Projetos</h1>
-          <div className="text-sm text-gray-500">
-            Total de {filteredProjects.length} projetos
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-gray-500">
+              Total de {filteredProjects.length} projetos
+            </div>
+            <Button onClick={handleNewProject} className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Projeto
+            </Button>
           </div>
         </div>
       </div>
