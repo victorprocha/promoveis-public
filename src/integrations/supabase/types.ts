@@ -735,6 +735,48 @@ export type Database = {
         }
         Relationships: []
       }
+      project_xml_data: {
+        Row: {
+          ambiente_data: Json | null
+          caracteristicas_data: Json | null
+          created_at: string
+          file_name: string
+          file_url: string
+          fornecedores_data: Json | null
+          id: string
+          itens_data: Json | null
+          observacoes_data: Json | null
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          ambiente_data?: Json | null
+          caracteristicas_data?: Json | null
+          created_at?: string
+          file_name: string
+          file_url: string
+          fornecedores_data?: Json | null
+          id?: string
+          itens_data?: Json | null
+          observacoes_data?: Json | null
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          ambiente_data?: Json | null
+          caracteristicas_data?: Json | null
+          created_at?: string
+          file_name?: string
+          file_url?: string
+          fornecedores_data?: Json | null
+          id?: string
+          itens_data?: Json | null
+          observacoes_data?: Json | null
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       projects: {
         Row: {
           budget: number | null

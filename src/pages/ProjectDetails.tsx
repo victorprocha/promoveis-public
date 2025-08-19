@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Edit, Upload, Plus, Receipt, Calendar, Users, Paperclip, TrendingUp, Save, X, CalendarIcon } from 'lucide-react';
+import { ArrowLeft, User, Edit, Upload, Plus, Receipt, Calendar, Users, Paperclip, TrendingUp, Save, X, CalendarIcon, FileText, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -43,6 +43,9 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
   const [specifiers, setSpecifiers] = useState<any[]>([]);
   const [collaborators, setCollaborators] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
+  const [xmlData, setXmlData] = useState<any>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const id = projectId || params.id;
 
@@ -126,6 +129,19 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
           console.error('Erro ao buscar clientes:', clientsError);
         } else {
           setClients(clientsData || []);
+        }
+
+        // Buscar dados XML do projeto se existir
+        const { data: xmlDataResult, error: xmlError } = await supabase
+          .from('project_xml_data')
+          .select('*')
+          .eq('project_id', id)
+          .maybeSingle();
+
+        if (xmlError && xmlError.code !== 'PGRST116') {
+          console.error('Erro ao buscar dados XML:', xmlError);
+        } else if (xmlDataResult) {
+          setXmlData(xmlDataResult);
         }
 
       } catch (error) {
@@ -288,6 +304,145 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
       ...prev,
       [field]: value
     }));
+  };
+
+  const parseXMLContent = (xmlContent: string) => {
+    try {
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
+      
+      // Verificar se houve erro no parsing
+      if (xmlDoc.documentElement.nodeName === 'parsererror') {
+        throw new Error('Erro ao fazer parse do XML');
+      }
+
+      // Extrair dados do ambiente
+      const ambienteData = {
+        tipo: xmlDoc.querySelector('tipo')?.textContent || '',
+        nome: xmlDoc.querySelector('nome')?.textContent || '',
+        valor: xmlDoc.querySelector('valor')?.textContent || 'R$ 0,00',
+        data_importacao: new Date().toLocaleString('pt-BR')
+      };
+
+      // Extrair fornecedores
+      const fornecedoresElements = xmlDoc.querySelectorAll('fornecedor');
+      const fornecedoresData = Array.from(fornecedoresElements).map(f => ({
+        nome: f.querySelector('nome')?.textContent || '',
+        servico: f.querySelector('servico')?.textContent || ''
+      }));
+
+      // Extrair características
+      const caracteristicasElements = xmlDoc.querySelectorAll('caracteristica');
+      const caracteristicasData = Array.from(caracteristicasElements).map(c => ({
+        nome: c.querySelector('nome')?.textContent || '',
+        valor: c.querySelector('valor')?.textContent || ''
+      }));
+
+      // Extrair observações
+      const observacoesData = {
+        descricao: xmlDoc.querySelector('observacoes')?.textContent || xmlDoc.querySelector('observacao')?.textContent || ''
+      };
+
+      // Extrair itens
+      const itensElements = xmlDoc.querySelectorAll('item');
+      const itensData = Array.from(itensElements).map(i => ({
+        codigo: i.querySelector('codigo')?.textContent || '',
+        descricao: i.querySelector('descricao')?.textContent || '',
+        quantidade: i.querySelector('quantidade')?.textContent || '0',
+        valor: i.querySelector('valor')?.textContent || 'R$ 0,00'
+      }));
+
+      return {
+        ambiente_data: ambienteData,
+        fornecedores_data: fornecedoresData,
+        caracteristicas_data: caracteristicasData,
+        observacoes_data: observacoesData,
+        itens_data: itensData
+      };
+    } catch (error) {
+      console.error('Erro ao fazer parse do XML:', error);
+      throw new Error('Arquivo XML inválido ou corrompido');
+    }
+  };
+
+  const handleFileUpload = async (file: File) => {
+    if (!file.name.toLowerCase().endsWith('.xml')) {
+      toast({
+        title: "Erro",
+        description: "Por favor, selecione um arquivo XML válido.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setUploading(true);
+    
+    try {
+      // Ler conteúdo do arquivo
+      const fileContent = await file.text();
+      
+      // Fazer parse do XML
+      const parsedData = parseXMLContent(fileContent);
+      
+      // Upload do arquivo para o storage
+      const fileName = `${user?.id}/${Date.now()}_${file.name}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('project-files')
+        .upload(fileName, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Obter URL pública do arquivo
+      const { data: { publicUrl } } = supabase.storage
+        .from('project-files')
+        .getPublicUrl(fileName);
+
+      // Salvar dados parseados no banco
+      const xmlRecord = {
+        project_id: project.id,
+        file_name: file.name,
+        file_url: publicUrl,
+        ...parsedData
+      };
+
+      const { data, error } = await supabase
+        .from('project_xml_data')
+        .upsert(xmlRecord, { onConflict: 'project_id' });
+
+      if (error) {
+        throw error;
+      }
+
+      setXmlData(xmlRecord);
+      
+      toast({
+        title: "Sucesso",
+        description: "Arquivo XML importado e processado com sucesso!",
+      });
+
+    } catch (error) {
+      console.error('Erro ao processar arquivo:', error);
+      toast({
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Erro ao processar arquivo XML.",
+        variant: "destructive"
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleFileUpload(file);
+    }
+  };
+
+  const handleDropZoneClick = () => {
+    fileInputRef.current?.click();
   };
 
   if (loading) {
@@ -549,10 +704,63 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                   </div>
                   
                   {/* File Upload Area */}
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer">
-                    <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">Importar Arquivo do Projeto</p>
-                    <p className="text-sm text-gray-500">Arraste o arquivo ou clique para selecionar</p>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Importar Arquivo do Projeto
+                    </label>
+                    
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".xml"
+                      onChange={handleFileInputChange}
+                      className="hidden"
+                    />
+                    
+                    {!xmlData ? (
+                      <div 
+                        onClick={handleDropZoneClick}
+                        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
+                          uploading 
+                            ? 'border-blue-400 bg-blue-50' 
+                            : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                        }`}
+                      >
+                        {uploading ? (
+                          <div className="flex flex-col items-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+                            <p className="text-blue-600 font-medium">Processando arquivo XML...</p>
+                          </div>
+                        ) : (
+                          <>
+                            <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                            <p className="text-gray-600 font-medium">Importar Arquivo do Projeto</p>
+                            <p className="text-sm text-gray-500 mt-1">Arraste o arquivo XML ou clique para selecionar</p>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div className="flex items-center gap-3">
+                          <CheckCircle2 className="h-8 w-8 text-green-600" />
+                          <div>
+                            <p className="font-medium text-green-800">Arquivo XML importado com sucesso!</p>
+                            <p className="text-sm text-green-600">{xmlData.file_name}</p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Importado em {xmlData.ambiente_data?.data_importacao}
+                            </p>
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={handleDropZoneClick}
+                            className="ml-auto"
+                          >
+                            Substituir
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -573,30 +781,127 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                   </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>#</TableHead>
-                        <TableHead>Ambiente</TableHead>
-                        <TableHead>Nome</TableHead>
-                        <TableHead>Situação</TableHead>
-                        <TableHead>Data de Criação</TableHead>
-                        <TableHead>Última alteração em</TableHead>
-                        <TableHead>Valor Bruto</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                          Nenhum registro encontrado
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
+                  {xmlData && xmlData.ambiente_data ? (
+                    <div className="p-6">
+                      {/* Ambiente Information */}
+                      <div className="bg-blue-50 rounded-lg p-4 mb-6">
+                        <div className="flex items-center gap-2 mb-2">
+                          <FileText className="h-5 w-5 text-blue-600" />
+                          <h3 className="font-semibold text-blue-900">Ambiente {xmlData.ambiente_data.tipo}</h3>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">Nome do Ambiente</label>
+                            <div className="bg-white p-2 rounded border mt-1">
+                              {xmlData.ambiente_data.nome || 'Não informado'}
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">Valor do Ambiente</label>
+                            <div className="bg-white p-2 rounded border mt-1 font-semibold text-green-600">
+                              {xmlData.ambiente_data.valor}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Fornecedores */}
+                      {xmlData.fornecedores_data && xmlData.fornecedores_data.length > 0 && (
+                        <div className="mb-6">
+                          <h4 className="font-semibold text-gray-800 mb-3">Fornecedores</h4>
+                          <div className="grid gap-2">
+                            {xmlData.fornecedores_data.map((fornecedor: any, index: number) => (
+                              <div key={index} className="bg-gray-50 p-3 rounded border">
+                                <div className="font-medium">{fornecedor.nome}</div>
+                                <div className="text-sm text-gray-600">{fornecedor.servico}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Características */}
+                      {xmlData.caracteristicas_data && xmlData.caracteristicas_data.length > 0 && (
+                        <div className="mb-6">
+                          <h4 className="font-semibold text-gray-800 mb-3">Características</h4>
+                          <div className="grid gap-2">
+                            {xmlData.caracteristicas_data.map((caracteristica: any, index: number) => (
+                              <div key={index} className="bg-gray-50 p-3 rounded border flex justify-between">
+                                <span className="font-medium">{caracteristica.nome}</span>
+                                <span className="text-gray-600">{caracteristica.valor}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Observações */}
+                      {xmlData.observacoes_data && xmlData.observacoes_data.descricao && (
+                        <div className="mb-6">
+                          <h4 className="font-semibold text-gray-800 mb-3">Observações</h4>
+                          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3">
+                            <p className="text-gray-700">{xmlData.observacoes_data.descricao}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Itens */}
+                      {xmlData.itens_data && xmlData.itens_data.length > 0 && (
+                        <div>
+                          <h4 className="font-semibold text-gray-800 mb-3">Itens</h4>
+                          <div className="overflow-x-auto">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Código</TableHead>
+                                  <TableHead>Descrição</TableHead>
+                                  <TableHead>Quantidade</TableHead>
+                                  <TableHead>Valor</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {xmlData.itens_data.map((item: any, index: number) => (
+                                  <TableRow key={index}>
+                                    <TableCell className="font-medium">{item.codigo}</TableCell>
+                                    <TableCell>{item.descricao}</TableCell>
+                                    <TableCell>{item.quantidade}</TableCell>
+                                    <TableCell className="font-semibold text-green-600">{item.valor}</TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>#</TableHead>
+                          <TableHead>Ambiente</TableHead>
+                          <TableHead>Nome</TableHead>
+                          <TableHead>Situação</TableHead>
+                          <TableHead>Data de Criação</TableHead>
+                          <TableHead>Última alteração em</TableHead>
+                          <TableHead>Valor Bruto</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                            Nenhum registro encontrado. Importe um arquivo XML para visualizar os dados.
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  )}
                   <div className="p-4 bg-green-50 border-t">
                     <div className="flex justify-between items-center">
                       <span className="font-medium">TOTAL DOS AMBIENTES</span>
-                      <span className="text-green-600 font-bold text-lg">R$ 0,00</span>
+                      <span className="text-green-600 font-bold text-lg">
+                        {xmlData?.ambiente_data?.valor || 'R$ 0,00'}
+                      </span>
                     </div>
                   </div>
                 </CardContent>
