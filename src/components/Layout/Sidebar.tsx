@@ -177,7 +177,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggleSidebar }) => {
           title: 'PEDIDOS DE COMPRA',
           items: [
             { id: 'geracao-envio', label: 'Geração e Envio' },
-            { id: 'pedidos-compra', label: 'Pedidos de Compra' },
+            { id: 'pedidos-compra', label: 'Pedidos de Compra', route: '/pedidos-compra' },
             { id: 'atendimento', label: 'Atendimento' },
             { id: 'cancelamento', label: 'Cancelamento' },
             { id: 'comparativo', label: 'Comparativo' }

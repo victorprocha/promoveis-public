@@ -9,7 +9,11 @@ const NovoPedidoSaidaWrapper: React.FC = () => {
     navigate('/pedidos-saida');
   };
 
-  return <NovoPedidoSaida onBack={handleBack} />;
+  const handlePedidoCreated = (pedidoId: string) => {
+    navigate(`/pedidos-saida/${pedidoId}/editar`);
+  };
+
+  return <NovoPedidoSaida onBack={handleBack} onPedidoCreated={handlePedidoCreated} />;
 };
 
 export default NovoPedidoSaidaWrapper;

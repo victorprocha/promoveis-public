@@ -29,7 +29,7 @@ import ProjectDetails from "./pages/ProjectDetails";
 import ProjectRegistration from "./pages/ProjectRegistration";
 import PortfolioTracking from "@/components/Modules/PortfolioTracking";
 import PainelProjetos from "@/components/Modules/PainelProjetos";
-import Colaboradores from "./pages/Colaboradores";
+import ColaboradoresWrapper from "./pages/ColaboradoresWrapper";
 import NovoColaborador from "./pages/NovoColaborador";
 import Estoque from "./pages/Estoque";
 import CadastroProduto from "./pages/CadastroProduto";
@@ -102,7 +102,7 @@ const App = () => (
             <Route path="/painel-projetos" element={<ProtectedRoute><Layout><PainelProjetos /></Layout></ProtectedRoute>} />
             
             {/* Sistema Routes */}
-            <Route path="/colaboradores" element={<ProtectedRoute><Layout><Colaboradores /></Layout></ProtectedRoute>} />
+            <Route path="/colaboradores" element={<ProtectedRoute><Layout><ColaboradoresWrapper /></Layout></ProtectedRoute>} />
             <Route path="/colaboradores/novo" element={<ProtectedRoute><Layout><NovoColaboradorWrapper /></Layout></ProtectedRoute>} />
             <Route path="/usuarios" element={<ProtectedRoute><Layout><Usuarios /></Layout></ProtectedRoute>} />
             <Route path="/usuarios/cadastrar" element={<ProtectedRoute><Layout><CadastroUsuarioWrapper /></Layout></ProtectedRoute>} />
