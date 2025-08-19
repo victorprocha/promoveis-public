@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { UserPlus, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -27,12 +26,11 @@ interface UserFormData {
 }
 
 interface CadastroUsuarioProps {
-  onBack?: () => void;
+  onNavigate?: (module: string) => void;
 }
 
-const CadastroUsuario: React.FC<CadastroUsuarioProps> = ({ onBack }) => {
+const CadastroUsuario: React.FC<CadastroUsuarioProps> = ({ onNavigate }) => {
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<UserFormData>({
     name: '',
@@ -111,10 +109,8 @@ const CadastroUsuario: React.FC<CadastroUsuarioProps> = ({ onBack }) => {
         description: "Usuário cadastrado com sucesso!"
       });
 
-      if (onBack) {
-        onBack();
-      } else {
-        navigate('/usuarios');
+      if (onNavigate) {
+        onNavigate('usuario');
       }
     } catch (error) {
       console.error('Erro ao cadastrar usuário:', error);
@@ -137,7 +133,7 @@ const CadastroUsuario: React.FC<CadastroUsuarioProps> = ({ onBack }) => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onBack ? onBack() : navigate('/usuarios')}
+              onClick={() => onNavigate && onNavigate('usuario')}
               className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -302,7 +298,7 @@ const CadastroUsuario: React.FC<CadastroUsuarioProps> = ({ onBack }) => {
                   <Button 
                     type="button"
                     variant="outline" 
-                    onClick={() => onBack ? onBack() : navigate('/usuarios')}
+                    onClick={() => onNavigate && onNavigate('usuario')}
                   >
                     Cancelar
                   </Button>

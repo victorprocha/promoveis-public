@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Calendar, Users, Settings, FileText, MapPin, Clock } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,8 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import PageTemplate from '@/components/Layout/PageTemplate';
 import { useCollaborators } from '@/hooks/useCollaborators';
 
-const Compromissos = () => {
-  const navigate = useNavigate();
+const Compromissos = ({ onNavigate }: { onNavigate?: (page: string) => void }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [selectedStore, setSelectedStore] = useState('Loja de Móveis');
@@ -263,15 +261,21 @@ const Compromissos = () => {
                             key={date.toISOString()} 
                             className="p-2 border-l h-24 hover:bg-muted/30 cursor-pointer transition-colors relative group"
                           >
-                             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                               <Calendar 
-                                 className="h-4 w-4 text-muted-foreground hover:text-primary cursor-pointer" 
-                                 onClick={(e) => {
-                                   e.stopPropagation();
-                                   navigate('/agenda-entrega');
-                                 }}
-                               />
-                             </div>
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Calendar 
+                                className="h-4 w-4 text-muted-foreground hover:text-primary cursor-pointer" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  console.log('Clicando no ícone de agenda');
+                                  if (onNavigate) {
+                                    console.log('Redirecionando para agenda-entrega');
+                                    onNavigate('agenda-entrega');
+                                  } else {
+                                    console.log('onNavigate não definido');
+                                  }
+                                }}
+                              />
+                            </div>
                           </div>
                         ))}
                      </div>

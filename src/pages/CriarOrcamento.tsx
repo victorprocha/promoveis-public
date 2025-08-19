@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,10 +15,11 @@ import { PaymentProposalDialog } from '@/components/Dialogs/PaymentProposalDialo
 import { PaymentProposalsList } from '@/components/PaymentProposals/PaymentProposalsList';
 import { toast } from 'sonner';
 
-interface CriarOrcamentoProps {}
+interface CriarOrcamentoProps {
+  onNavigate?: (module: string) => void;
+}
 
-const CriarOrcamento = ({}: CriarOrcamentoProps) => {
-  const navigate = useNavigate();
+const CriarOrcamento = ({ onNavigate }: CriarOrcamentoProps) => {
   const [activeTab, setActiveTab] = useState('dados');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [showEnvironmentDropdown, setShowEnvironmentDropdown] = useState(false);
@@ -76,7 +76,12 @@ const CriarOrcamento = ({}: CriarOrcamentoProps) => {
   ];
 
   const handleBackNavigation = () => {
-    navigate('/orcamentos');
+    if (onNavigate) {
+      onNavigate('orcamentos');
+    } else {
+      // Fallback for direct access
+      window.history.back();
+    }
   };
 
   const handleCreateBudget = async () => {

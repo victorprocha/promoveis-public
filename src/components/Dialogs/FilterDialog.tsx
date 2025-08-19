@@ -23,10 +23,10 @@ const FilterDialog: React.FC<FilterDialogProps> = ({ children }) => {
   const [open, setOpen] = useState(false);
   const [filters, setFilters] = useState({
     searchTerm: '',
-    status: 'todos',
-    consultant: 'todos',
-    dateRange: 'todos',
-    priority: 'todas',
+    status: '',
+    consultant: '',
+    dateRange: '',
+    priority: '',
     showOnlyMyProjects: false
   });
   const { toast } = useToast();
@@ -52,10 +52,10 @@ const FilterDialog: React.FC<FilterDialogProps> = ({ children }) => {
   const handleClearFilters = () => {
     setFilters({
       searchTerm: '',
-      status: 'todos',
-      consultant: 'todos',
-      dateRange: 'todos',
-      priority: 'todas',
+      status: '',
+      consultant: '',
+      dateRange: '',
+      priority: '',
       showOnlyMyProjects: false
     });
     
@@ -93,7 +93,7 @@ const FilterDialog: React.FC<FilterDialogProps> = ({ children }) => {
                   <SelectValue placeholder="Todos os status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="">Todos</SelectItem>
                   <SelectItem value="normal">Normal</SelectItem>
                   <SelectItem value="pendente">Pendente</SelectItem>
                   <SelectItem value="atrasado">Atrasado</SelectItem>
@@ -108,7 +108,7 @@ const FilterDialog: React.FC<FilterDialogProps> = ({ children }) => {
                   <SelectValue placeholder="Todas as prioridades" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todas">Todas</SelectItem>
+                  <SelectItem value="">Todas</SelectItem>
                   <SelectItem value="baixa">Baixa</SelectItem>
                   <SelectItem value="normal">Normal</SelectItem>
                   <SelectItem value="alta">Alta</SelectItem>
@@ -125,7 +125,7 @@ const FilterDialog: React.FC<FilterDialogProps> = ({ children }) => {
                 <SelectValue placeholder="Todos os consultores" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="">Todos</SelectItem>
                 <SelectItem value="joao">João Silva</SelectItem>
                 <SelectItem value="maria">Maria Santos</SelectItem>
                 <SelectItem value="carlos">Carlos Lima</SelectItem>
@@ -141,7 +141,7 @@ const FilterDialog: React.FC<FilterDialogProps> = ({ children }) => {
                 <SelectValue placeholder="Selecione o período" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="todos">Todos os períodos</SelectItem>
+                <SelectItem value="">Todos os períodos</SelectItem>
                 <SelectItem value="today">Hoje</SelectItem>
                 <SelectItem value="week">Última semana</SelectItem>
                 <SelectItem value="month">Último mês</SelectItem>

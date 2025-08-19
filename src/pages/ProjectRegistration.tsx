@@ -33,7 +33,7 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack, onPro
   const [priority, setPriority] = useState('Normal');
   const [description, setDescription] = useState('');
   const [deliveryDeadline, setDeliveryDeadline] = useState('');
-  const [specifierId, setSpecifierId] = useState('nenhum');
+  const [specifierId, setSpecifierId] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -76,7 +76,7 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack, onPro
         environments: '1',
         priority: priority,
         deliveryDeadline: deliveryDeadline || undefined,
-        specifierId: (specifierId && specifierId !== 'nenhum') ? specifierId : undefined
+        specifierId: specifierId || undefined
       });
 
       if (result.success) {
@@ -91,7 +91,7 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack, onPro
         setPriority('Normal');
         setDescription('');
         setDeliveryDeadline('');
-        setSpecifierId('nenhum');
+        setSpecifierId('');
         
         // Atualizar a lista de projetos imediatamente
         await refetch();
@@ -119,7 +119,7 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack, onPro
 
   const handleCancel = () => {
     const hasChanges = selectedClient || projectName.trim() || description.trim() || 
-                      priority !== 'Normal' || deliveryDeadline || (specifierId !== 'nenhum');
+                      priority !== 'Normal' || deliveryDeadline || specifierId;
     
     if (hasChanges) {
       if (window.confirm('Deseja descartar as alterações?')) {
@@ -128,7 +128,7 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack, onPro
         setPriority('Normal');
         setDescription('');
         setDeliveryDeadline('');
-        setSpecifierId('nenhum');
+        setSpecifierId('');
         if (onBack) {
           onBack();
         }
@@ -287,7 +287,7 @@ const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onBack, onPro
                         <SelectValue placeholder="Selecione um especificador" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="nenhum">Nenhum especificador</SelectItem>
+                        <SelectItem value="">Nenhum especificador</SelectItem>
                         {specifiers.map((specifier) => (
                           <SelectItem key={specifier.id} value={specifier.id}>
                             {specifier.nome}
