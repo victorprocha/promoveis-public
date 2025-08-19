@@ -34,13 +34,21 @@ import NovoColaborador from "./pages/NovoColaborador";
 import Estoque from "./pages/Estoque";
 import CadastroProduto from "./pages/CadastroProduto";
 import HistoricoLancamentos from "./pages/HistoricoLancamentos";
+import HistoricoLancamentosWrapper from "./pages/HistoricoLancamentosWrapper";
 import PedidosCompra from "./pages/PedidosCompra";
+import PedidosCompraWrapper from "./pages/PedidosCompraWrapper";
 import NovoPedidoCompra from "./pages/NovoPedidoCompra";
+import NovoPedidoCompraWrapper from "./pages/NovoPedidoCompraWrapper";
 import EditarPedido from "./pages/EditarPedido";
+import EditarPedidoWrapper from "./pages/EditarPedidoWrapper";
 import PedidoView from "./pages/PedidoView";
+import PedidoViewWrapper from "./pages/PedidoViewWrapper";
 import PedidosSaida from "./pages/PedidosSaida";
+import PedidosSaidaWrapper from "./pages/PedidosSaidaWrapper";
 import NovoPedidoSaida from "./pages/NovoPedidoSaida";
+import NovoPedidoSaidaWrapper from "./pages/NovoPedidoSaidaWrapper";
 import EditarPedidoSaida from "./pages/EditarPedidoSaida";
+import EditarPedidoSaidaWrapper from "./pages/EditarPedidoSaidaWrapper";
 import Compromissos from "./pages/Compromissos";
 import AgendaEntrega from "./pages/AgendaEntrega";
 import MinhaEmpresa from "./pages/MinhaEmpresa";
@@ -49,6 +57,7 @@ import Usuarios from "./pages/Usuarios";
 import CadastroUsuario from "./pages/CadastroUsuario";
 import CadastroUsuarioWrapper from "./pages/CadastroUsuarioWrapper";
 import ContratoEditor from "./pages/ContratoEditor";
+import ContratoEditorWrapper from "./pages/ContratoEditorWrapper";
 import CadastroMatrizEventos from "./pages/CadastroMatrizEventos";
 import FluxoPadraoDetalhes from "./pages/FluxoPadraoDetalhes";
 import EnvironmentReview from "./pages/EnvironmentReview";
@@ -104,29 +113,29 @@ const App = () => (
             {/* Compras Routes */}
             <Route path="/estoque" element={<ProtectedRoute><Layout><EstoqueWrapper /></Layout></ProtectedRoute>} />
             <Route path="/produtos/cadastrar" element={<ProtectedRoute><Layout><CadastroProdutoWrapper /></Layout></ProtectedRoute>} />
-            <Route path="/produtos/:id/historico" element={<ProtectedRoute><Layout><PlaceholderPage title="Histórico de Lançamentos" /></Layout></ProtectedRoute>} />
-            <Route path="/pedidos-compra" element={<ProtectedRoute><Layout><PlaceholderPage title="Pedidos de Compra" /></Layout></ProtectedRoute>} />
-            <Route path="/pedidos-compra/novo" element={<ProtectedRoute><Layout><PlaceholderPage title="Novo Pedido de Compra" /></Layout></ProtectedRoute>} />
-            <Route path="/pedidos-compra/:id/editar" element={<ProtectedRoute><Layout><PlaceholderPage title="Editar Pedido" /></Layout></ProtectedRoute>} />
-            <Route path="/pedidos-compra/:id" element={<ProtectedRoute><Layout><PlaceholderPage title="Visualizar Pedido" /></Layout></ProtectedRoute>} />
-            <Route path="/pedidos-saida" element={<ProtectedRoute><Layout><PlaceholderPage title="Pedidos de Saída" /></Layout></ProtectedRoute>} />
-            <Route path="/pedidos-saida/novo" element={<ProtectedRoute><Layout><PlaceholderPage title="Novo Pedido de Saída" /></Layout></ProtectedRoute>} />
-            <Route path="/pedidos-saida/:id/editar" element={<ProtectedRoute><Layout><PlaceholderPage title="Editar Pedido de Saída" /></Layout></ProtectedRoute>} />
+            <Route path="/produtos/:id/historico" element={<ProtectedRoute><Layout><HistoricoLancamentosWrapper /></Layout></ProtectedRoute>} />
+            <Route path="/pedidos-compra" element={<ProtectedRoute><Layout><PedidosCompraWrapper /></Layout></ProtectedRoute>} />
+            <Route path="/pedidos-compra/novo" element={<ProtectedRoute><Layout><NovoPedidoCompraWrapper /></Layout></ProtectedRoute>} />
+            <Route path="/pedidos-compra/:id/editar" element={<ProtectedRoute><Layout><EditarPedidoWrapper /></Layout></ProtectedRoute>} />
+            <Route path="/pedidos-compra/:id" element={<ProtectedRoute><Layout><PedidoViewWrapper /></Layout></ProtectedRoute>} />
+            <Route path="/pedidos-saida" element={<ProtectedRoute><Layout><PedidosSaidaWrapper /></Layout></ProtectedRoute>} />
+            <Route path="/pedidos-saida/novo" element={<ProtectedRoute><Layout><NovoPedidoSaidaWrapper /></Layout></ProtectedRoute>} />
+            <Route path="/pedidos-saida/:id/editar" element={<ProtectedRoute><Layout><EditarPedidoSaidaWrapper /></Layout></ProtectedRoute>} />
             
             {/* Agendas Routes */}
             <Route path="/compromissos" element={<ProtectedRoute><Layout><Compromissos /></Layout></ProtectedRoute>} />
-            <Route path="/agenda-entrega" element={<ProtectedRoute><Layout><PlaceholderPage title="Agenda de Entrega" /></Layout></ProtectedRoute>} />
+            <Route path="/agenda-entrega" element={<ProtectedRoute><Layout><AgendaEntrega /></Layout></ProtectedRoute>} />
             
             {/* Configurações Routes */}
-            <Route path="/contrato-editor" element={<ProtectedRoute><Layout><PlaceholderPage title="Editor de Contrato" /></Layout></ProtectedRoute>} />
-            <Route path="/matriz-eventos" element={<ProtectedRoute><Layout><PlaceholderPage title="Matriz de Eventos" /></Layout></ProtectedRoute>} />
-            <Route path="/fluxo-padrao" element={<ProtectedRoute><Layout><PlaceholderPage title="Fluxo Padrão" /></Layout></ProtectedRoute>} />
+            <Route path="/contrato-editor" element={<ProtectedRoute><Layout><ContratoEditorWrapper /></Layout></ProtectedRoute>} />
+            <Route path="/matriz-eventos" element={<ProtectedRoute><Layout><CadastroMatrizEventos /></Layout></ProtectedRoute>} />
+            <Route path="/fluxo-padrao" element={<ProtectedRoute><Layout><FluxoPadraoDetalhes /></Layout></ProtectedRoute>} />
             
             {/* Pós-Venda Routes */}
-            <Route path="/revisao-ambientes" element={<ProtectedRoute><Layout><PlaceholderPage title="Revisão de Ambientes" /></Layout></ProtectedRoute>} />
-            <Route path="/entregas" element={<ProtectedRoute><Layout><PlaceholderPage title="Entregas" /></Layout></ProtectedRoute>} />
-            <Route path="/montagem" element={<ProtectedRoute><Layout><PlaceholderPage title="Montagem" /></Layout></ProtectedRoute>} />
-            <Route path="/entregas-montagens" element={<ProtectedRoute><Layout><PlaceholderPage title="Entregas e Montagens" /></Layout></ProtectedRoute>} />
+            <Route path="/revisao-ambientes" element={<ProtectedRoute><Layout><EnvironmentReview /></Layout></ProtectedRoute>} />
+            <Route path="/entregas" element={<ProtectedRoute><Layout><Deliveries /></Layout></ProtectedRoute>} />
+            <Route path="/montagem" element={<ProtectedRoute><Layout><Assembly /></Layout></ProtectedRoute>} />
+            <Route path="/entregas-montagens" element={<ProtectedRoute><Layout><DeliveriesAndAssembly /></Layout></ProtectedRoute>} />
             <Route path="/assistencias" element={<ProtectedRoute><Layout><PlaceholderPage title="Assistência Técnica" /></Layout></ProtectedRoute>} />
             
             <Route path="*" element={<NotFound />} />
