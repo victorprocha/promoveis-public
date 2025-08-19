@@ -27,6 +27,7 @@ import Sales from "./pages/Sales";
 import Specifiers from "./pages/Specifiers";
 import ProjectDetails from "./pages/ProjectDetails";
 import ProjectRegistration from "./pages/ProjectRegistration";
+import ProjectsList from "./pages/ProjectsList";
 import PortfolioTracking from "@/components/Modules/PortfolioTracking";
 import PainelProjetos from "@/components/Modules/PainelProjetos";
 import ColaboradoresWrapper from "./pages/ColaboradoresWrapper";
@@ -96,7 +97,8 @@ const App = () => (
             <Route path="/especificadores" element={<ProtectedRoute><Layout><Specifiers /></Layout></ProtectedRoute>} />
             
             {/* Projetos Routes */}
-            <Route path="/projetos" element={<ProtectedRoute><Layout><ProjectRegistration /></Layout></ProtectedRoute>} />
+            <Route path="/projetos" element={<ProtectedRoute><Layout><ProjectsList /></Layout></ProtectedRoute>} />
+            <Route path="/projetos/novo" element={<ProtectedRoute><Layout><ProjectRegistration /></Layout></ProtectedRoute>} />
             <Route path="/projetos/:id" element={<ProtectedRoute><Layout><ProjectDetailsWrapper /></Layout></ProtectedRoute>} />
             <Route path="/carteira" element={<ProtectedRoute><Layout><PortfolioTracking /></Layout></ProtectedRoute>} />
             <Route path="/painel-projetos" element={<ProtectedRoute><Layout><PainelProjetos /></Layout></ProtectedRoute>} />

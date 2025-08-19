@@ -66,7 +66,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggleSidebar }) => {
 
   const quickAccessItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, route: '/' },
-    { id: 'projetos', label: 'Projetos', icon: FolderOpen, route: '/painel-projetos' },
+    { id: 'projetos', label: 'Projetos', icon: FolderOpen, route: '/projetos' },
     { id: 'carteira', label: 'Acompanhamento de Carteira', icon: BarChart3, route: '/carteira' },
     { id: 'painel-projetos', label: 'Painel de Projetos', icon: Kanban, route: '/painel-projetos' },
   ];
