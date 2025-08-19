@@ -47,6 +47,7 @@ import MinhaEmpresa from "./pages/MinhaEmpresa";
 import EmitenteNFe from "./pages/EmitenteNFe";
 import Usuarios from "./pages/Usuarios";
 import CadastroUsuario from "./pages/CadastroUsuario";
+import CadastroUsuarioWrapper from "./pages/CadastroUsuarioWrapper";
 import ContratoEditor from "./pages/ContratoEditor";
 import CadastroMatrizEventos from "./pages/CadastroMatrizEventos";
 import FluxoPadraoDetalhes from "./pages/FluxoPadraoDetalhes";
@@ -95,7 +96,8 @@ const App = () => (
             <Route path="/colaboradores" element={<ProtectedRoute><Layout><Colaboradores /></Layout></ProtectedRoute>} />
             <Route path="/colaboradores/novo" element={<ProtectedRoute><Layout><NovoColaboradorWrapper /></Layout></ProtectedRoute>} />
             <Route path="/usuarios" element={<ProtectedRoute><Layout><Usuarios /></Layout></ProtectedRoute>} />
-            <Route path="/usuarios/novo" element={<ProtectedRoute><Layout><PlaceholderPage title="Cadastro de Usuário" /></Layout></ProtectedRoute>} />
+            <Route path="/usuarios/cadastrar" element={<ProtectedRoute><Layout><CadastroUsuarioWrapper /></Layout></ProtectedRoute>} />
+            <Route path="/usuarios/novo" element={<ProtectedRoute><Layout><CadastroUsuarioWrapper /></Layout></ProtectedRoute>} />
             <Route path="/minha-empresa" element={<ProtectedRoute><Layout><MinhaEmpresa /></Layout></ProtectedRoute>} />
             <Route path="/emitente-nfe" element={<ProtectedRoute><Layout><EmitenteNFe /></Layout></ProtectedRoute>} />
             
@@ -112,7 +114,7 @@ const App = () => (
             <Route path="/pedidos-saida/:id/editar" element={<ProtectedRoute><Layout><PlaceholderPage title="Editar Pedido de Saída" /></Layout></ProtectedRoute>} />
             
             {/* Agendas Routes */}
-            <Route path="/compromissos" element={<ProtectedRoute><Layout><PlaceholderPage title="Compromissos" /></Layout></ProtectedRoute>} />
+            <Route path="/compromissos" element={<ProtectedRoute><Layout><Compromissos /></Layout></ProtectedRoute>} />
             <Route path="/agenda-entrega" element={<ProtectedRoute><Layout><PlaceholderPage title="Agenda de Entrega" /></Layout></ProtectedRoute>} />
             
             {/* Configurações Routes */}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Pencil, Trash2, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,12 +18,9 @@ interface Usuario {
   created_at: string;
 }
 
-interface UsuariosProps {
-  onNavigate?: (module: string) => void;
-}
-
-const Usuarios: React.FC<UsuariosProps> = ({ onNavigate }) => {
+const Usuarios: React.FC = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [users, setUsers] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -69,9 +67,7 @@ const Usuarios: React.FC<UsuariosProps> = ({ onNavigate }) => {
   }, []);
 
   const handleAddUser = () => {
-    if (onNavigate) {
-      onNavigate('cadastro-usuario');
-    }
+    navigate('/usuarios/cadastrar');
   };
 
   const handleDeleteUser = async (userId: string) => {
