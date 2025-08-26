@@ -15,6 +15,7 @@ export interface XMLStructure {
   hasCustomerData: boolean;
   hasItemsData: boolean;
   hasBudgetData: boolean;
+  hasTotalPrices: boolean;
 }
 
 export const analyzeXMLStructure = (xmlContent: string): XMLStructure => {
@@ -31,7 +32,8 @@ export const analyzeXMLStructure = (xmlContent: string): XMLStructure => {
       sections: [],
       hasCustomerData: false,
       hasItemsData: false,
-      hasBudgetData: false
+      hasBudgetData: false,
+      hasTotalPrices: false
     };
   }
 
@@ -40,11 +42,13 @@ export const analyzeXMLStructure = (xmlContent: string): XMLStructure => {
   const customerDataSection = xmlDoc.querySelector('CUSTOMERSDATA');
   const itemsDataSection = xmlDoc.querySelector('ITEMSDATA');
   const budgetDataSection = xmlDoc.querySelector('BUDGETDATA');
+  const totalPricesSection = xmlDoc.querySelector('TOTALPRICES');
 
   console.log(`[XML Parser] Encontrados ${dataElements.length} elementos DATA`);
   console.log(`[XML Parser] CUSTOMERSDATA: ${customerDataSection ? 'Sim' : 'Não'}`);
   console.log(`[XML Parser] ITEMSDATA: ${itemsDataSection ? 'Sim' : 'Não'}`);
   console.log(`[XML Parser] BUDGETDATA: ${budgetDataSection ? 'Sim' : 'Não'}`);
+  console.log(`[XML Parser] TOTALPRICES: ${totalPricesSection ? 'Sim' : 'Não'}`);
 
   const sections: PromobSection[] = [];
 
@@ -91,12 +95,83 @@ export const analyzeXMLStructure = (xmlContent: string): XMLStructure => {
       console.log(`[XML Parser] BUDGETDATA: ${budgetData.length} itens`);
     }
 
+    // Extrair TOTALPRICES
+    if (totalPricesSection) {
+      const totalPricesData = [];
+      
+      // Valor total da tabela
+      const tableValue = totalPricesSection.getAttribute('TABLE');
+      if (tableValue) {
+        totalPricesData.push({
+          id: 'TABLE_VALUE',
+          value: tableValue
+        });
+      }
+
+      // Extrair margens de ORDER
+      const orderElement = totalPricesSection.querySelector('MARGINS ORDER');
+      if (orderElement) {
+        const orderValue = orderElement.getAttribute('VALUE');
+        if (orderValue) {
+          totalPricesData.push({
+            id: 'ORDER_VALUE',
+            value: orderValue
+          });
+        }
+
+        // Margens específicas de ORDER
+        const orderMargins = orderElement.querySelectorAll('MARGIN');
+        orderMargins.forEach(margin => {
+          const id = margin.getAttribute('ID');
+          const value = margin.getAttribute('VALUE');
+          if (id && value) {
+            totalPricesData.push({
+              id: `ORDER_${id.toUpperCase()}`,
+              value: value
+            });
+          }
+        });
+      }
+
+      // Extrair margens de BUDGET
+      const budgetElement = totalPricesSection.querySelector('MARGINS BUDGET');
+      if (budgetElement) {
+        const budgetValue = budgetElement.getAttribute('VALUE');
+        if (budgetValue) {
+          totalPricesData.push({
+            id: 'BUDGET_VALUE',
+            value: budgetValue
+          });
+        }
+
+        // Margens específicas de BUDGET
+        const budgetMargins = budgetElement.querySelectorAll('MARGIN');
+        budgetMargins.forEach(margin => {
+          const id = margin.getAttribute('ID');
+          const value = margin.getAttribute('VALUE');
+          if (id && value) {
+            totalPricesData.push({
+              id: `BUDGET_${id.toUpperCase()}`,
+              value: value
+            });
+          }
+        });
+      }
+
+      sections.push({
+        name: 'TOTALPRICES',
+        data: totalPricesData
+      });
+      console.log(`[XML Parser] TOTALPRICES: ${totalPricesData.length} itens`);
+    }
+
     return {
       type: 'promob',
       sections,
       hasCustomerData: !!customerDataSection,
       hasItemsData: !!itemsDataSection,
-      hasBudgetData: !!budgetDataSection
+      hasBudgetData: !!budgetDataSection,
+      hasTotalPrices: !!totalPricesSection
     };
   }
 
@@ -111,7 +186,8 @@ export const analyzeXMLStructure = (xmlContent: string): XMLStructure => {
       sections: [],
       hasCustomerData: false,
       hasItemsData: itemElements.length > 0,
-      hasBudgetData: false
+      hasBudgetData: false,
+      hasTotalPrices: false
     };
   }
 
@@ -121,7 +197,8 @@ export const analyzeXMLStructure = (xmlContent: string): XMLStructure => {
     sections: [],
     hasCustomerData: false,
     hasItemsData: false,
-    hasBudgetData: false
+    hasBudgetData: false,
+    hasTotalPrices: false
   };
 };
 
@@ -134,10 +211,16 @@ export const extractPromobData = (xmlStructure: XMLStructure): any => {
   const customerSection = xmlStructure.sections.find(s => s.name === 'CUSTOMERSDATA');
   const itemsSection = xmlStructure.sections.find(s => s.name === 'ITEMSDATA');
   const budgetSection = xmlStructure.sections.find(s => s.name === 'BUDGETDATA');
+  const totalPricesSection = xmlStructure.sections.find(s => s.name === 'TOTALPRICES');
 
   // Extrair dados do cliente conforme mapeamento fornecido
   const getDataValue = (section: PromobSection | undefined, id: string): string => {
     return section?.data.find(item => item.id === id)?.value || '';
+  };
+
+  const getNumericValue = (section: PromobSection | undefined, id: string): number => {
+    const value = getDataValue(section, id);
+    return parseFloat(value.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
   };
 
   if (!customerSection) {
@@ -173,6 +256,53 @@ export const extractPromobData = (xmlStructure: XMLStructure): any => {
     return null;
   }
 
+  // Extrair totais do orçamento
+  let valorPedido = 0;
+  let valorOrcamento = 0;
+  let acrescimo = 0;
+  let frete = 0;
+  let montagem = 0;
+  let impostos = 0;
+  let descontos = 0;
+
+  if (totalPricesSection) {
+    // Valor pedido (ORDER)
+    valorPedido = getNumericValue(totalPricesSection, 'ORDER_VALUE');
+    
+    // Valor orçamento (BUDGET)
+    valorOrcamento = getNumericValue(totalPricesSection, 'BUDGET_VALUE');
+    
+    // Acréscimo
+    acrescimo = getNumericValue(totalPricesSection, 'BUDGET_ACRESCIMO') || 
+                getNumericValue(totalPricesSection, 'ORDER_ACR_1');
+    
+    // Frete
+    frete = getNumericValue(totalPricesSection, 'BUDGET_FRETE');
+    
+    // Montagem
+    montagem = getNumericValue(totalPricesSection, 'BUDGET_MONTAGEM');
+    
+    // Impostos (ICMS + IPI)
+    const icms = getNumericValue(totalPricesSection, 'ORDER_ICMS');
+    const ipi = getNumericValue(totalPricesSection, 'ORDER_IPI');
+    impostos = icms + ipi;
+    
+    // Descontos (somar todos os descontos)
+    const desc1 = getNumericValue(totalPricesSection, 'ORDER_DESC_1');
+    const desc2 = getNumericValue(totalPricesSection, 'ORDER_DESC_2');
+    const desc3 = getNumericValue(totalPricesSection, 'ORDER_DESC_3');
+    const desc4 = getNumericValue(totalPricesSection, 'ORDER_DESC_4');
+    descontos = desc1 + desc2 + desc3 + desc4;
+
+    console.log(`[XML Parser] Valor Pedido: R$ ${valorPedido}`);
+    console.log(`[XML Parser] Valor Orçamento: R$ ${valorOrcamento}`);
+    console.log(`[XML Parser] Acréscimo: R$ ${acrescimo}`);
+    console.log(`[XML Parser] Frete: R$ ${frete}`);
+    console.log(`[XML Parser] Montagem: R$ ${montagem}`);
+    console.log(`[XML Parser] Impostos: R$ ${impostos}`);
+    console.log(`[XML Parser] Descontos: R$ ${descontos}`);
+  }
+
   // Converter data de criação para formato adequado
   let dataOrcamento = new Date().toISOString().split('T')[0];
   if (createdOn) {
@@ -199,13 +329,13 @@ export const extractPromobData = (xmlStructure: XMLStructure): any => {
       ambiente_principal: environmentName,
       situacao: situation || 'Importado',
       etapa: stage || 'Análise',
-      valor_pedido: 0,
-      valor_orcamento: 0,
-      acrescimo: 0,
-      frete: 0,
-      montagem: 0,
-      impostos: 0,
-      descontos: 0,
+      valor_pedido: valorPedido,
+      valor_orcamento: valorOrcamento || valorPedido,
+      acrescimo: acrescimo,
+      frete: frete,
+      montagem: montagem,
+      impostos: impostos,
+      descontos: descontos,
     },
     cliente: {
       nome: nomeCliente || razaoSocial,
@@ -217,13 +347,13 @@ export const extractPromobData = (xmlStructure: XMLStructure): any => {
     },
     ambientes: [{
       descricao: environmentName,
-      total_pedido: 0,
-      total_orcamento: 0,
+      total_pedido: valorPedido,
+      total_orcamento: valorOrcamento || valorPedido,
     }],
     categorias: [{
       descricao: 'Categoria Principal',
-      total_pedido: 0,
-      total_orcamento: 0,
+      total_pedido: valorPedido,
+      total_orcamento: valorOrcamento || valorPedido,
       ambiente_index: 0,
     }],
     itens: [],
@@ -281,7 +411,7 @@ export const extractPromobData = (xmlStructure: XMLStructure): any => {
       altura: 0,
       profundidade: 0,
       dimensoes: '0x0x0',
-      valor_total: 0,
+      valor_total: valorOrcamento || valorPedido,
       categoria_index: 0,
     });
   }
