@@ -1,12 +1,13 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, X, FileText, CheckCircle2 } from "lucide-react";
+import { Upload, X, FileText, CheckCircle2, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { analyzeXMLStructure, extractPromobData, XMLStructure } from "@/utils/xmlParser";
+import { XMLPreviewDialog } from "./XMLPreviewDialog";
 
 interface ImportPromobXMLDialogProps {
   open: boolean;
@@ -33,6 +34,9 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [importResult, setImportResult] = useState<any>(null);
+  const [xmlStructure, setXmlStructure] = useState<XMLStructure | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [xmlContent, setXmlContent] = useState<string>('');
   const { toast } = useToast();
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -40,6 +44,8 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
     if (file && file.name.toLowerCase().endsWith('.xml')) {
       setSelectedFile(file);
       setImportResult(null);
+      setXmlStructure(null);
+      setXmlContent('');
     } else {
       toast({
         title: "Erro",
@@ -50,7 +56,66 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
     }
   };
 
+  const analyzeFile = async () => {
+    if (!selectedFile) return;
+
+    try {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        setXmlContent(content);
+        
+        console.log('[Import Dialog] Iniciando análise do XML...');
+        const structure = analyzeXMLStructure(content);
+        setXmlStructure(structure);
+        
+        if (structure.type === 'unknown') {
+          toast({
+            title: "Estrutura não reconhecida",
+            description: "O arquivo XML não possui uma estrutura reconhecida pelo sistema.",
+            variant: "destructive",
+          });
+        } else {
+          console.log(`[Import Dialog] Estrutura ${structure.type} detectada com sucesso`);
+        }
+      };
+      
+      reader.onerror = () => {
+        toast({
+          title: "Erro",
+          description: "Erro ao ler o arquivo XML.",
+          variant: "destructive",
+        });
+      };
+      
+      reader.readAsText(selectedFile);
+    } catch (error) {
+      console.error('[Import Dialog] Erro na análise:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao analisar o arquivo XML.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const parseXMLToPromobData = (xmlContent: string): ParsedData => {
+    console.log('[Import Dialog] Iniciando parsing do XML...');
+    
+    const structure = analyzeXMLStructure(xmlContent);
+    
+    if (structure.type === 'promob') {
+      console.log('[Import Dialog] Usando parser Promob');
+      const promobData = extractPromobData(structure);
+      
+      if (promobData) {
+        console.log('[Import Dialog] Dados extraídos com sucesso do Promob');
+        return promobData;
+      }
+    }
+    
+    // Fallback para estrutura tradicional
+    console.log('[Import Dialog] Usando parser tradicional como fallback');
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
     
@@ -264,6 +329,20 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
     };
   };
 
+  const handlePreview = async () => {
+    if (!selectedFile) {
+      toast({
+        title: "Erro",
+        description: "Por favor, selecione um arquivo XML.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    await analyzeFile();
+    setShowPreview(true);
+  };
+
   const handleImport = async () => {
     if (!selectedFile) {
       toast({
@@ -336,128 +415,158 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
   const handleCancel = () => {
     setSelectedFile(null);
     setImportResult(null);
+    setXmlStructure(null);
+    setXmlContent('');
     onOpenChange(false);
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Importar Arquivo XML do Promob</DialogTitle>
-        </DialogHeader>
-        
-        <div className="space-y-4">
-          {!importResult ? (
-            <>
-              <div className="bg-blue-50 p-3 rounded-md">
-                <p className="text-sm text-blue-800">
-                  Selecione o arquivo XML exportado do Promob para importar orçamento, ambientes, categorias e itens.
-                </p>
-              </div>
+  const handleProceedFromPreview = () => {
+    setShowPreview(false);
+    handleImport();
+  };
 
-              <div className="space-y-2">
-                <Label htmlFor="xmlFile">Escolher arquivo XML</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="xmlFile"
-                    type="file"
-                    accept=".xml"
-                    onChange={handleFileSelect}
-                    className="flex-1"
-                  />
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Importar Arquivo XML do Promob</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {!importResult ? (
+              <>
+                <div className="bg-blue-50 p-3 rounded-md">
+                  <p className="text-sm text-blue-800">
+                    Selecione o arquivo XML exportado do Promob para importar orçamento, ambientes, categorias e itens.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="xmlFile">Escolher arquivo XML</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="xmlFile"
+                      type="file"
+                      accept=".xml"
+                      onChange={handleFileSelect}
+                      className="flex-1"
+                    />
+                    {selectedFile && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedFile(null)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                   {selectedFile && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedFile(null)}
+                    <p className="text-sm text-muted-foreground">
+                      Arquivo selecionado: {selectedFile.name}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button variant="outline" onClick={handleCancel}>
+                    Cancelar
+                  </Button>
+                  
+                  {selectedFile && (
+                    <Button 
+                      variant="outline"
+                      onClick={handlePreview}
+                      className="text-blue-600 border-blue-600 hover:bg-blue-50"
                     >
-                      <X className="h-4 w-4" />
+                      <Eye className="h-4 w-4 mr-2" />
+                      Visualizar
                     </Button>
                   )}
+                  
+                  <Button 
+                    onClick={handleImport}
+                    disabled={!selectedFile || loading}
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    {loading ? (
+                      <>
+                        <Upload className="h-4 w-4 mr-2 animate-spin" />
+                        Importando...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Importar
+                      </>
+                    )}
+                  </Button>
                 </div>
-                {selectedFile && (
-                  <p className="text-sm text-muted-foreground">
-                    Arquivo selecionado: {selectedFile.name}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={handleCancel}>
-                  Cancelar
-                </Button>
-                <Button 
-                  onClick={handleImport}
-                  disabled={!selectedFile || loading}
-                  className="bg-primary hover:bg-primary/90"
-                >
-                  {loading ? (
-                    <>
-                      <Upload className="h-4 w-4 mr-2 animate-spin" />
-                      Importando...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Importar
-                    </>
-                  )}
-                </Button>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="h-8 w-8 text-green-600" />
-                  <div>
-                    <p className="font-medium text-green-800">Importação concluída com sucesso!</p>
-                    <p className="text-sm text-green-600 mt-1">
-                      Orçamento: {importResult.orcamento?.ambiente_principal}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <h4 className="font-semibold text-gray-800">Resumo da importação:</h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="bg-gray-50 p-3 rounded">
-                    <div className="font-medium text-gray-700">Ambientes</div>
-                    <div className="text-lg font-bold text-blue-600">
-                      {importResult.ambientes?.length || 0}
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded">
-                    <div className="font-medium text-gray-700">Itens</div>
-                    <div className="text-lg font-bold text-green-600">
-                      {importResult.totalItens || 0}
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded">
-                    <div className="font-medium text-gray-700">Subitens</div>
-                    <div className="text-lg font-bold text-orange-600">
-                      {importResult.totalSubitens || 0}
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded">
-                    <div className="font-medium text-gray-700">Valor Total</div>
-                    <div className="text-lg font-bold text-purple-600">
-                      R$ {importResult.orcamento?.valor_orcamento?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
+              </>
+            ) : (
+              <>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="h-8 w-8 text-green-600" />
+                    <div>
+                      <p className="font-medium text-green-800">Importação concluída com sucesso!</p>
+                      <p className="text-sm text-green-600 mt-1">
+                        Orçamento: {importResult.orcamento?.ambiente_principal}
+                      </p>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex justify-end pt-4">
-                <Button onClick={handleCancel}>
-                  Fechar
-                </Button>
-              </div>
-            </>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-gray-800">Resumo da importação:</h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="bg-gray-50 p-3 rounded">
+                      <div className="font-medium text-gray-700">Ambientes</div>
+                      <div className="text-lg font-bold text-blue-600">
+                        {importResult.ambientes?.length || 0}
+                      </div>
+                    </div>
+                    <div className="bg-gray-50 p-3 rounded">
+                      <div className="font-medium text-gray-700">Itens</div>
+                      <div className="text-lg font-bold text-green-600">
+                        {importResult.totalItens || 0}
+                      </div>
+                    </div>
+                    <div className="bg-gray-50 p-3 rounded">
+                      <div className="font-medium text-gray-700">Subitens</div>
+                      <div className="text-lg font-bold text-orange-600">
+                        {importResult.totalSubitens || 0}
+                      </div>
+                    </div>
+                    <div className="bg-gray-50 p-3 rounded">
+                      <div className="font-medium text-gray-700">Valor Total</div>
+                      <div className="text-lg font-bold text-purple-600">
+                        R$ {importResult.orcamento?.valor_orcamento?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-4">
+                  <Button onClick={handleCancel}>
+                    Fechar
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {xmlStructure && (
+        <XMLPreviewDialog
+          open={showPreview}
+          onOpenChange={setShowPreview}
+          xmlStructure={xmlStructure}
+          onProceed={handleProceedFromPreview}
+        />
+      )}
+    </>
   );
 };
