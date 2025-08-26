@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,52 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
   const [showPreview, setShowPreview] = useState(false);
   const [xmlContent, setXmlContent] = useState<string>('');
   const { toast } = useToast();
+
+  const N8N_WEBHOOK_URL = 'https://victorprocha.app.n8n.cloud/webhook-test/leitorxml';
+
+  const sendFileToN8N = async (file: File, xmlContent: string) => {
+    console.log('[N8N] Enviando arquivo para n8n webhook:', N8N_WEBHOOK_URL);
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('fileName', file.name);
+      formData.append('fileSize', file.size.toString());
+      formData.append('projectId', projectId);
+      formData.append('xmlContent', xmlContent);
+
+      const response = await fetch(N8N_WEBHOOK_URL, {
+        method: 'POST',
+        body: formData,
+      });
+
+      console.log('[N8N] Response status:', response.status);
+      
+      if (response.ok) {
+        const responseData = await response.text();
+        console.log('[N8N] Arquivo enviado com sucesso para n8n:', responseData);
+        
+        toast({
+          title: "Arquivo enviado",
+          description: "Arquivo XML enviado com sucesso para processamento no n8n.",
+        });
+      } else {
+        console.error('[N8N] Erro ao enviar arquivo para n8n:', response.statusText);
+        toast({
+          title: "Aviso",
+          description: "Não foi possível enviar o arquivo para o n8n, mas a importação continuará.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('[N8N] Erro ao conectar com n8n:', error);
+      toast({
+        title: "Aviso",
+        description: "Erro de conexão com n8n, mas a importação continuará.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -432,8 +479,12 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
       reader.onload = async (e) => {
         try {
           const xmlContent = e.target?.result as string;
-          console.log('[ImportPromobXMLDialog] Conteúdo do arquivo lido, iniciando parsing...');
+          console.log('[ImportPromobXMLDialog] Conteúdo do arquivo lido, enviando para n8n...');
           
+          // Enviar arquivo para n8n primeiro
+          await sendFileToN8N(selectedFile, xmlContent);
+          
+          console.log('[ImportPromobXMLDialog] Iniciando parsing local...');
           const parsedData = parseXMLToPromobData(xmlContent);
           
           if (parsedData.ambientes.length === 0) {
@@ -518,6 +569,7 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
                 <div className="bg-blue-50 p-3 rounded-md">
                   <p className="text-sm text-blue-800">
                     Selecione o arquivo XML exportado do Promob para importar orçamento, ambientes, categorias e itens.
+                    O arquivo também será enviado para processamento no n8n.
                   </p>
                 </div>
 
