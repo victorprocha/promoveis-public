@@ -230,7 +230,7 @@ export const analyzeXMLStructure = (xmlContent: string): XMLStructure => {
             const priceElement = item.querySelector('PRICE');
             const totalComponents = priceElement?.getAttribute('TOTALCOMPONENTS');
             
-            // Adicionar dados do item
+            // Adicionar dados do item principal
             Object.entries(itemData).forEach(([key, value]) => {
               if (value) {
                 ambientsData.push({
@@ -246,6 +246,41 @@ export const analyzeXMLStructure = (xmlContent: string): XMLStructure => {
                 value: totalComponents
               });
             }
+            
+            // Extrair subitens (ITEMS/ITEM dentro do item principal)
+            const subItems = item.querySelectorAll('ITEMS ITEM');
+            subItems.forEach((subItem, subItemIndex) => {
+              const subItemData = {
+                description: subItem.getAttribute('DESCRIPTION'),
+                reference: subItem.getAttribute('REFERENCE'),
+                unit: subItem.getAttribute('UNIT'),
+                quantity: subItem.getAttribute('QUANTITY'),
+                width: subItem.getAttribute('WIDTH'),
+                height: subItem.getAttribute('HEIGHT'),
+                depth: subItem.getAttribute('DEPTH'),
+                textDimension: subItem.getAttribute('TEXTDIMENSION'),
+              };
+              
+              const subPriceElement = subItem.querySelector('PRICE');
+              const subTotal = subPriceElement?.getAttribute('TOTAL');
+              
+              // Adicionar dados do subitem
+              Object.entries(subItemData).forEach(([key, value]) => {
+                if (value) {
+                  ambientsData.push({
+                    id: `AMBIENT_${ambientIndex}_CATEGORY_${categoryIndex}_ITEM_${itemIndex}_SUBITEM_${subItemIndex}_${key.toUpperCase()}`,
+                    value: value
+                  });
+                }
+              });
+              
+              if (subTotal) {
+                ambientsData.push({
+                  id: `AMBIENT_${ambientIndex}_CATEGORY_${categoryIndex}_ITEM_${itemIndex}_SUBITEM_${subItemIndex}_TOTAL`,
+                  value: subTotal
+                });
+              }
+            });
           });
         });
       });
@@ -422,6 +457,7 @@ export const extractPromobData = (xmlStructure: XMLStructure): any => {
   const ambientes: any[] = [];
   const categorias: any[] = [];
   const itens: any[] = [];
+  const subitens: any[] = [];
 
   if (ambientsSection) {
     console.log(`[XML Parser] Processando dados de ambientes...`);
@@ -430,6 +466,7 @@ export const extractPromobData = (xmlStructure: XMLStructure): any => {
     const ambientesMap = new Map();
     const categoriasMap = new Map();
     const itensMap = new Map();
+    const subItensMap = new Map();
 
     ambientsSection.data.forEach(dataItem => {
       const parts = dataItem.id.split('_');
@@ -475,54 +512,111 @@ export const extractPromobData = (xmlStructure: XMLStructure): any => {
             categoriasMap.set(categoryKey, categoria);
           } else if (parts[4] === 'ITEM' && parts.length >= 7) {
             const itemIndex = parseInt(parts[5]);
-            const itemKey = `${ambientIndex}_${categoryIndex}_${itemIndex}`;
-            const campo = parts[6];
             
-            if (!itensMap.has(itemKey)) {
-              itensMap.set(itemKey, {
-                descricao: '',
-                referencia: '',
-                unidade: 'UN',
-                quantidade: 1,
-                largura: 0,
-                altura: 0,
-                profundidade: 0,
-                dimensoes: '',
-                valor_total: 0,
-                categoria_index: categoryIndex,
-              });
-            }
-            
-            const item = itensMap.get(itemKey);
-            
-            switch (campo) {
-              case 'DESCRIPTION':
-                item.descricao = dataItem.value;
-                break;
-              case 'REFERENCE':
-                item.referencia = dataItem.value;
-                break;
-              case 'UNIT':
-                item.unidade = dataItem.value;
-                break;
-              case 'QUANTITY':
-                item.quantidade = parseInt(dataItem.value) || 1;
-                break;
-              case 'WIDTH':
-                item.largura = parseFloat(dataItem.value) || 0;
-                break;
-              case 'HEIGHT':
-                item.altura = parseFloat(dataItem.value) || 0;
-                break;
-              case 'DEPTH':
-                item.profundidade = parseFloat(dataItem.value) || 0;
-                break;
-              case 'TEXTDIMENSION':
-                item.dimensoes = dataItem.value;
-                break;
-              case 'TOTALCOMPONENTS':
-                item.valor_total = parseFloat(dataItem.value.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
-                break;
+            // Verificar se é um subitem (tem mais níveis)
+            if (parts.length >= 9 && parts[6] === 'SUBITEM') {
+              // É um subitem
+              const subItemIndex = parseInt(parts[7]);
+              const subItemKey = `${ambientIndex}_${categoryIndex}_${itemIndex}_${subItemIndex}`;
+              const campo = parts[8];
+              
+              if (!subItensMap.has(subItemKey)) {
+                subItensMap.set(subItemKey, {
+                  descricao: '',
+                  referencia: '',
+                  unidade: 'UN',
+                  quantidade: 1,
+                  largura: 0,
+                  altura: 0,
+                  profundidade: 0,
+                  dimensoes: '',
+                  valor_total: 0,
+                  item_index: itemIndex,
+                });
+              }
+              
+              const subItem = subItensMap.get(subItemKey);
+              
+              switch (campo) {
+                case 'DESCRIPTION':
+                  subItem.descricao = dataItem.value;
+                  break;
+                case 'REFERENCE':
+                  subItem.referencia = dataItem.value;
+                  break;
+                case 'UNIT':
+                  subItem.unidade = dataItem.value;
+                  break;
+                case 'QUANTITY':
+                  subItem.quantidade = parseInt(dataItem.value) || 1;
+                  break;
+                case 'WIDTH':
+                  subItem.largura = parseFloat(dataItem.value) || 0;
+                  break;
+                case 'HEIGHT':
+                  subItem.altura = parseFloat(dataItem.value) || 0;
+                  break;
+                case 'DEPTH':
+                  subItem.profundidade = parseFloat(dataItem.value) || 0;
+                  break;
+                case 'TEXTDIMENSION':
+                  subItem.dimensoes = dataItem.value;
+                  break;
+                case 'TOTAL':
+                  subItem.valor_total = parseFloat(dataItem.value.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+                  break;
+              }
+            } else {
+              // É um item principal
+              const itemKey = `${ambientIndex}_${categoryIndex}_${itemIndex}`;
+              const campo = parts[6];
+              
+              if (!itensMap.has(itemKey)) {
+                itensMap.set(itemKey, {
+                  descricao: '',
+                  referencia: '',
+                  unidade: 'UN',
+                  quantidade: 1,
+                  largura: 0,
+                  altura: 0,
+                  profundidade: 0,
+                  dimensoes: '',
+                  valor_total: 0,
+                  categoria_index: categoryIndex,
+                });
+              }
+              
+              const item = itensMap.get(itemKey);
+              
+              switch (campo) {
+                case 'DESCRIPTION':
+                  item.descricao = dataItem.value;
+                  break;
+                case 'REFERENCE':
+                  item.referencia = dataItem.value;
+                  break;
+                case 'UNIT':
+                  item.unidade = dataItem.value;
+                  break;
+                case 'QUANTITY':
+                  item.quantidade = parseInt(dataItem.value) || 1;
+                  break;
+                case 'WIDTH':
+                  item.largura = parseFloat(dataItem.value) || 0;
+                  break;
+                case 'HEIGHT':
+                  item.altura = parseFloat(dataItem.value) || 0;
+                  break;
+                case 'DEPTH':
+                  item.profundidade = parseFloat(dataItem.value) || 0;
+                  break;
+                case 'TEXTDIMENSION':
+                  item.dimensoes = dataItem.value;
+                  break;
+                case 'TOTALCOMPONENTS':
+                  item.valor_total = parseFloat(dataItem.value.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+                  break;
+              }
             }
           }
         }
@@ -532,10 +626,12 @@ export const extractPromobData = (xmlStructure: XMLStructure): any => {
     ambientes.push(...Array.from(ambientesMap.values()));
     categorias.push(...Array.from(categoriasMap.values()));
     itens.push(...Array.from(itensMap.values()));
+    subitens.push(...Array.from(subItensMap.values()));
 
     console.log(`[XML Parser] ${ambientes.length} ambientes processados`);
     console.log(`[XML Parser] ${categorias.length} categorias processadas`);
     console.log(`[XML Parser] ${itens.length} itens processados`);
+    console.log(`[XML Parser] ${subitens.length} subitens processados`);
   }
 
   // Se não há ambientes estruturados, usar dados básicos
@@ -639,7 +735,7 @@ export const extractPromobData = (xmlStructure: XMLStructure): any => {
     ambientes: ambientes,
     categorias: categorias,
     itens: itens,
-    subitens: [],
+    subitens: subitens,
     margens: []
   };
 
