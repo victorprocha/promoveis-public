@@ -1,4 +1,3 @@
-
 export interface PromobDataItem {
   id: string;
   value: string;
@@ -16,6 +15,7 @@ export interface XMLStructure {
   hasItemsData: boolean;
   hasBudgetData: boolean;
   hasTotalPrices: boolean;
+  hasAmbients: boolean;
 }
 
 export const analyzeXMLStructure = (xmlContent: string): XMLStructure => {
@@ -33,7 +33,8 @@ export const analyzeXMLStructure = (xmlContent: string): XMLStructure => {
       hasCustomerData: false,
       hasItemsData: false,
       hasBudgetData: false,
-      hasTotalPrices: false
+      hasTotalPrices: false,
+      hasAmbients: false
     };
   }
 
@@ -43,12 +44,14 @@ export const analyzeXMLStructure = (xmlContent: string): XMLStructure => {
   const itemsDataSection = xmlDoc.querySelector('ITEMSDATA');
   const budgetDataSection = xmlDoc.querySelector('BUDGETDATA');
   const totalPricesSection = xmlDoc.querySelector('TOTALPRICES');
+  const ambientsSection = xmlDoc.querySelector('AMBIENTS');
 
   console.log(`[XML Parser] Encontrados ${dataElements.length} elementos DATA`);
   console.log(`[XML Parser] CUSTOMERSDATA: ${customerDataSection ? 'Sim' : 'Não'}`);
   console.log(`[XML Parser] ITEMSDATA: ${itemsDataSection ? 'Sim' : 'Não'}`);
   console.log(`[XML Parser] BUDGETDATA: ${budgetDataSection ? 'Sim' : 'Não'}`);
   console.log(`[XML Parser] TOTALPRICES: ${totalPricesSection ? 'Sim' : 'Não'}`);
+  console.log(`[XML Parser] AMBIENTS: ${ambientsSection ? 'Sim' : 'Não'}`);
 
   const sections: PromobSection[] = [];
 
@@ -165,13 +168,103 @@ export const analyzeXMLStructure = (xmlContent: string): XMLStructure => {
       console.log(`[XML Parser] TOTALPRICES: ${totalPricesData.length} itens`);
     }
 
+    // Extrair AMBIENTS
+    if (ambientsSection) {
+      const ambientsData = [];
+      const ambientElements = ambientsSection.querySelectorAll('AMBIENT');
+      
+      ambientElements.forEach((ambient, ambientIndex) => {
+        const description = ambient.getAttribute('DESCRIPTION');
+        const totalPrices = ambient.querySelector('TOTALPRICES');
+        const tableValue = totalPrices?.getAttribute('TABLE');
+        
+        if (description) {
+          ambientsData.push({
+            id: `AMBIENT_${ambientIndex}_DESCRIPTION`,
+            value: description
+          });
+        }
+        
+        if (tableValue) {
+          ambientsData.push({
+            id: `AMBIENT_${ambientIndex}_TABLE`,
+            value: tableValue
+          });
+        }
+        
+        // Extrair categorias do ambiente
+        const categories = ambient.querySelectorAll('CATEGORIES CATEGORY');
+        categories.forEach((category, categoryIndex) => {
+          const categoryDescription = category.getAttribute('DESCRIPTION');
+          const categoryTotalPrices = category.querySelector('TOTALPRICES');
+          const categoryTableValue = categoryTotalPrices?.getAttribute('TABLE');
+          
+          if (categoryDescription) {
+            ambientsData.push({
+              id: `AMBIENT_${ambientIndex}_CATEGORY_${categoryIndex}_DESCRIPTION`,
+              value: categoryDescription
+            });
+          }
+          
+          if (categoryTableValue) {
+            ambientsData.push({
+              id: `AMBIENT_${ambientIndex}_CATEGORY_${categoryIndex}_TABLE`,
+              value: categoryTableValue
+            });
+          }
+          
+          // Extrair itens da categoria
+          const items = category.querySelectorAll('ITEM');
+          items.forEach((item, itemIndex) => {
+            const itemData = {
+              description: item.getAttribute('DESCRIPTION'),
+              reference: item.getAttribute('REFERENCE'),
+              unit: item.getAttribute('UNIT'),
+              quantity: item.getAttribute('QUANTITY'),
+              width: item.getAttribute('WIDTH'),
+              height: item.getAttribute('HEIGHT'),
+              depth: item.getAttribute('DEPTH'),
+              textDimension: item.getAttribute('TEXTDIMENSION'),
+            };
+            
+            const priceElement = item.querySelector('PRICE');
+            const totalComponents = priceElement?.getAttribute('TOTALCOMPONENTS');
+            
+            // Adicionar dados do item
+            Object.entries(itemData).forEach(([key, value]) => {
+              if (value) {
+                ambientsData.push({
+                  id: `AMBIENT_${ambientIndex}_CATEGORY_${categoryIndex}_ITEM_${itemIndex}_${key.toUpperCase()}`,
+                  value: value
+                });
+              }
+            });
+            
+            if (totalComponents) {
+              ambientsData.push({
+                id: `AMBIENT_${ambientIndex}_CATEGORY_${categoryIndex}_ITEM_${itemIndex}_TOTALCOMPONENTS`,
+                value: totalComponents
+              });
+            }
+          });
+        });
+      });
+      
+      sections.push({
+        name: 'AMBIENTS',
+        data: ambientsData
+      });
+      console.log(`[XML Parser] AMBIENTS: ${ambientsData.length} itens`);
+    }
+
     return {
       type: 'promob',
       sections,
       hasCustomerData: !!customerDataSection,
       hasItemsData: !!itemsDataSection,
       hasBudgetData: !!budgetDataSection,
-      hasTotalPrices: !!totalPricesSection
+      hasTotalPrices: !!totalPricesSection,
+      hasAmbients: !!ambientsSection
     };
   }
 
@@ -187,7 +280,8 @@ export const analyzeXMLStructure = (xmlContent: string): XMLStructure => {
       hasCustomerData: false,
       hasItemsData: itemElements.length > 0,
       hasBudgetData: false,
-      hasTotalPrices: false
+      hasTotalPrices: false,
+      hasAmbients: false
     };
   }
 
@@ -198,7 +292,8 @@ export const analyzeXMLStructure = (xmlContent: string): XMLStructure => {
     hasCustomerData: false,
     hasItemsData: false,
     hasBudgetData: false,
-    hasTotalPrices: false
+    hasTotalPrices: false,
+    hasAmbients: false
   };
 };
 
@@ -212,6 +307,7 @@ export const extractPromobData = (xmlStructure: XMLStructure): any => {
   const itemsSection = xmlStructure.sections.find(s => s.name === 'ITEMSDATA');
   const budgetSection = xmlStructure.sections.find(s => s.name === 'BUDGETDATA');
   const totalPricesSection = xmlStructure.sections.find(s => s.name === 'TOTALPRICES');
+  const ambientsSection = xmlStructure.sections.find(s => s.name === 'AMBIENTS');
 
   // Extrair dados do cliente conforme mapeamento fornecido
   const getDataValue = (section: PromobSection | undefined, id: string): string => {
@@ -322,6 +418,201 @@ export const extractPromobData = (xmlStructure: XMLStructure): any => {
     telefoneProcessado = telefoneCompleto.split('|')[1] || telefoneProcessado;
   }
 
+  // Extrair ambientes, categorias e itens da seção AMBIENTS
+  const ambientes: any[] = [];
+  const categorias: any[] = [];
+  const itens: any[] = [];
+
+  if (ambientsSection) {
+    console.log(`[XML Parser] Processando dados de ambientes...`);
+    
+    // Agrupar dados por ambiente
+    const ambientesMap = new Map();
+    const categoriasMap = new Map();
+    const itensMap = new Map();
+
+    ambientsSection.data.forEach(dataItem => {
+      const parts = dataItem.id.split('_');
+      
+      if (parts[0] === 'AMBIENT' && parts.length >= 3) {
+        const ambientIndex = parseInt(parts[1]);
+        
+        if (parts[2] === 'DESCRIPTION') {
+          // Descrição do ambiente
+          ambientesMap.set(ambientIndex, {
+            descricao: dataItem.value,
+            total_pedido: 0,
+            total_orcamento: 0,
+          });
+        } else if (parts[2] === 'TABLE') {
+          // Valor total do ambiente
+          const ambiente = ambientesMap.get(ambientIndex) || { descricao: `Ambiente ${ambientIndex}` };
+          const valor = getNumericValue(ambientsSection, dataItem.id);
+          ambiente.total_pedido = valor;
+          ambiente.total_orcamento = valor;
+          ambientesMap.set(ambientIndex, ambiente);
+        } else if (parts[2] === 'CATEGORY' && parts.length >= 5) {
+          const categoryIndex = parseInt(parts[3]);
+          const categoryKey = `${ambientIndex}_${categoryIndex}`;
+          
+          if (parts[4] === 'DESCRIPTION') {
+            // Descrição da categoria
+            categoriasMap.set(categoryKey, {
+              descricao: dataItem.value,
+              total_pedido: 0,
+              total_orcamento: 0,
+              ambiente_index: ambientIndex,
+            });
+          } else if (parts[4] === 'TABLE') {
+            // Valor total da categoria
+            const categoria = categoriasMap.get(categoryKey) || { 
+              descricao: `Categoria ${categoryIndex}`,
+              ambiente_index: ambientIndex 
+            };
+            const valor = getNumericValue(ambientsSection, dataItem.id);
+            categoria.total_pedido = valor;
+            categoria.total_orcamento = valor;
+            categoriasMap.set(categoryKey, categoria);
+          } else if (parts[4] === 'ITEM' && parts.length >= 7) {
+            const itemIndex = parseInt(parts[5]);
+            const itemKey = `${ambientIndex}_${categoryIndex}_${itemIndex}`;
+            const campo = parts[6];
+            
+            if (!itensMap.has(itemKey)) {
+              itensMap.set(itemKey, {
+                descricao: '',
+                referencia: '',
+                unidade: 'UN',
+                quantidade: 1,
+                largura: 0,
+                altura: 0,
+                profundidade: 0,
+                dimensoes: '',
+                valor_total: 0,
+                categoria_index: categoryIndex,
+              });
+            }
+            
+            const item = itensMap.get(itemKey);
+            
+            switch (campo) {
+              case 'DESCRIPTION':
+                item.descricao = dataItem.value;
+                break;
+              case 'REFERENCE':
+                item.referencia = dataItem.value;
+                break;
+              case 'UNIT':
+                item.unidade = dataItem.value;
+                break;
+              case 'QUANTITY':
+                item.quantidade = parseInt(dataItem.value) || 1;
+                break;
+              case 'WIDTH':
+                item.largura = parseFloat(dataItem.value) || 0;
+                break;
+              case 'HEIGHT':
+                item.altura = parseFloat(dataItem.value) || 0;
+                break;
+              case 'DEPTH':
+                item.profundidade = parseFloat(dataItem.value) || 0;
+                break;
+              case 'TEXTDIMENSION':
+                item.dimensoes = dataItem.value;
+                break;
+              case 'TOTALCOMPONENTS':
+                item.valor_total = parseFloat(dataItem.value.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+                break;
+            }
+          }
+        }
+      }
+    });
+
+    ambientes.push(...Array.from(ambientesMap.values()));
+    categorias.push(...Array.from(categoriasMap.values()));
+    itens.push(...Array.from(itensMap.values()));
+
+    console.log(`[XML Parser] ${ambientes.length} ambientes processados`);
+    console.log(`[XML Parser] ${categorias.length} categorias processadas`);
+    console.log(`[XML Parser] ${itens.length} itens processados`);
+  }
+
+  // Se não há ambientes estruturados, usar dados básicos
+  if (ambientes.length === 0) {
+    ambientes.push({
+      descricao: environmentName,
+      total_pedido: valorPedido,
+      total_orcamento: valorOrcamento || valorPedido,
+    });
+  }
+
+  if (categorias.length === 0) {
+    categorias.push({
+      descricao: 'Categoria Principal',
+      total_pedido: valorPedido,
+      total_orcamento: valorOrcamento || valorPedido,
+      ambiente_index: 0,
+    });
+  }
+
+  // Se não há itens estruturados, processar da seção ITEMSDATA ou criar genérico
+  if (itens.length === 0) {
+    if (itemsSection && itemsSection.data.length > 0) {
+      console.log(`[XML Parser] Processando ${itemsSection.data.length} itens da seção ITEMSDATA...`);
+      
+      // Agrupar dados por item (assumindo que itens podem ter múltiplos DATA elements)
+      const itemsMap = new Map();
+      
+      itemsSection.data.forEach(dataItem => {
+        // Usar o ID como base para agrupar itens relacionados
+        const itemKey = dataItem.id.includes('_') ? dataItem.id.split('_')[0] : dataItem.id;
+        
+        if (!itemsMap.has(itemKey)) {
+          itemsMap.set(itemKey, {
+            descricao: `Item ${itemKey}`,
+            referencia: '',
+            quantidade: 1,
+            unidade: 'UN',
+            largura: 0,
+            altura: 0,
+            profundidade: 0,
+            dimensoes: '0x0x0',
+            valor_total: 0,
+            categoria_index: 0,
+          });
+        }
+        
+        // Mapear campos específicos se possível
+        const item = itemsMap.get(itemKey);
+        if (dataItem.id.toLowerCase().includes('descricao') || dataItem.id.toLowerCase().includes('description')) {
+          item.descricao = dataItem.value;
+        } else if (dataItem.id.toLowerCase().includes('quantidade') || dataItem.id.toLowerCase().includes('qty')) {
+          item.quantidade = parseInt(dataItem.value) || 1;
+        } else if (dataItem.id.toLowerCase().includes('valor') || dataItem.id.toLowerCase().includes('price')) {
+          item.valor_total = parseFloat(dataItem.value) || 0;
+        }
+      });
+      
+      itens.push(...Array.from(itemsMap.values()));
+      console.log(`[XML Parser] ${itens.length} itens processados da seção ITEMSDATA`);
+    } else {
+      // Criar um item genérico baseado no ambiente
+      itens.push({
+        descricao: `Móveis de ${environmentName}`,
+        referencia: '',
+        quantidade: 1,
+        unidade: 'UN',
+        largura: 0,
+        altura: 0,
+        profundidade: 0,
+        dimensoes: '0x0x0',
+        valor_total: valorOrcamento || valorPedido,
+        categoria_index: 0,
+      });
+    }
+  }
+
   // Estrutura de dados compatível com o sistema atual
   const parsedData = {
     orcamento: {
@@ -345,76 +636,12 @@ export const extractPromobData = (xmlStructure: XMLStructure): any => {
       telefone: telefoneProcessado,
       telefone_completo: telefoneCompleto,
     },
-    ambientes: [{
-      descricao: environmentName,
-      total_pedido: valorPedido,
-      total_orcamento: valorOrcamento || valorPedido,
-    }],
-    categorias: [{
-      descricao: 'Categoria Principal',
-      total_pedido: valorPedido,
-      total_orcamento: valorOrcamento || valorPedido,
-      ambiente_index: 0,
-    }],
-    itens: [],
+    ambientes: ambientes,
+    categorias: categorias,
+    itens: itens,
     subitens: [],
     margens: []
   };
-
-  // Extrair itens se disponível
-  if (itemsSection && itemsSection.data.length > 0) {
-    console.log(`[XML Parser] Processando ${itemsSection.data.length} itens...`);
-    
-    // Agrupar dados por item (assumindo que itens podem ter múltiplos DATA elements)
-    const itemsMap = new Map();
-    
-    itemsSection.data.forEach(dataItem => {
-      // Usar o ID como base para agrupar itens relacionados
-      const itemKey = dataItem.id.includes('_') ? dataItem.id.split('_')[0] : dataItem.id;
-      
-      if (!itemsMap.has(itemKey)) {
-        itemsMap.set(itemKey, {
-          descricao: `Item ${itemKey}`,
-          referencia: '',
-          quantidade: 1,
-          unidade: 'UN',
-          largura: 0,
-          altura: 0,
-          profundidade: 0,
-          dimensoes: '0x0x0',
-          valor_total: 0,
-          categoria_index: 0,
-        });
-      }
-      
-      // Mapear campos específicos se possível
-      const item = itemsMap.get(itemKey);
-      if (dataItem.id.toLowerCase().includes('descricao') || dataItem.id.toLowerCase().includes('description')) {
-        item.descricao = dataItem.value;
-      } else if (dataItem.id.toLowerCase().includes('quantidade') || dataItem.id.toLowerCase().includes('qty')) {
-        item.quantidade = parseInt(dataItem.value) || 1;
-      } else if (dataItem.id.toLowerCase().includes('valor') || dataItem.id.toLowerCase().includes('price')) {
-        item.valor_total = parseFloat(dataItem.value) || 0;
-      }
-    });
-    
-    parsedData.itens = Array.from(itemsMap.values());
-    console.log(`[XML Parser] ${parsedData.itens.length} itens processados`);
-  } else {
-    // Criar um item genérico baseado no ambiente
-    parsedData.itens.push({
-      descricao: `Móveis de ${environmentName}`,
-      referencia: '',
-      quantidade: 1,
-      unidade: 'UN',
-      largura: 0,
-      altura: 0,
-      profundidade: 0,
-      dimensoes: '0x0x0',
-      valor_total: valorOrcamento || valorPedido,
-      categoria_index: 0,
-    });
-  }
 
   return parsedData;
 };
