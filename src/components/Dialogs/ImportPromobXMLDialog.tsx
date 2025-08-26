@@ -46,6 +46,7 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
       setImportResult(null);
       setXmlStructure(null);
       setXmlContent('');
+      console.log('[ImportPromobXMLDialog] Arquivo selecionado:', file.name);
     } else {
       toast({
         title: "Erro",
@@ -60,14 +61,19 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
     if (!selectedFile) return;
 
     try {
+      console.log('[ImportPromobXMLDialog] Iniciando análise do arquivo...');
       const reader = new FileReader();
       reader.onload = (e) => {
         const content = e.target?.result as string;
         setXmlContent(content);
         
-        console.log('[Import Dialog] Iniciando análise do XML...');
+        console.log('[ImportPromobXMLDialog] Conteúdo do arquivo lido, tamanho:', content.length);
+        console.log('[ImportPromobXMLDialog] Primeiros 500 caracteres:', content.substring(0, 500));
+        
         const structure = analyzeXMLStructure(content);
         setXmlStructure(structure);
+        
+        console.log('[ImportPromobXMLDialog] Estrutura analisada:', structure.type);
         
         if (structure.type === 'unknown') {
           toast({
@@ -76,11 +82,12 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
             variant: "destructive",
           });
         } else {
-          console.log(`[Import Dialog] Estrutura ${structure.type} detectada com sucesso`);
+          console.log(`[ImportPromobXMLDialog] Estrutura ${structure.type} detectada com sucesso`);
         }
       };
       
-      reader.onerror = () => {
+      reader.onerror = (error) => {
+        console.error('[ImportPromobXMLDialog] Erro ao ler arquivo:', error);
         toast({
           title: "Erro",
           description: "Erro ao ler o arquivo XML.",
@@ -90,7 +97,7 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
       
       reader.readAsText(selectedFile);
     } catch (error) {
-      console.error('[Import Dialog] Erro na análise:', error);
+      console.error('[ImportPromobXMLDialog] Erro na análise:', error);
       toast({
         title: "Erro",
         description: "Erro ao analisar o arquivo XML.",
@@ -100,233 +107,297 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
   };
 
   const parseXMLToPromobData = (xmlContent: string): ParsedData => {
-    console.log('[Import Dialog] Iniciando parsing do XML...');
+    console.log('[ImportPromobXMLDialog] Iniciando parsing do XML...');
     
-    const structure = analyzeXMLStructure(xmlContent);
-    
-    if (structure.type === 'promob') {
-      console.log('[Import Dialog] Usando parser Promob');
-      const promobData = extractPromobData(structure);
+    try {
+      const structure = analyzeXMLStructure(xmlContent);
+      console.log('[ImportPromobXMLDialog] Estrutura detectada:', structure.type);
       
-      if (promobData) {
-        console.log('[Import Dialog] Dados extraídos com sucesso do Promob');
-        return promobData;
+      if (structure.type === 'promob') {
+        console.log('[ImportPromobXMLDialog] Usando parser Promob');
+        const promobData = extractPromobData(structure);
+        
+        if (promobData) {
+          console.log('[ImportPromobXMLDialog] Dados extraídos com sucesso do Promob');
+          console.log('[ImportPromobXMLDialog] Orçamento:', promobData.orcamento);
+          console.log('[ImportPromobXMLDialog] Ambientes:', promobData.ambientes.length);
+          console.log('[ImportPromobXMLDialog] Categorias:', promobData.categorias.length);
+          console.log('[ImportPromobXMLDialog] Itens:', promobData.itens.length);
+          console.log('[ImportPromobXMLDialog] Subitens:', promobData.subitens.length);
+          return promobData;
+        }
       }
-    }
-    
-    // Fallback para estrutura tradicional
-    console.log('[Import Dialog] Usando parser tradicional como fallback');
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
-    
-    if (xmlDoc.documentElement.nodeName === 'parsererror') {
-      throw new Error('Erro ao fazer parse do XML');
-    }
-
-    // Parse orçamento principal
-    const orcamento = {
-      data_orcamento: new Date().toISOString().split('T')[0],
-      ambiente_principal: xmlDoc.querySelector('ambiente')?.getAttribute('nome') || 'Ambiente Principal',
-      situacao: 'Importado',
-      etapa: 'Análise',
-      valor_pedido: parseFloat(xmlDoc.querySelector('totalPedido')?.textContent || '0'),
-      valor_orcamento: parseFloat(xmlDoc.querySelector('totalOrcamento')?.textContent || '0'),
-      acrescimo: parseFloat(xmlDoc.querySelector('acrescimo')?.textContent || '0'),
-      frete: parseFloat(xmlDoc.querySelector('frete')?.textContent || '0'),
-      montagem: parseFloat(xmlDoc.querySelector('montagem')?.textContent || '0'),
-      impostos: parseFloat(xmlDoc.querySelector('impostos')?.textContent || '0'),
-      descontos: parseFloat(xmlDoc.querySelector('descontos')?.textContent || '0'),
-    };
-
-    // Parse ambientes
-    const ambientesElements = xmlDoc.querySelectorAll('ambiente');
-    const ambientes = Array.from(ambientesElements).map((ambiente, index) => ({
-      descricao: ambiente.getAttribute('nome') || `Ambiente ${index + 1}`,
-      total_pedido: parseFloat(ambiente.querySelector('totalPedido')?.textContent || '0'),
-      total_orcamento: parseFloat(ambiente.querySelector('totalOrcamento')?.textContent || '0'),
-    }));
-
-    // Parse categorias
-    const categoriasElements = xmlDoc.querySelectorAll('categoria');
-    const categorias = Array.from(categoriasElements).map((categoria, index) => ({
-      descricao: categoria.getAttribute('nome') || categoria.textContent || `Categoria ${index + 1}`,
-      total_pedido: parseFloat(categoria.querySelector('totalPedido')?.textContent || '0'),
-      total_orcamento: parseFloat(categoria.querySelector('totalOrcamento')?.textContent || '0'),
-      ambiente_index: 0, // Associar ao primeiro ambiente por padrão
-    }));
-
-    // Parse itens
-    const itensElements = xmlDoc.querySelectorAll('item');
-    const itens = Array.from(itensElements).map((item, index) => {
-      const largura = parseFloat(item.querySelector('largura')?.textContent || '0');
-      const altura = parseFloat(item.querySelector('altura')?.textContent || '0');
-      const profundidade = parseFloat(item.querySelector('profundidade')?.textContent || '0');
       
-      return {
-        descricao: item.querySelector('descricao')?.textContent || `Item ${index + 1}`,
-        referencia: item.querySelector('referencia')?.textContent || '',
-        quantidade: parseInt(item.querySelector('quantidade')?.textContent || '1'),
-        unidade: item.querySelector('unidade')?.textContent || 'UN',
-        largura,
-        altura,
-        profundidade,
-        dimensoes: `${largura}x${altura}x${profundidade}`,
-        valor_total: parseFloat(item.querySelector('valor')?.textContent || '0'),
-        categoria_index: 0, // Associar à primeira categoria por padrão
-      };
-    });
-
-    // Parse subitens (componentes)
-    const subItensElements = xmlDoc.querySelectorAll('componente, subitem');
-    const subitens = Array.from(subItensElements).map((subitem, index) => {
-      const largura = parseFloat(subitem.querySelector('largura')?.textContent || '0');
-      const altura = parseFloat(subitem.querySelector('altura')?.textContent || '0');
-      const profundidade = parseFloat(subitem.querySelector('profundidade')?.textContent || '0');
+      // Fallback para estrutura tradicional
+      console.log('[ImportPromobXMLDialog] Usando parser tradicional como fallback');
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
       
-      return {
-        descricao: subitem.querySelector('descricao')?.textContent || `Subitem ${index + 1}`,
-        referencia: subitem.querySelector('referencia')?.textContent || '',
-        quantidade: parseInt(subitem.querySelector('quantidade')?.textContent || '1'),
-        unidade: subitem.querySelector('unidade')?.textContent || 'UN',
-        largura,
-        altura,
-        profundidade,
-        dimensoes: `${largura}x${altura}x${profundidade}`,
-        valor_total: parseFloat(subitem.querySelector('valor')?.textContent || '0'),
-        item_index: 0, // Associar ao primeiro item por padrão
+      if (xmlDoc.documentElement.nodeName === 'parsererror') {
+        console.error('[ImportPromobXMLDialog] Erro de parsing do XML:', xmlDoc.documentElement.textContent);
+        throw new Error('Erro ao fazer parse do XML: ' + xmlDoc.documentElement.textContent);
+      }
+
+      const orcamento = {
+        data_orcamento: new Date().toISOString().split('T')[0],
+        ambiente_principal: xmlDoc.querySelector('ambiente')?.getAttribute('nome') || 'Ambiente Principal',
+        situacao: 'Importado',
+        etapa: 'Análise',
+        valor_pedido: parseFloat(xmlDoc.querySelector('totalPedido')?.textContent || '0'),
+        valor_orcamento: parseFloat(xmlDoc.querySelector('totalOrcamento')?.textContent || '0'),
+        acrescimo: parseFloat(xmlDoc.querySelector('acrescimo')?.textContent || '0'),
+        frete: parseFloat(xmlDoc.querySelector('frete')?.textContent || '0'),
+        montagem: parseFloat(xmlDoc.querySelector('montagem')?.textContent || '0'),
+        impostos: parseFloat(xmlDoc.querySelector('impostos')?.textContent || '0'),
+        descontos: parseFloat(xmlDoc.querySelector('descontos')?.textContent || '0'),
       };
-    });
 
-    // Parse margens (impostos, descontos, acréscimos)
-    const margens: any[] = [];
-    
-    const impostosElements = xmlDoc.querySelectorAll('imposto');
-    Array.from(impostosElements).forEach(imposto => {
-      margens.push({
-        entidade_tipo: 'orcamento',
-        tipo: 'imposto',
-        descricao: imposto.querySelector('descricao')?.textContent || 'Imposto',
-        valor: parseFloat(imposto.querySelector('valor')?.textContent || '0'),
+      const ambientesElements = xmlDoc.querySelectorAll('ambiente');
+      const ambientes = Array.from(ambientesElements).map((ambiente, index) => ({
+        descricao: ambiente.getAttribute('nome') || `Ambiente ${index + 1}`,
+        total_pedido: parseFloat(ambiente.querySelector('totalPedido')?.textContent || '0'),
+        total_orcamento: parseFloat(ambiente.querySelector('totalOrcamento')?.textContent || '0'),
+      }));
+
+      const categoriasElements = xmlDoc.querySelectorAll('categoria');
+      const categorias = Array.from(categoriasElements).map((categoria, index) => ({
+        descricao: categoria.getAttribute('nome') || categoria.textContent || `Categoria ${index + 1}`,
+        total_pedido: parseFloat(categoria.querySelector('totalPedido')?.textContent || '0'),
+        total_orcamento: parseFloat(categoria.querySelector('totalOrcamento')?.textContent || '0'),
+        ambiente_index: 0,
+      }));
+
+      const itensElements = xmlDoc.querySelectorAll('item');
+      const itens = Array.from(itensElements).map((item, index) => {
+        const largura = parseFloat(item.querySelector('largura')?.textContent || '0');
+        const altura = parseFloat(item.querySelector('altura')?.textContent || '0');
+        const profundidade = parseFloat(item.querySelector('profundidade')?.textContent || '0');
+        
+        return {
+          descricao: item.querySelector('descricao')?.textContent || `Item ${index + 1}`,
+          referencia: item.querySelector('referencia')?.textContent || '',
+          quantidade: parseInt(item.querySelector('quantidade')?.textContent || '1'),
+          unidade: item.querySelector('unidade')?.textContent || 'UN',
+          largura,
+          altura,
+          profundidade,
+          dimensoes: `${largura}x${altura}x${profundidade}`,
+          valor_total: parseFloat(item.querySelector('valor')?.textContent || '0'),
+          categoria_index: 0,
+        };
       });
-    });
 
-    const descontosElements = xmlDoc.querySelectorAll('desconto');
-    Array.from(descontosElements).forEach(desconto => {
-      margens.push({
-        entidade_tipo: 'orcamento',
-        tipo: 'desconto',
-        descricao: desconto.querySelector('descricao')?.textContent || 'Desconto',
-        valor: parseFloat(desconto.querySelector('valor')?.textContent || '0'),
+      const subItensElements = xmlDoc.querySelectorAll('componente, subitem');
+      const subitens = Array.from(subItensElements).map((subitem, index) => {
+        const largura = parseFloat(subitem.querySelector('largura')?.textContent || '0');
+        const altura = parseFloat(subitem.querySelector('altura')?.textContent || '0');
+        const profundidade = parseFloat(subitem.querySelector('profundidade')?.textContent || '0');
+        
+        return {
+          descricao: subitem.querySelector('descricao')?.textContent || `Subitem ${index + 1}`,
+          referencia: subitem.querySelector('referencia')?.textContent || '',
+          quantidade: parseInt(subitem.querySelector('quantidade')?.textContent || '1'),
+          unidade: subitem.querySelector('unidade')?.textContent || 'UN',
+          largura,
+          altura,
+          profundidade,
+          dimensoes: `${largura}x${altura}x${profundidade}`,
+          valor_total: parseFloat(subitem.querySelector('valor')?.textContent || '0'),
+          item_index: 0,
+        };
       });
-    });
 
-    return {
-      orcamento,
-      ambientes,
-      categorias,
-      itens,
-      subitens,
-      margens
-    };
+      const margens: any[] = [];
+      
+      const impostosElements = xmlDoc.querySelectorAll('imposto');
+      Array.from(impostosElements).forEach(imposto => {
+        margens.push({
+          entidade_tipo: 'orcamento',
+          tipo: 'imposto',
+          descricao: imposto.querySelector('descricao')?.textContent || 'Imposto',
+          valor: parseFloat(imposto.querySelector('valor')?.textContent || '0'),
+        });
+      });
+
+      const descontosElements = xmlDoc.querySelectorAll('desconto');
+      Array.from(descontosElements).forEach(desconto => {
+        margens.push({
+          entidade_tipo: 'orcamento',
+          tipo: 'desconto',
+          descricao: desconto.querySelector('descricao')?.textContent || 'Desconto',
+          valor: parseFloat(desconto.querySelector('valor')?.textContent || '0'),
+        });
+      });
+
+      const fallbackData = {
+        orcamento,
+        ambientes,
+        categorias,
+        itens,
+        subitens,
+        margens
+      };
+
+      console.log('[ImportPromobXMLDialog] Dados parseados (fallback):', fallbackData);
+      return fallbackData;
+
+    } catch (error) {
+      console.error('[ImportPromobXMLDialog] Erro no parsing:', error);
+      throw error;
+    }
   };
 
   const savePromobDataToDatabase = async (parsedData: ParsedData) => {
-    const { data: { user } } = await supabase.auth.getUser();
+    console.log('[ImportPromobXMLDialog] Iniciando salvamento no banco de dados...');
     
-    if (!user) {
-      throw new Error('Usuário não autenticado');
-    }
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('Usuário não autenticado');
+      }
 
-    // 1. Criar orçamento
-    const { data: orcamentoData, error: orcamentoError } = await supabase
-      .from('orcamentos')
-      .insert({
-        user_id: user.id,
-        project_id: projectId,
-        ...parsedData.orcamento
-      })
-      .select()
-      .single();
+      console.log('[ImportPromobXMLDialog] Usuário autenticado:', user.id);
+      console.log('[ImportPromobXMLDialog] Project ID:', projectId);
 
-    if (orcamentoError) throw orcamentoError;
+      // 1. Criar orçamento
+      console.log('[ImportPromobXMLDialog] Criando orçamento:', parsedData.orcamento);
+      const { data: orcamentoData, error: orcamentoError } = await supabase
+        .from('orcamentos')
+        .insert({
+          user_id: user.id,
+          project_id: projectId,
+          ...parsedData.orcamento
+        })
+        .select()
+        .single();
 
-    // 2. Criar ambientes
-    const ambientesWithOrcamentoId = parsedData.ambientes.map(ambiente => ({
-      ...ambiente,
-      orcamento_id: orcamentoData.id
-    }));
+      if (orcamentoError) {
+        console.error('[ImportPromobXMLDialog] Erro ao criar orçamento:', orcamentoError);
+        throw orcamentoError;
+      }
 
-    const { data: ambientesData, error: ambientesError } = await supabase
-      .from('ambientes')
-      .insert(ambientesWithOrcamentoId)
-      .select();
+      console.log('[ImportPromobXMLDialog] Orçamento criado:', orcamentoData);
 
-    if (ambientesError) throw ambientesError;
-
-    // 3. Criar categorias
-    if (parsedData.categorias.length > 0 && ambientesData && ambientesData.length > 0) {
-      const categoriasWithAmbienteId = parsedData.categorias.map(categoria => ({
-        ...categoria,
-        ambiente_id: ambientesData[categoria.ambiente_index] || ambientesData[0].id
-      }));
-
-      const { data: categoriasData, error: categoriasError } = await supabase
-        .from('categorias')
-        .insert(categoriasWithAmbienteId)
-        .select();
-
-      if (categoriasError) throw categoriasError;
-
-      // 4. Criar itens
-      if (parsedData.itens.length > 0 && categoriasData && categoriasData.length > 0) {
-        const itensWithCategoriaId = parsedData.itens.map(item => ({
-          ...item,
-          categoria_id: categoriasData[item.categoria_index] || categoriasData[0].id
+      // 2. Criar ambientes
+      if (parsedData.ambientes.length > 0) {
+        const ambientesWithOrcamentoId = parsedData.ambientes.map(ambiente => ({
+          ...ambiente,
+          orcamento_id: orcamentoData.id
         }));
 
-        const { data: itensData, error: itensError } = await supabase
-          .from('itens')
-          .insert(itensWithCategoriaId)
+        console.log('[ImportPromobXMLDialog] Criando ambientes:', ambientesWithOrcamentoId);
+        const { data: ambientesData, error: ambientesError } = await supabase
+          .from('ambientes')
+          .insert(ambientesWithOrcamentoId)
           .select();
 
-        if (itensError) throw itensError;
+        if (ambientesError) {
+          console.error('[ImportPromobXMLDialog] Erro ao criar ambientes:', ambientesError);
+          throw ambientesError;
+        }
 
-        // 5. Criar subitens
-        if (parsedData.subitens.length > 0 && itensData && itensData.length > 0) {
-          const subItensWithItemId = parsedData.subitens.map(subitem => ({
-            ...subitem,
-            item_id: itensData[subitem.item_index] || itensData[0].id
+        console.log('[ImportPromobXMLDialog] Ambientes criados:', ambientesData);
+
+        // 3. Criar categorias
+        if (parsedData.categorias.length > 0 && ambientesData && ambientesData.length > 0) {
+          const categoriasWithAmbienteId = parsedData.categorias.map(categoria => ({
+            ...categoria,
+            ambiente_id: ambientesData[categoria.ambiente_index] || ambientesData[0].id
           }));
 
-          const { error: subItensError } = await supabase
-            .from('subitens')
-            .insert(subItensWithItemId);
+          console.log('[ImportPromobXMLDialog] Criando categorias:', categoriasWithAmbienteId);
+          const { data: categoriasData, error: categoriasError } = await supabase
+            .from('categorias')
+            .insert(categoriasWithAmbienteId)
+            .select();
 
-          if (subItensError) throw subItensError;
+          if (categoriasError) {
+            console.error('[ImportPromobXMLDialog] Erro ao criar categorias:', categoriasError);
+            throw categoriasError;
+          }
+
+          console.log('[ImportPromobXMLDialog] Categorias criadas:', categoriasData);
+
+          // 4. Criar itens
+          if (parsedData.itens.length > 0 && categoriasData && categoriasData.length > 0) {
+            const itensWithCategoriaId = parsedData.itens.map(item => ({
+              ...item,
+              categoria_id: categoriasData[item.categoria_index] || categoriasData[0].id
+            }));
+
+            console.log('[ImportPromobXMLDialog] Criando itens:', itensWithCategoriaId);
+            const { data: itensData, error: itensError } = await supabase
+              .from('itens')
+              .insert(itensWithCategoriaId)
+              .select();
+
+            if (itensError) {
+              console.error('[ImportPromobXMLDialog] Erro ao criar itens:', itensError);
+              throw itensError;
+            }
+
+            console.log('[ImportPromobXMLDialog] Itens criados:', itensData);
+
+            // 5. Criar subitens
+            if (parsedData.subitens.length > 0 && itensData && itensData.length > 0) {
+              const subItensWithItemId = parsedData.subitens.map(subitem => ({
+                ...subitem,
+                item_id: itensData[subitem.item_index] || itensData[0].id
+              }));
+
+              console.log('[ImportPromobXMLDialog] Criando subitens:', subItensWithItemId);
+              const { error: subItensError } = await supabase
+                .from('subitens')
+                .insert(subItensWithItemId);
+
+              if (subItensError) {
+                console.error('[ImportPromobXMLDialog] Erro ao criar subitens:', subItensError);
+                throw subItensError;
+              }
+
+              console.log('[ImportPromobXMLDialog] Subitens criados com sucesso');
+            }
+          }
         }
+
+        // 6. Criar margens
+        if (parsedData.margens.length > 0) {
+          const margensWithEntidadeId = parsedData.margens.map(margem => ({
+            ...margem,
+            entidade_id: orcamentoData.id
+          }));
+
+          console.log('[ImportPromobXMLDialog] Criando margens:', margensWithEntidadeId);
+          const { error: margensError } = await supabase
+            .from('margens')
+            .insert(margensWithEntidadeId);
+
+          if (margensError) {
+            console.error('[ImportPromobXMLDialog] Erro ao criar margens:', margensError);
+            throw margensError;
+          }
+
+          console.log('[ImportPromobXMLDialog] Margens criadas com sucesso');
+        }
+
+        const result = {
+          orcamento: orcamentoData,
+          ambientes: ambientesData,
+          totalItens: parsedData.itens.length,
+          totalSubitens: parsedData.subitens.length
+        };
+
+        console.log('[ImportPromobXMLDialog] Salvamento concluído com sucesso:', result);
+        return result;
       }
+
+      throw new Error('Nenhum ambiente foi encontrado para processar');
+
+    } catch (error) {
+      console.error('[ImportPromobXMLDialog] Erro no salvamento:', error);
+      throw error;
     }
-
-    // 6. Criar margens
-    if (parsedData.margens.length > 0) {
-      const margensWithEntidadeId = parsedData.margens.map(margem => ({
-        ...margem,
-        entidade_id: orcamentoData.id
-      }));
-
-      const { error: margensError } = await supabase
-        .from('margens')
-        .insert(margensWithEntidadeId);
-
-      if (margensError) throw margensError;
-    }
-
-    return {
-      orcamento: orcamentoData,
-      ambientes: ambientesData,
-      totalItens: parsedData.itens.length,
-      totalSubitens: parsedData.subitens.length
-    };
   };
 
   const handlePreview = async () => {
@@ -354,14 +425,19 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
     }
 
     setLoading(true);
+    console.log('[ImportPromobXMLDialog] Iniciando processo de importação...');
+    
     try {
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
           const xmlContent = e.target?.result as string;
+          console.log('[ImportPromobXMLDialog] Conteúdo do arquivo lido, iniciando parsing...');
+          
           const parsedData = parseXMLToPromobData(xmlContent);
           
           if (parsedData.ambientes.length === 0) {
+            console.warn('[ImportPromobXMLDialog] Nenhum ambiente encontrado');
             toast({
               title: "Aviso",
               description: "Nenhum ambiente foi encontrado no arquivo XML.",
@@ -370,6 +446,7 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
             return;
           }
 
+          console.log('[ImportPromobXMLDialog] Parsing concluído, iniciando salvamento...');
           const result = await savePromobDataToDatabase(parsedData);
           setImportResult(result);
           
@@ -381,7 +458,7 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
           onImportSuccess();
           
         } catch (error) {
-          console.error('Erro ao processar XML:', error);
+          console.error('[ImportPromobXMLDialog] Erro ao processar XML:', error);
           toast({
             title: "Erro",
             description: error instanceof Error ? error.message : "Erro ao processar o arquivo XML.",
@@ -392,7 +469,8 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
         }
       };
       
-      reader.onerror = () => {
+      reader.onerror = (error) => {
+        console.error('[ImportPromobXMLDialog] Erro ao ler arquivo:', error);
         toast({
           title: "Erro",
           description: "Erro ao ler o arquivo XML.",
@@ -403,6 +481,7 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
       
       reader.readAsText(selectedFile);
     } catch (error) {
+      console.error('[ImportPromobXMLDialog] Erro geral:', error);
       toast({
         title: "Erro",
         description: "Erro ao processar o arquivo XML.",
