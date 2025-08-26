@@ -4,26 +4,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, X, FileText, CheckCircle2, Eye } from "lucide-react";
+import { Upload, X, CheckCircle2, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { analyzeXMLStructure, extractPromobData, XMLStructure } from "@/utils/xmlParser";
-import { XMLPreviewDialog } from "./XMLPreviewDialog";
 
 interface ImportPromobXMLDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projectId: string;
   onImportSuccess: () => void;
-}
-
-interface ParsedData {
-  orcamento: any;
-  ambientes: any[];
-  categorias: any[];
-  itens: any[];
-  subitens: any[];
-  margens: any[];
 }
 
 export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
@@ -35,9 +23,6 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [importResult, setImportResult] = useState<any>(null);
-  const [xmlStructure, setXmlStructure] = useState<XMLStructure | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
-  const [xmlContent, setXmlContent] = useState<string>('');
   const { toast } = useToast();
 
   const N8N_WEBHOOK_URL = 'https://victorprocha.app.n8n.cloud/webhook-test/leitorxml';
@@ -64,25 +49,18 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
         const responseData = await response.text();
         console.log('[N8N] Arquivo enviado com sucesso para n8n:', responseData);
         
-        toast({
-          title: "Arquivo enviado",
-          description: "Arquivo XML enviado com sucesso para processamento no n8n.",
-        });
+        return {
+          success: true,
+          message: 'Arquivo enviado com sucesso para processamento no n8n.',
+          data: responseData
+        };
       } else {
         console.error('[N8N] Erro ao enviar arquivo para n8n:', response.statusText);
-        toast({
-          title: "Aviso",
-          description: "Não foi possível enviar o arquivo para o n8n, mas a importação continuará.",
-          variant: "destructive",
-        });
+        throw new Error(`Erro HTTP ${response.status}: ${response.statusText}`);
       }
     } catch (error) {
       console.error('[N8N] Erro ao conectar com n8n:', error);
-      toast({
-        title: "Aviso",
-        description: "Erro de conexão com n8n, mas a importação continuará.",
-        variant: "destructive",
-      });
+      throw error;
     }
   };
 
@@ -91,8 +69,6 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
     if (file && file.name.toLowerCase().endsWith('.xml')) {
       setSelectedFile(file);
       setImportResult(null);
-      setXmlStructure(null);
-      setXmlContent('');
       console.log('[ImportPromobXMLDialog] Arquivo selecionado:', file.name);
     } else {
       toast({
@@ -102,363 +78,6 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
       });
       setSelectedFile(null);
     }
-  };
-
-  const analyzeFile = async () => {
-    if (!selectedFile) return;
-
-    try {
-      console.log('[ImportPromobXMLDialog] Iniciando análise do arquivo...');
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const content = e.target?.result as string;
-        setXmlContent(content);
-        
-        console.log('[ImportPromobXMLDialog] Conteúdo do arquivo lido, tamanho:', content.length);
-        console.log('[ImportPromobXMLDialog] Primeiros 500 caracteres:', content.substring(0, 500));
-        
-        const structure = analyzeXMLStructure(content);
-        setXmlStructure(structure);
-        
-        console.log('[ImportPromobXMLDialog] Estrutura analisada:', structure.type);
-        
-        if (structure.type === 'unknown') {
-          toast({
-            title: "Estrutura não reconhecida",
-            description: "O arquivo XML não possui uma estrutura reconhecida pelo sistema.",
-            variant: "destructive",
-          });
-        } else {
-          console.log(`[ImportPromobXMLDialog] Estrutura ${structure.type} detectada com sucesso`);
-        }
-      };
-      
-      reader.onerror = (error) => {
-        console.error('[ImportPromobXMLDialog] Erro ao ler arquivo:', error);
-        toast({
-          title: "Erro",
-          description: "Erro ao ler o arquivo XML.",
-          variant: "destructive",
-        });
-      };
-      
-      reader.readAsText(selectedFile);
-    } catch (error) {
-      console.error('[ImportPromobXMLDialog] Erro na análise:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao analisar o arquivo XML.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const parseXMLToPromobData = (xmlContent: string): ParsedData => {
-    console.log('[ImportPromobXMLDialog] Iniciando parsing do XML...');
-    
-    try {
-      const structure = analyzeXMLStructure(xmlContent);
-      console.log('[ImportPromobXMLDialog] Estrutura detectada:', structure.type);
-      
-      if (structure.type === 'promob') {
-        console.log('[ImportPromobXMLDialog] Usando parser Promob');
-        const promobData = extractPromobData(structure);
-        
-        if (promobData) {
-          console.log('[ImportPromobXMLDialog] Dados extraídos com sucesso do Promob');
-          console.log('[ImportPromobXMLDialog] Orçamento:', promobData.orcamento);
-          console.log('[ImportPromobXMLDialog] Ambientes:', promobData.ambientes.length);
-          console.log('[ImportPromobXMLDialog] Categorias:', promobData.categorias.length);
-          console.log('[ImportPromobXMLDialog] Itens:', promobData.itens.length);
-          console.log('[ImportPromobXMLDialog] Subitens:', promobData.subitens.length);
-          return promobData;
-        }
-      }
-      
-      // Fallback para estrutura tradicional
-      console.log('[ImportPromobXMLDialog] Usando parser tradicional como fallback');
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
-      
-      if (xmlDoc.documentElement.nodeName === 'parsererror') {
-        console.error('[ImportPromobXMLDialog] Erro de parsing do XML:', xmlDoc.documentElement.textContent);
-        throw new Error('Erro ao fazer parse do XML: ' + xmlDoc.documentElement.textContent);
-      }
-
-      const orcamento = {
-        data_orcamento: new Date().toISOString().split('T')[0],
-        ambiente_principal: xmlDoc.querySelector('ambiente')?.getAttribute('nome') || 'Ambiente Principal',
-        situacao: 'Importado',
-        etapa: 'Análise',
-        valor_pedido: parseFloat(xmlDoc.querySelector('totalPedido')?.textContent || '0'),
-        valor_orcamento: parseFloat(xmlDoc.querySelector('totalOrcamento')?.textContent || '0'),
-        acrescimo: parseFloat(xmlDoc.querySelector('acrescimo')?.textContent || '0'),
-        frete: parseFloat(xmlDoc.querySelector('frete')?.textContent || '0'),
-        montagem: parseFloat(xmlDoc.querySelector('montagem')?.textContent || '0'),
-        impostos: parseFloat(xmlDoc.querySelector('impostos')?.textContent || '0'),
-        descontos: parseFloat(xmlDoc.querySelector('descontos')?.textContent || '0'),
-      };
-
-      const ambientesElements = xmlDoc.querySelectorAll('ambiente');
-      const ambientes = Array.from(ambientesElements).map((ambiente, index) => ({
-        descricao: ambiente.getAttribute('nome') || `Ambiente ${index + 1}`,
-        total_pedido: parseFloat(ambiente.querySelector('totalPedido')?.textContent || '0'),
-        total_orcamento: parseFloat(ambiente.querySelector('totalOrcamento')?.textContent || '0'),
-      }));
-
-      const categoriasElements = xmlDoc.querySelectorAll('categoria');
-      const categorias = Array.from(categoriasElements).map((categoria, index) => ({
-        descricao: categoria.getAttribute('nome') || categoria.textContent || `Categoria ${index + 1}`,
-        total_pedido: parseFloat(categoria.querySelector('totalPedido')?.textContent || '0'),
-        total_orcamento: parseFloat(categoria.querySelector('totalOrcamento')?.textContent || '0'),
-        ambiente_index: 0,
-      }));
-
-      const itensElements = xmlDoc.querySelectorAll('item');
-      const itens = Array.from(itensElements).map((item, index) => {
-        const largura = parseFloat(item.querySelector('largura')?.textContent || '0');
-        const altura = parseFloat(item.querySelector('altura')?.textContent || '0');
-        const profundidade = parseFloat(item.querySelector('profundidade')?.textContent || '0');
-        
-        return {
-          descricao: item.querySelector('descricao')?.textContent || `Item ${index + 1}`,
-          referencia: item.querySelector('referencia')?.textContent || '',
-          quantidade: parseInt(item.querySelector('quantidade')?.textContent || '1'),
-          unidade: item.querySelector('unidade')?.textContent || 'UN',
-          largura,
-          altura,
-          profundidade,
-          dimensoes: `${largura}x${altura}x${profundidade}`,
-          valor_total: parseFloat(item.querySelector('valor')?.textContent || '0'),
-          categoria_index: 0,
-        };
-      });
-
-      const subItensElements = xmlDoc.querySelectorAll('componente, subitem');
-      const subitens = Array.from(subItensElements).map((subitem, index) => {
-        const largura = parseFloat(subitem.querySelector('largura')?.textContent || '0');
-        const altura = parseFloat(subitem.querySelector('altura')?.textContent || '0');
-        const profundidade = parseFloat(subitem.querySelector('profundidade')?.textContent || '0');
-        
-        return {
-          descricao: subitem.querySelector('descricao')?.textContent || `Subitem ${index + 1}`,
-          referencia: subitem.querySelector('referencia')?.textContent || '',
-          quantidade: parseInt(subitem.querySelector('quantidade')?.textContent || '1'),
-          unidade: subitem.querySelector('unidade')?.textContent || 'UN',
-          largura,
-          altura,
-          profundidade,
-          dimensoes: `${largura}x${altura}x${profundidade}`,
-          valor_total: parseFloat(subitem.querySelector('valor')?.textContent || '0'),
-          item_index: 0,
-        };
-      });
-
-      const margens: any[] = [];
-      
-      const impostosElements = xmlDoc.querySelectorAll('imposto');
-      Array.from(impostosElements).forEach(imposto => {
-        margens.push({
-          entidade_tipo: 'orcamento',
-          tipo: 'imposto',
-          descricao: imposto.querySelector('descricao')?.textContent || 'Imposto',
-          valor: parseFloat(imposto.querySelector('valor')?.textContent || '0'),
-        });
-      });
-
-      const descontosElements = xmlDoc.querySelectorAll('desconto');
-      Array.from(descontosElements).forEach(desconto => {
-        margens.push({
-          entidade_tipo: 'orcamento',
-          tipo: 'desconto',
-          descricao: desconto.querySelector('descricao')?.textContent || 'Desconto',
-          valor: parseFloat(desconto.querySelector('valor')?.textContent || '0'),
-        });
-      });
-
-      const fallbackData = {
-        orcamento,
-        ambientes,
-        categorias,
-        itens,
-        subitens,
-        margens
-      };
-
-      console.log('[ImportPromobXMLDialog] Dados parseados (fallback):', fallbackData);
-      return fallbackData;
-
-    } catch (error) {
-      console.error('[ImportPromobXMLDialog] Erro no parsing:', error);
-      throw error;
-    }
-  };
-
-  const savePromobDataToDatabase = async (parsedData: ParsedData) => {
-    console.log('[ImportPromobXMLDialog] Iniciando salvamento no banco de dados...');
-    
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        throw new Error('Usuário não autenticado');
-      }
-
-      console.log('[ImportPromobXMLDialog] Usuário autenticado:', user.id);
-      console.log('[ImportPromobXMLDialog] Project ID:', projectId);
-
-      // 1. Criar orçamento
-      console.log('[ImportPromobXMLDialog] Criando orçamento:', parsedData.orcamento);
-      const { data: orcamentoData, error: orcamentoError } = await supabase
-        .from('orcamentos')
-        .insert({
-          user_id: user.id,
-          project_id: projectId,
-          ...parsedData.orcamento
-        })
-        .select()
-        .single();
-
-      if (orcamentoError) {
-        console.error('[ImportPromobXMLDialog] Erro ao criar orçamento:', orcamentoError);
-        throw orcamentoError;
-      }
-
-      console.log('[ImportPromobXMLDialog] Orçamento criado:', orcamentoData);
-
-      // 2. Criar ambientes
-      if (parsedData.ambientes.length > 0) {
-        const ambientesWithOrcamentoId = parsedData.ambientes.map(ambiente => ({
-          ...ambiente,
-          orcamento_id: orcamentoData.id
-        }));
-
-        console.log('[ImportPromobXMLDialog] Criando ambientes:', ambientesWithOrcamentoId);
-        const { data: ambientesData, error: ambientesError } = await supabase
-          .from('ambientes')
-          .insert(ambientesWithOrcamentoId)
-          .select();
-
-        if (ambientesError) {
-          console.error('[ImportPromobXMLDialog] Erro ao criar ambientes:', ambientesError);
-          throw ambientesError;
-        }
-
-        console.log('[ImportPromobXMLDialog] Ambientes criados:', ambientesData);
-
-        // 3. Criar categorias
-        if (parsedData.categorias.length > 0 && ambientesData && ambientesData.length > 0) {
-          const categoriasWithAmbienteId = parsedData.categorias.map(categoria => ({
-            ...categoria,
-            ambiente_id: ambientesData[categoria.ambiente_index] || ambientesData[0].id
-          }));
-
-          console.log('[ImportPromobXMLDialog] Criando categorias:', categoriasWithAmbienteId);
-          const { data: categoriasData, error: categoriasError } = await supabase
-            .from('categorias')
-            .insert(categoriasWithAmbienteId)
-            .select();
-
-          if (categoriasError) {
-            console.error('[ImportPromobXMLDialog] Erro ao criar categorias:', categoriasError);
-            throw categoriasError;
-          }
-
-          console.log('[ImportPromobXMLDialog] Categorias criadas:', categoriasData);
-
-          // 4. Criar itens
-          if (parsedData.itens.length > 0 && categoriasData && categoriasData.length > 0) {
-            const itensWithCategoriaId = parsedData.itens.map(item => ({
-              ...item,
-              categoria_id: categoriasData[item.categoria_index] || categoriasData[0].id
-            }));
-
-            console.log('[ImportPromobXMLDialog] Criando itens:', itensWithCategoriaId);
-            const { data: itensData, error: itensError } = await supabase
-              .from('itens')
-              .insert(itensWithCategoriaId)
-              .select();
-
-            if (itensError) {
-              console.error('[ImportPromobXMLDialog] Erro ao criar itens:', itensError);
-              throw itensError;
-            }
-
-            console.log('[ImportPromobXMLDialog] Itens criados:', itensData);
-
-            // 5. Criar subitens
-            if (parsedData.subitens.length > 0 && itensData && itensData.length > 0) {
-              const subItensWithItemId = parsedData.subitens.map(subitem => ({
-                ...subitem,
-                item_id: itensData[subitem.item_index] || itensData[0].id
-              }));
-
-              console.log('[ImportPromobXMLDialog] Criando subitens:', subItensWithItemId);
-              const { error: subItensError } = await supabase
-                .from('subitens')
-                .insert(subItensWithItemId);
-
-              if (subItensError) {
-                console.error('[ImportPromobXMLDialog] Erro ao criar subitens:', subItensError);
-                throw subItensError;
-              }
-
-              console.log('[ImportPromobXMLDialog] Subitens criados com sucesso');
-            }
-          }
-        }
-
-        // 6. Criar margens
-        if (parsedData.margens.length > 0) {
-          const margensWithEntidadeId = parsedData.margens.map(margem => ({
-            ...margem,
-            entidade_id: orcamentoData.id
-          }));
-
-          console.log('[ImportPromobXMLDialog] Criando margens:', margensWithEntidadeId);
-          const { error: margensError } = await supabase
-            .from('margens')
-            .insert(margensWithEntidadeId);
-
-          if (margensError) {
-            console.error('[ImportPromobXMLDialog] Erro ao criar margens:', margensError);
-            throw margensError;
-          }
-
-          console.log('[ImportPromobXMLDialog] Margens criadas com sucesso');
-        }
-
-        const result = {
-          orcamento: orcamentoData,
-          ambientes: ambientesData,
-          totalItens: parsedData.itens.length,
-          totalSubitens: parsedData.subitens.length
-        };
-
-        console.log('[ImportPromobXMLDialog] Salvamento concluído com sucesso:', result);
-        return result;
-      }
-
-      throw new Error('Nenhum ambiente foi encontrado para processar');
-
-    } catch (error) {
-      console.error('[ImportPromobXMLDialog] Erro no salvamento:', error);
-      throw error;
-    }
-  };
-
-  const handlePreview = async () => {
-    if (!selectedFile) {
-      toast({
-        title: "Erro",
-        description: "Por favor, selecione um arquivo XML.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    await analyzeFile();
-    setShowPreview(true);
   };
 
   const handleImport = async () => {
@@ -472,7 +91,7 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
     }
 
     setLoading(true);
-    console.log('[ImportPromobXMLDialog] Iniciando processo de importação...');
+    console.log('[ImportPromobXMLDialog] Iniciando processo de importação via n8n...');
     
     try {
       const reader = new FileReader();
@@ -481,29 +100,18 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
           const xmlContent = e.target?.result as string;
           console.log('[ImportPromobXMLDialog] Conteúdo do arquivo lido, enviando para n8n...');
           
-          // Enviar arquivo para n8n primeiro
-          await sendFileToN8N(selectedFile, xmlContent);
+          const result = await sendFileToN8N(selectedFile, xmlContent);
           
-          console.log('[ImportPromobXMLDialog] Iniciando parsing local...');
-          const parsedData = parseXMLToPromobData(xmlContent);
-          
-          if (parsedData.ambientes.length === 0) {
-            console.warn('[ImportPromobXMLDialog] Nenhum ambiente encontrado');
-            toast({
-              title: "Aviso",
-              description: "Nenhum ambiente foi encontrado no arquivo XML.",
-              variant: "destructive",
-            });
-            return;
-          }
-
-          console.log('[ImportPromobXMLDialog] Parsing concluído, iniciando salvamento...');
-          const result = await savePromobDataToDatabase(parsedData);
-          setImportResult(result);
+          setImportResult({
+            success: true,
+            fileName: selectedFile.name,
+            fileSize: selectedFile.size,
+            message: result.message
+          });
           
           toast({
             title: "Sucesso",
-            description: `Orçamento importado com sucesso! ${result.ambientes?.length || 0} ambientes e ${result.totalItens} itens processados.`,
+            description: "Arquivo XML enviado com sucesso para processamento no n8n.",
           });
 
           onImportSuccess();
@@ -512,7 +120,7 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
           console.error('[ImportPromobXMLDialog] Erro ao processar XML:', error);
           toast({
             title: "Erro",
-            description: error instanceof Error ? error.message : "Erro ao processar o arquivo XML.",
+            description: error instanceof Error ? error.message : "Erro ao enviar o arquivo para o n8n.",
             variant: "destructive",
           });
         } finally {
@@ -545,159 +153,118 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
   const handleCancel = () => {
     setSelectedFile(null);
     setImportResult(null);
-    setXmlStructure(null);
-    setXmlContent('');
     onOpenChange(false);
   };
 
-  const handleProceedFromPreview = () => {
-    setShowPreview(false);
-    handleImport();
-  };
-
   return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Importar Arquivo XML do Promob</DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            {!importResult ? (
-              <>
-                <div className="bg-blue-50 p-3 rounded-md">
-                  <p className="text-sm text-blue-800">
-                    Selecione o arquivo XML exportado do Promob para importar orçamento, ambientes, categorias e itens.
-                    O arquivo também será enviado para processamento no n8n.
-                  </p>
-                </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Importar Arquivo XML do Promob</DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          {!importResult ? (
+            <>
+              <div className="bg-blue-50 p-3 rounded-md">
+                <p className="text-sm text-blue-800">
+                  Selecione o arquivo XML exportado do Promob para enviar para processamento no n8n.
+                  O arquivo será processado automaticamente e os dados serão importados para o sistema.
+                </p>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="xmlFile">Escolher arquivo XML</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="xmlFile"
-                      type="file"
-                      accept=".xml"
-                      onChange={handleFileSelect}
-                      className="flex-1"
-                    />
-                    {selectedFile && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedFile(null)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
+              <div className="space-y-2">
+                <Label htmlFor="xmlFile">Escolher arquivo XML</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="xmlFile"
+                    type="file"
+                    accept=".xml"
+                    onChange={handleFileSelect}
+                    className="flex-1"
+                  />
                   {selectedFile && (
-                    <p className="text-sm text-muted-foreground">
-                      Arquivo selecionado: {selectedFile.name}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button variant="outline" onClick={handleCancel}>
-                    Cancelar
-                  </Button>
-                  
-                  {selectedFile && (
-                    <Button 
-                      variant="outline"
-                      onClick={handlePreview}
-                      className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedFile(null)}
                     >
-                      <Eye className="h-4 w-4 mr-2" />
-                      Visualizar
+                      <X className="h-4 w-4" />
                     </Button>
                   )}
-                  
-                  <Button 
-                    onClick={handleImport}
-                    disabled={!selectedFile || loading}
-                    className="bg-primary hover:bg-primary/90"
-                  >
-                    {loading ? (
-                      <>
-                        <Upload className="h-4 w-4 mr-2 animate-spin" />
-                        Importando...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="h-4 w-4 mr-2" />
-                        Importar
-                      </>
-                    )}
-                  </Button>
                 </div>
-              </>
-            ) : (
-              <>
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="h-8 w-8 text-green-600" />
-                    <div>
-                      <p className="font-medium text-green-800">Importação concluída com sucesso!</p>
-                      <p className="text-sm text-green-600 mt-1">
-                        Orçamento: {importResult.orcamento?.ambiente_principal}
-                      </p>
+                {selectedFile && (
+                  <p className="text-sm text-muted-foreground">
+                    Arquivo selecionado: {selectedFile.name}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={handleCancel}>
+                  Cancelar
+                </Button>
+                
+                <Button 
+                  onClick={handleImport}
+                  disabled={!selectedFile || loading}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  {loading ? (
+                    <>
+                      <Upload className="h-4 w-4 mr-2 animate-spin" />
+                      Enviando...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Enviar para n8n
+                    </>
+                  )}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center gap-3">
+                  <CheckCircle2 className="h-8 w-8 text-green-600" />
+                  <div>
+                    <p className="font-medium text-green-800">Arquivo enviado com sucesso!</p>
+                    <p className="text-sm text-green-600 mt-1">
+                      O arquivo está sendo processado pelo n8n
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h4 className="font-semibold text-gray-800">Detalhes do envio:</h4>
+                <div className="grid grid-cols-1 gap-4 text-sm">
+                  <div className="bg-gray-50 p-3 rounded">
+                    <div className="font-medium text-gray-700">Nome do arquivo</div>
+                    <div className="text-lg font-bold text-blue-600">
+                      {importResult.fileName}
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 p-3 rounded">
+                    <div className="font-medium text-gray-700">Tamanho</div>
+                    <div className="text-lg font-bold text-green-600">
+                      {(importResult.fileSize / 1024).toFixed(2)} KB
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <div className="space-y-3">
-                  <h4 className="font-semibold text-gray-800">Resumo da importação:</h4>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="bg-gray-50 p-3 rounded">
-                      <div className="font-medium text-gray-700">Ambientes</div>
-                      <div className="text-lg font-bold text-blue-600">
-                        {importResult.ambientes?.length || 0}
-                      </div>
-                    </div>
-                    <div className="bg-gray-50 p-3 rounded">
-                      <div className="font-medium text-gray-700">Itens</div>
-                      <div className="text-lg font-bold text-green-600">
-                        {importResult.totalItens || 0}
-                      </div>
-                    </div>
-                    <div className="bg-gray-50 p-3 rounded">
-                      <div className="font-medium text-gray-700">Subitens</div>
-                      <div className="text-lg font-bold text-orange-600">
-                        {importResult.totalSubitens || 0}
-                      </div>
-                    </div>
-                    <div className="bg-gray-50 p-3 rounded">
-                      <div className="font-medium text-gray-700">Valor Total</div>
-                      <div className="text-lg font-bold text-purple-600">
-                        R$ {importResult.orcamento?.valor_orcamento?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-end pt-4">
-                  <Button onClick={handleCancel}>
-                    Fechar
-                  </Button>
-                </div>
-              </>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {xmlStructure && (
-        <XMLPreviewDialog
-          open={showPreview}
-          onOpenChange={setShowPreview}
-          xmlStructure={xmlStructure}
-          onProceed={handleProceedFromPreview}
-        />
-      )}
-    </>
+              <div className="flex justify-end pt-4">
+                <Button onClick={handleCancel}>
+                  Fechar
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
