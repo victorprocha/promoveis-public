@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Edit, Upload, Plus, Receipt, Calendar, Users, Paperclip, TrendingUp, Save, X, CalendarIcon, FileText, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, User, Edit, Upload, Plus, Receipt, Calendar, Users, Paperclip, TrendingUp, Save, X, CalendarIcon, FileText, CheckCircle2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -23,6 +22,8 @@ import {
 } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { ImportPromobXMLDialog } from '@/components/Dialogs/ImportPromobXMLDialog';
+import { orcamentoService } from '@/services/orcamentoService';
 
 interface ProjectDetailsProps {
   projectId?: string;
@@ -45,6 +46,8 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
   const [clients, setClients] = useState<any[]>([]);
   const [xmlData, setXmlData] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [orcamentos, setOrcamentos] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const id = projectId || params.id;
@@ -144,6 +147,9 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
           setXmlData(xmlDataResult);
         }
 
+        // Buscar orçamentos do Promob
+        await fetchOrcamentos();
+
       } catch (error) {
         console.error('Erro ao buscar dados:', error);
       } finally {
@@ -153,6 +159,17 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
 
     fetchProjectData();
   }, [id]);
+
+  const fetchOrcamentos = async () => {
+    if (!id) return;
+    
+    try {
+      const orcamentosData = await orcamentoService.getOrcamentosByProject(id);
+      setOrcamentos(orcamentosData || []);
+    } catch (error) {
+      console.error('Erro ao buscar orçamentos:', error);
+    }
+  };
 
   const navigationItems = [
     { id: 'dados-projeto', label: 'Dados do Projeto', icon: Edit },
@@ -445,6 +462,28 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
     fileInputRef.current?.click();
   };
 
+  const handleImportSuccess = () => {
+    setShowImportDialog(false);
+    fetchOrcamentos();
+  };
+
+  const handleDeleteOrcamento = async (orcamentoId: string) => {
+    try {
+      await orcamentoService.deleteOrcamento(orcamentoId);
+      toast({
+        title: "Sucesso",
+        description: "Orçamento excluído com sucesso!"
+      });
+      fetchOrcamentos();
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir orçamento.",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#ECF0F5] flex items-center justify-center">
@@ -703,64 +742,20 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                     )}
                   </div>
                   
-                  {/* File Upload Area */}
+                  {/* Import Promob XML Section */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Importar Arquivo do Projeto
+                      Importar Arquivo do Projeto (Promob)
                     </label>
                     
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".xml"
-                      onChange={handleFileInputChange}
-                      className="hidden"
-                    />
-                    
-                    {!xmlData ? (
-                      <div 
-                        onClick={handleDropZoneClick}
-                        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
-                          uploading 
-                            ? 'border-blue-400 bg-blue-50' 
-                            : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                        }`}
-                      >
-                        {uploading ? (
-                          <div className="flex flex-col items-center">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-                            <p className="text-blue-600 font-medium">Processando arquivo XML...</p>
-                          </div>
-                        ) : (
-                          <>
-                            <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                            <p className="text-gray-600 font-medium">Importar Arquivo do Projeto</p>
-                            <p className="text-sm text-gray-500 mt-1">Arraste o arquivo XML ou clique para selecionar</p>
-                          </>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                        <div className="flex items-center gap-3">
-                          <CheckCircle2 className="h-8 w-8 text-green-600" />
-                          <div>
-                            <p className="font-medium text-green-800">Arquivo XML importado com sucesso!</p>
-                            <p className="text-sm text-green-600">{xmlData.file_name}</p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              Importado em {xmlData.ambiente_data?.data_importacao}
-                            </p>
-                          </div>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={handleDropZoneClick}
-                            className="ml-auto"
-                          >
-                            Substituir
-                          </Button>
-                        </div>
-                      </div>
-                    )}
+                    <div 
+                      onClick={() => setShowImportDialog(true)}
+                      className="border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 rounded-lg p-8 text-center transition-colors cursor-pointer"
+                    >
+                      <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600 font-medium">Importar Arquivo XML do Promob</p>
+                      <p className="text-sm text-gray-500 mt-1">Clique para selecionar arquivo XML exportado do Promob</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -781,7 +776,78 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                   </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                  {xmlData && xmlData.ambiente_data ? (
+                  {orcamentos.length > 0 ? (
+                    <div className="p-6">
+                      {orcamentos.map((orcamento) => (
+                        <div key={orcamento.id} className="mb-6 border rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-4">
+                            <div>
+                              <h3 className="font-semibold text-lg">{orcamento.ambiente_principal}</h3>
+                              <p className="text-sm text-gray-600">
+                                Criado em {new Date(orcamento.created_at).toLocaleDateString('pt-BR')}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="text-right">
+                                <div className="font-bold text-green-600 text-lg">
+                                  R$ {orcamento.valor_orcamento?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {orcamento.ambientes?.length || 0} ambiente(s)
+                                </div>
+                              </div>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Excluir Orçamento</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Esta ação não pode ser desfeita. Tem certeza que deseja excluir este orçamento?
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                      onClick={() => handleDeleteOrcamento(orcamento.id)}
+                                      className="bg-red-600 hover:bg-red-700"
+                                    >
+                                      Excluir
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </div>
+                          
+                          {orcamento.ambientes && orcamento.ambientes.length > 0 && (
+                            <div className="space-y-3">
+                              {orcamento.ambientes.map((ambiente: any) => (
+                                <div key={ambiente.id} className="bg-gray-50 p-3 rounded">
+                                  <div className="flex justify-between items-start">
+                                    <div>
+                                      <h4 className="font-medium">{ambiente.descricao}</h4>
+                                      <p className="text-sm text-gray-600">
+                                        {ambiente.categorias?.length || 0} categoria(s)
+                                      </p>
+                                    </div>
+                                    <div className="text-right">
+                                      <div className="font-semibold text-green-600">
+                                        R$ {ambiente.total_orcamento?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (xmlData && xmlData.ambiente_data ? (
                     <div className="p-6">
                       {/* Ambiente Information */}
                       <div className="bg-blue-50 rounded-lg p-4 mb-6">
@@ -875,32 +941,15 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                       )}
                     </div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>#</TableHead>
-                          <TableHead>Ambiente</TableHead>
-                          <TableHead>Nome</TableHead>
-                          <TableHead>Situação</TableHead>
-                          <TableHead>Data de Criação</TableHead>
-                          <TableHead>Última alteração em</TableHead>
-                          <TableHead>Valor Bruto</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        <TableRow>
-                          <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                            Nenhum registro encontrado. Importe um arquivo XML para visualizar os dados.
-                          </TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
-                  )}
+                    <div className="text-center py-8 text-gray-500">
+                      Nenhum ambiente encontrado. Importe um arquivo XML do Promob para visualizar os dados.
+                    </div>
+                  ))}
                   <div className="p-4 bg-green-50 border-t">
                     <div className="flex justify-between items-center">
                       <span className="font-medium">TOTAL DOS AMBIENTES</span>
                       <span className="text-green-600 font-bold text-lg">
-                        {xmlData?.ambiente_data?.valor || 'R$ 0,00'}
+                        R$ {orcamentos.reduce((total, orc) => total + (orc.valor_orcamento || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </span>
                     </div>
                   </div>
@@ -1012,6 +1061,14 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
           </div>
         </div>
       </div>
+
+      {/* Import Dialog */}
+      <ImportPromobXMLDialog
+        open={showImportDialog}
+        onOpenChange={setShowImportDialog}
+        projectId={id!}
+        onImportSuccess={handleImportSuccess}
+      />
 
       {/* Bottom spacing to avoid fixed bar overlap */}
       <div className="h-20"></div>

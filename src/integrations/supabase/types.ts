@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      ambientes: {
+        Row: {
+          created_at: string
+          descricao: string
+          id: string
+          orcamento_id: string
+          total_orcamento: number | null
+          total_pedido: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          id?: string
+          orcamento_id: string
+          total_orcamento?: number | null
+          total_pedido?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          id?: string
+          orcamento_id?: string
+          total_orcamento?: number | null
+          total_pedido?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambientes_orcamento_id_fkey"
+            columns: ["orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "orcamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       billing_info: {
         Row: {
           bank: string | null
@@ -138,6 +176,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      categorias: {
+        Row: {
+          ambiente_id: string
+          created_at: string
+          descricao: string
+          id: string
+          total_orcamento: number | null
+          total_pedido: number | null
+          updated_at: string
+        }
+        Insert: {
+          ambiente_id: string
+          created_at?: string
+          descricao: string
+          id?: string
+          total_orcamento?: number | null
+          total_pedido?: number | null
+          updated_at?: string
+        }
+        Update: {
+          ambiente_id?: string
+          created_at?: string
+          descricao?: string
+          id?: string
+          total_orcamento?: number | null
+          total_pedido?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categorias_ambiente_id_fkey"
+            columns: ["ambiente_id"]
+            isOneToOne: false
+            referencedRelation: "ambientes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       clients: {
         Row: {
@@ -467,6 +543,160 @@ export type Database = {
             columns: ["event_matrix_id"]
             isOneToOne: false
             referencedRelation: "event_matrix"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      itens: {
+        Row: {
+          altura: number | null
+          categoria_id: string
+          created_at: string
+          descricao: string
+          dimensoes: string | null
+          id: string
+          largura: number | null
+          profundidade: number | null
+          quantidade: number | null
+          referencia: string | null
+          unidade: string | null
+          updated_at: string
+          valor_total: number | null
+        }
+        Insert: {
+          altura?: number | null
+          categoria_id: string
+          created_at?: string
+          descricao: string
+          dimensoes?: string | null
+          id?: string
+          largura?: number | null
+          profundidade?: number | null
+          quantidade?: number | null
+          referencia?: string | null
+          unidade?: string | null
+          updated_at?: string
+          valor_total?: number | null
+        }
+        Update: {
+          altura?: number | null
+          categoria_id?: string
+          created_at?: string
+          descricao?: string
+          dimensoes?: string | null
+          id?: string
+          largura?: number | null
+          profundidade?: number | null
+          quantidade?: number | null
+          referencia?: string | null
+          unidade?: string | null
+          updated_at?: string
+          valor_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "itens_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      margens: {
+        Row: {
+          created_at: string
+          descricao: string
+          entidade_id: string
+          entidade_tipo: string
+          id: string
+          tipo: string
+          updated_at: string
+          valor: number | null
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          entidade_id: string
+          entidade_tipo: string
+          id?: string
+          tipo: string
+          updated_at?: string
+          valor?: number | null
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          entidade_id?: string
+          entidade_tipo?: string
+          id?: string
+          tipo?: string
+          updated_at?: string
+          valor?: number | null
+        }
+        Relationships: []
+      }
+      orcamentos: {
+        Row: {
+          acrescimo: number | null
+          ambiente_principal: string | null
+          created_at: string
+          data_orcamento: string | null
+          descontos: number | null
+          etapa: string | null
+          frete: number | null
+          id: string
+          impostos: number | null
+          montagem: number | null
+          project_id: string | null
+          situacao: string | null
+          updated_at: string
+          user_id: string
+          valor_orcamento: number | null
+          valor_pedido: number | null
+        }
+        Insert: {
+          acrescimo?: number | null
+          ambiente_principal?: string | null
+          created_at?: string
+          data_orcamento?: string | null
+          descontos?: number | null
+          etapa?: string | null
+          frete?: number | null
+          id?: string
+          impostos?: number | null
+          montagem?: number | null
+          project_id?: string | null
+          situacao?: string | null
+          updated_at?: string
+          user_id: string
+          valor_orcamento?: number | null
+          valor_pedido?: number | null
+        }
+        Update: {
+          acrescimo?: number | null
+          ambiente_principal?: string | null
+          created_at?: string
+          data_orcamento?: string | null
+          descontos?: number | null
+          etapa?: string | null
+          frete?: number | null
+          id?: string
+          impostos?: number | null
+          montagem?: number | null
+          project_id?: string | null
+          situacao?: string | null
+          updated_at?: string
+          user_id?: string
+          valor_orcamento?: number | null
+          valor_pedido?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orcamentos_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -1002,6 +1232,62 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      subitens: {
+        Row: {
+          altura: number | null
+          created_at: string
+          descricao: string
+          dimensoes: string | null
+          id: string
+          item_id: string
+          largura: number | null
+          profundidade: number | null
+          quantidade: number | null
+          referencia: string | null
+          unidade: string | null
+          updated_at: string
+          valor_total: number | null
+        }
+        Insert: {
+          altura?: number | null
+          created_at?: string
+          descricao: string
+          dimensoes?: string | null
+          id?: string
+          item_id: string
+          largura?: number | null
+          profundidade?: number | null
+          quantidade?: number | null
+          referencia?: string | null
+          unidade?: string | null
+          updated_at?: string
+          valor_total?: number | null
+        }
+        Update: {
+          altura?: number | null
+          created_at?: string
+          descricao?: string
+          dimensoes?: string | null
+          id?: string
+          item_id?: string
+          largura?: number | null
+          profundidade?: number | null
+          quantidade?: number | null
+          referencia?: string | null
+          unidade?: string | null
+          updated_at?: string
+          valor_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subitens_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "itens"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       users: {
         Row: {
