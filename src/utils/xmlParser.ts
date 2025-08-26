@@ -135,7 +135,7 @@ export const extractPromobData = (xmlStructure: XMLStructure): any => {
   const itemsSection = xmlStructure.sections.find(s => s.name === 'ITEMSDATA');
   const budgetSection = xmlStructure.sections.find(s => s.name === 'BUDGETDATA');
 
-  // Extrair dados do cliente e ambiente
+  // Extrair dados do cliente conforme mapeamento fornecido
   const getDataValue = (section: PromobSection | undefined, id: string): string => {
     return section?.data.find(item => item.id === id)?.value || '';
   };
@@ -145,26 +145,57 @@ export const extractPromobData = (xmlStructure: XMLStructure): any => {
     return null;
   }
 
+  // Extrair dados conforme o mapeamento XPath fornecido
+  const nomeCliente = getDataValue(customerSection, 'nomecliente');
+  const razaoSocial = getDataValue(customerSection, 'corporateName');
+  const email = getDataValue(customerSection, 'email');
+  const emailAlternativo = getDataValue(customerSection, 'email_Private_0');
+  const telefoneCompleto = getDataValue(customerSection, 'phone_Mobile_0');
+  const celular = getDataValue(customerSection, 'celular');
   const environmentName = getDataValue(customerSection, 'Environment');
-  const clientName = getDataValue(customerSection, 'nomecliente') || getDataValue(customerSection, 'corporateName');
-  const clientEmail = getDataValue(customerSection, 'email');
   const situation = getDataValue(customerSection, 'Situation');
   const stage = getDataValue(customerSection, 'Stage');
+  const createdOn = getDataValue(customerSection, 'CreatedOn');
 
-  console.log(`[XML Parser] Ambiente extraído: "${environmentName}"`);
-  console.log(`[XML Parser] Cliente extraído: "${clientName}"`);
+  console.log(`[XML Parser] Nome do Cliente: "${nomeCliente}"`);
+  console.log(`[XML Parser] Razão Social: "${razaoSocial}"`);
+  console.log(`[XML Parser] Email: "${email}"`);
+  console.log(`[XML Parser] Email Alternativo: "${emailAlternativo}"`);
+  console.log(`[XML Parser] Telefone: "${telefoneCompleto}"`);
+  console.log(`[XML Parser] Celular: "${celular}"`);
+  console.log(`[XML Parser] Ambiente: "${environmentName}"`);
   console.log(`[XML Parser] Situação: "${situation}"`);
   console.log(`[XML Parser] Etapa: "${stage}"`);
+  console.log(`[XML Parser] Data de Criação: "${createdOn}"`);
 
   if (!environmentName) {
     console.warn('[XML Parser] Ambiente não encontrado nos dados do cliente');
     return null;
   }
 
+  // Converter data de criação para formato adequado
+  let dataOrcamento = new Date().toISOString().split('T')[0];
+  if (createdOn) {
+    try {
+      // Formato esperado: "05/08/2025 14:48:44"
+      const [datePart] = createdOn.split(' ');
+      const [day, month, year] = datePart.split('/');
+      dataOrcamento = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    } catch (error) {
+      console.warn('[XML Parser] Erro ao converter data de criação:', error);
+    }
+  }
+
+  // Processar telefone (remover DDI se presente)
+  let telefoneProcessado = celular || '';
+  if (telefoneCompleto && telefoneCompleto.includes('|')) {
+    telefoneProcessado = telefoneCompleto.split('|')[1] || telefoneProcessado;
+  }
+
   // Estrutura de dados compatível com o sistema atual
   const parsedData = {
     orcamento: {
-      data_orcamento: new Date().toISOString().split('T')[0],
+      data_orcamento: dataOrcamento,
       ambiente_principal: environmentName,
       situacao: situation || 'Importado',
       etapa: stage || 'Análise',
@@ -175,6 +206,14 @@ export const extractPromobData = (xmlStructure: XMLStructure): any => {
       montagem: 0,
       impostos: 0,
       descontos: 0,
+    },
+    cliente: {
+      nome: nomeCliente || razaoSocial,
+      razao_social: razaoSocial,
+      email: email,
+      email_alternativo: emailAlternativo,
+      telefone: telefoneProcessado,
+      telefone_completo: telefoneCompleto,
     },
     ambientes: [{
       descricao: environmentName,
@@ -194,7 +233,45 @@ export const extractPromobData = (xmlStructure: XMLStructure): any => {
 
   // Extrair itens se disponível
   if (itemsSection && itemsSection.data.length > 0) {
-    // Para agora, criar um item genérico baseado no ambiente
+    console.log(`[XML Parser] Processando ${itemsSection.data.length} itens...`);
+    
+    // Agrupar dados por item (assumindo que itens podem ter múltiplos DATA elements)
+    const itemsMap = new Map();
+    
+    itemsSection.data.forEach(dataItem => {
+      // Usar o ID como base para agrupar itens relacionados
+      const itemKey = dataItem.id.includes('_') ? dataItem.id.split('_')[0] : dataItem.id;
+      
+      if (!itemsMap.has(itemKey)) {
+        itemsMap.set(itemKey, {
+          descricao: `Item ${itemKey}`,
+          referencia: '',
+          quantidade: 1,
+          unidade: 'UN',
+          largura: 0,
+          altura: 0,
+          profundidade: 0,
+          dimensoes: '0x0x0',
+          valor_total: 0,
+          categoria_index: 0,
+        });
+      }
+      
+      // Mapear campos específicos se possível
+      const item = itemsMap.get(itemKey);
+      if (dataItem.id.toLowerCase().includes('descricao') || dataItem.id.toLowerCase().includes('description')) {
+        item.descricao = dataItem.value;
+      } else if (dataItem.id.toLowerCase().includes('quantidade') || dataItem.id.toLowerCase().includes('qty')) {
+        item.quantidade = parseInt(dataItem.value) || 1;
+      } else if (dataItem.id.toLowerCase().includes('valor') || dataItem.id.toLowerCase().includes('price')) {
+        item.valor_total = parseFloat(dataItem.value) || 0;
+      }
+    });
+    
+    parsedData.itens = Array.from(itemsMap.values());
+    console.log(`[XML Parser] ${parsedData.itens.length} itens processados`);
+  } else {
+    // Criar um item genérico baseado no ambiente
     parsedData.itens.push({
       descricao: `Móveis de ${environmentName}`,
       referencia: '',
