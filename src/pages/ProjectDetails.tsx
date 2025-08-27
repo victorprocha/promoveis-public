@@ -773,6 +773,14 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                   <CardTitle className="flex items-center gap-2">
                     <Edit className="h-5 w-5" />
                     Dados do Projeto
+                    {n8nData && (
+                      <div className="ml-auto">
+                        <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4" />
+                          Dados importados do XML
+                        </div>
+                      </div>
+                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -788,6 +796,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                       </Button>
                     </div>
                   )}
+                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Nome do Projeto</label>
@@ -795,22 +804,68 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                         <Input
                           value={editedProject?.name || ''}
                           onChange={(e) => handleInputChange('name', e.target.value)}
+                          className={n8nData ? 'border-green-300 bg-green-50' : ''}
                         />
                       ) : (
-                        <div className="p-3 bg-gray-50 rounded-md">{project.name}</div>
+                        <div className={`p-3 rounded-md ${n8nData ? 'bg-green-50 border border-green-200' : 'bg-gray-50'}`}>
+                          {project.name}
+                          {n8nData && (
+                            <div className="text-xs text-green-600 mt-1">
+                              Importado: {n8nData.dadosCliente.descricao}
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Número do Projeto</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Número do Cliente</label>
                       {isEditing ? (
                         <Input
                           value={editedProject?.client_name || ''}
                           onChange={(e) => handleInputChange('client_name', e.target.value)}
+                          className={n8nData ? 'border-green-300 bg-green-50' : ''}
                         />
                       ) : (
-                        <div className="p-3 bg-gray-50 rounded-md">{project.client_name}</div>
+                        <div className={`p-3 rounded-md ${n8nData ? 'bg-green-50 border border-green-200' : 'bg-gray-50'}`}>
+                          {project.client_name}
+                          {n8nData && (
+                            <div className="text-xs text-green-600 mt-1">
+                              Importado: {n8nData.dadosCliente.numeroCliente}
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Data do Projeto</label>
+                      <div className={`p-3 rounded-md ${n8nData ? 'bg-green-50 border border-green-200' : 'bg-gray-50'}`}>
+                        {n8nData ? (
+                          <div>
+                            <div className="font-medium">{n8nData.dadosCliente.data}</div>
+                            <div className="text-xs text-green-600 mt-1">
+                              Importado do XML
+                            </div>
+                          </div>
+                        ) : (
+                          project.delivery_deadline ? new Date(project.delivery_deadline).toLocaleDateString('pt-BR') : 'Não definido'
+                        )}
+                      </div>
+                    </div>
+                    {n8nData?.dadosCliente.logo && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Logo/Imagem</label>
+                        <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-green-600" />
+                            <span className="text-sm">{n8nData.dadosCliente.logo}</span>
+                          </div>
+                          <div className="text-xs text-green-600 mt-1">
+                            Importado do XML
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
                       {isEditing ? (
@@ -966,23 +1021,29 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
 
                   {/* Resumo Financeiro com dados do n8n */}
                   {n8nData && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-blue-50 rounded-lg">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">IPI</label>
-                        <div className="p-3 bg-white rounded-md font-semibold text-blue-600">
-                          R$ {n8nData.resumoFinanceiro.ipi.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </div>
+                    <div className="border-2 border-green-200 rounded-lg p-4 bg-green-50">
+                      <div className="flex items-center gap-2 mb-4">
+                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        <h3 className="font-semibold text-green-800">Resumo Financeiro Importado</h3>
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Descontos</label>
-                        <div className="p-3 bg-white rounded-md font-semibold text-red-600">
-                          R$ {n8nData.resumoFinanceiro.descontos.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-white p-4 rounded-lg border border-green-200">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">IPI</label>
+                          <div className="text-xl font-bold text-blue-600">
+                            R$ {n8nData.resumoFinanceiro.ipi.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </div>
                         </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Total do Projeto</label>
-                        <div className="p-3 bg-white rounded-md font-semibold text-green-600">
-                          R$ {n8nData.resumoFinanceiro.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        <div className="bg-white p-4 rounded-lg border border-green-200">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Descontos</label>
+                          <div className="text-xl font-bold text-red-600">
+                            R$ {n8nData.resumoFinanceiro.descontos.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </div>
+                        </div>
+                        <div className="bg-white p-4 rounded-lg border border-green-200">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Total do Projeto</label>
+                          <div className="text-xl font-bold text-green-600">
+                            R$ {n8nData.resumoFinanceiro.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1046,6 +1107,12 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                     <CardTitle className="flex items-center gap-2">
                       <Edit className="h-5 w-5" />
                       Ambientes
+                      {n8nData && n8nData.ambientes.length > 0 && (
+                        <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4" />
+                          {n8nData.ambientes.length} ambiente(s) importado(s)
+                        </div>
+                      )}
                     </CardTitle>
                     <Button size="icon" className="bg-green-600 hover:bg-green-700 rounded-full">
                       <Plus className="h-4 w-4" />
@@ -1055,31 +1122,39 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                 <CardContent className="p-0">
                   {n8nData && n8nData.ambientes.length > 0 ? (
                     <div className="p-6">
+                      <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center gap-2 text-green-800">
+                          <CheckCircle2 className="h-4 w-4" />
+                          <span className="font-medium">Dados importados automaticamente do XML</span>
+                        </div>
+                      </div>
+
                       {n8nData.ambientes.map((ambiente, index) => (
-                        <div key={ambiente.uniqueId || index} className="mb-6 border rounded-lg p-4">
+                        <div key={ambiente.uniqueId || index} className="mb-6 border-2 border-green-200 rounded-lg p-4 bg-green-50">
                           <div className="flex items-center justify-between mb-4">
                             <div>
-                              <h3 className="font-semibold text-lg">{ambiente.descricao}</h3>
-                              <p className="text-sm text-gray-600">
+                              <h3 className="font-semibold text-lg text-green-800">{ambiente.descricao}</h3>
+                              <p className="text-sm text-green-600">
                                 {ambiente.itens.length} item(s) no ambiente
                               </p>
                             </div>
                             <div className="text-right">
-                              <div className="font-bold text-green-600 text-lg">
+                              <div className="font-bold text-green-600 text-xl">
                                 R$ {ambiente.valorAmbiente.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                               </div>
+                              <div className="text-xs text-green-500">Valor do ambiente</div>
                             </div>
                           </div>
                           
                           {ambiente.itens && ambiente.itens.length > 0 && (
-                            <div className="bg-gray-50 rounded-lg p-4">
-                              <h4 className="font-medium mb-3">Itens do Ambiente</h4>
+                            <div className="bg-white rounded-lg p-4 border border-green-200">
+                              <h4 className="font-medium mb-3 text-green-800">Itens do Ambiente</h4>
                               <Table>
                                 <TableHeader>
                                   <TableRow>
                                     <TableHead>Descrição</TableHead>
                                     <TableHead>Quantidade</TableHead>
-                                    <TableHead>Preço</TableHead>
+                                    <TableHead>Preço Unitário</TableHead>
                                     <TableHead>Total</TableHead>
                                   </TableRow>
                                 </TableHeader>
@@ -1174,11 +1249,15 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                     </div>
                   ) : (
                     <div className="text-center py-8 text-gray-500">
-                      Nenhum ambiente encontrado. Importe um arquivo XML do Promob para visualizar os dados.
+                      <div className="mb-4">
+                        <Upload className="h-12 w-12 text-gray-300 mx-auto mb-2" />
+                        <p className="font-medium">Nenhum ambiente encontrado</p>
+                        <p className="text-sm">Importe um arquivo XML do Promob para visualizar os dados automaticamente</p>
+                      </div>
                     </div>
                   )}
                   
-                  <div className="p-4 bg-green-50 border-t">
+                  <div className={`p-4 border-t ${n8nData ? 'bg-green-50 border-green-200' : 'bg-green-50'}`}>
                     <div className="flex justify-between items-center">
                       <span className="font-medium">TOTAL DOS AMBIENTES</span>
                       <span className="text-green-600 font-bold text-lg">
@@ -1189,6 +1268,11 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                         )}
                       </span>
                     </div>
+                    {n8nData && (
+                      <div className="text-xs text-green-600 text-right mt-1">
+                        Importado do XML
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
