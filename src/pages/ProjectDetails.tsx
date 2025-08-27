@@ -389,21 +389,35 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
   const fillProjectDataFromN8N = (data: N8nResponse) => {
     console.log('[ProjectDetails] Preenchendo campos com dados do n8n:', data);
     
-    // Converter data do formato DD/MM/YYYY para YYYY-MM-DD
-    const convertDate = (dateStr: string) => {
-      const [day, month, year] = dateStr.split('/');
-      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    // Converter data do formato DD/MM/YYYY para YYYY-MM-DD com verificações de segurança
+    const convertDate = (dateStr: string | null | undefined) => {
+      if (!dateStr) return '';
+      
+      try {
+        const dateParts = dateStr.split('/');
+        if (dateParts.length !== 3) return '';
+        
+        const [day, month, year] = dateParts;
+        const dayPadded = (day ?? "0").toString().padStart(2, "0");
+        const monthPadded = (month ?? "0").toString().padStart(2, "0");
+        const yearStr = (year ?? "").toString();
+        
+        return `${yearStr}-${monthPadded}-${dayPadded}`;
+      } catch (error) {
+        console.error('Erro ao converter data:', error);
+        return '';
+      }
     };
 
     const updatedProject = {
       ...editedProject,
-      name: data.dadosCliente.descricao,
-      client_name: data.dadosCliente.numeroCliente,
-      delivery_deadline: convertDate(data.dadosCliente.data),
-      // Adicionar campos do resumo financeiro ao projeto
-      ipi: data.resumoFinanceiro.ipi,
-      descontos: data.resumoFinanceiro.descontos,
-      total_projeto: data.resumoFinanceiro.total
+      name: data?.dadosCliente?.descricao || '',
+      client_name: data?.dadosCliente?.numeroCliente || '',
+      delivery_deadline: convertDate(data?.dadosCliente?.data),
+      // Adicionar campos do resumo financeiro ao projeto com verificações
+      ipi: data?.resumoFinanceiro?.ipi ?? 0,
+      descontos: data?.resumoFinanceiro?.descontos ?? 0,
+      total_projeto: data?.resumoFinanceiro?.total ?? 0
     };
 
     setEditedProject(updatedProject);
@@ -496,6 +510,12 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
         variant: "destructive"
       });
     }
+  };
+
+  // Função auxiliar para formatar valores monetários com segurança
+  const formatCurrency = (value: number | null | undefined) => {
+    const numericValue = value ?? 0;
+    return numericValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
   };
 
   if (loading) {
@@ -750,19 +770,19 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">IPI</label>
                         <div className="p-3 bg-white rounded-md font-semibold text-blue-600">
-                          R$ {n8nData.resumoFinanceiro.ipi.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          R$ {formatCurrency(n8nData.resumoFinanceiro?.ipi)}
                         </div>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Descontos</label>
                         <div className="p-3 bg-white rounded-md font-semibold text-red-600">
-                          R$ {n8nData.resumoFinanceiro.descontos.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          R$ {formatCurrency(n8nData.resumoFinanceiro?.descontos)}
                         </div>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Total do Projeto</label>
                         <div className="p-3 bg-white rounded-md font-semibold text-green-600">
-                          R$ {n8nData.resumoFinanceiro.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          R$ {formatCurrency(n8nData.resumoFinanceiro?.total)}
                         </div>
                       </div>
                     </div>
@@ -839,22 +859,22 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Número do Cliente</label>
                           <div className="p-3 bg-white rounded-md border">
-                            {n8nData.dadosCliente.numeroCliente}
+                            {n8nData.dadosCliente?.numeroCliente || 'Não informado'}
                           </div>
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
                           <div className="p-3 bg-white rounded-md border">
-                            {n8nData.dadosCliente.descricao}
+                            {n8nData.dadosCliente?.descricao || 'Não informado'}
                           </div>
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Data</label>
                           <div className="p-3 bg-white rounded-md border">
-                            {n8nData.dadosCliente.data}
+                            {n8nData.dadosCliente?.data || 'Não informado'}
                           </div>
                         </div>
-                        {n8nData.dadosCliente.logo && (
+                        {n8nData.dadosCliente?.logo && (
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Logo</label>
                             <div className="p-3 bg-white rounded-md border">
@@ -876,7 +896,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                           <label className="block text-sm font-medium text-gray-700 mb-2">IPI</label>
                           <div className="p-4 bg-white rounded-lg shadow-sm">
                             <div className="text-2xl font-bold text-blue-600">
-                              R$ {n8nData.resumoFinanceiro.ipi.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              R$ {formatCurrency(n8nData.resumoFinanceiro?.ipi)}
                             </div>
                           </div>
                         </div>
@@ -884,7 +904,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Descontos</label>
                           <div className="p-4 bg-white rounded-lg shadow-sm">
                             <div className="text-2xl font-bold text-red-600">
-                              R$ {n8nData.resumoFinanceiro.descontos.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              R$ {formatCurrency(n8nData.resumoFinanceiro?.descontos)}
                             </div>
                           </div>
                         </div>
@@ -892,7 +912,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Total</label>
                           <div className="p-4 bg-white rounded-lg shadow-sm">
                             <div className="text-2xl font-bold text-green-600">
-                              R$ {n8nData.resumoFinanceiro.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              R$ {formatCurrency(n8nData.resumoFinanceiro?.total)}
                             </div>
                           </div>
                         </div>
@@ -903,27 +923,27 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                     <div>
                       <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
                         <Edit className="h-5 w-5" />
-                        Resumo dos Ambientes ({n8nData.ambientes.length})
+                        Resumo dos Ambientes ({n8nData.ambientes?.length || 0})
                       </h3>
                       <div className="space-y-3">
-                        {n8nData.ambientes.slice(0, 3).map((ambiente, index) => (
-                          <div key={ambiente.uniqueId || index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
+                        {(n8nData.ambientes || []).slice(0, 3).map((ambiente, index) => (
+                          <div key={ambiente?.uniqueId || index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
                             <div>
-                              <div className="font-medium">{ambiente.descricao}</div>
+                              <div className="font-medium">{ambiente?.descricao || 'Ambiente sem descrição'}</div>
                               <div className="text-sm text-gray-600">
-                                {ambiente.itens.length} item(s)
+                                {ambiente?.itens?.length || 0} item(s)
                               </div>
                             </div>
                             <div className="text-right">
                               <div className="font-bold text-green-600">
-                                R$ {ambiente.valorAmbiente.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                R$ {formatCurrency(ambiente?.valorAmbiente)}
                               </div>
                             </div>
                           </div>
                         ))}
-                        {n8nData.ambientes.length > 3 && (
+                        {(n8nData.ambientes?.length || 0) > 3 && (
                           <div className="text-center p-3 text-gray-500 text-sm">
-                            + {n8nData.ambientes.length - 3} ambiente(s) adicional(is)
+                            + {(n8nData.ambientes?.length || 0) - 3} ambiente(s) adicional(is)
                           </div>
                         )}
                       </div>
@@ -959,25 +979,25 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                   </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                  {n8nData && n8nData.ambientes.length > 0 ? (
+                  {n8nData && (n8nData.ambientes?.length || 0) > 0 ? (
                     <div className="p-6">
-                      {n8nData.ambientes.map((ambiente, index) => (
-                        <div key={ambiente.uniqueId || index} className="mb-6 border rounded-lg p-4">
+                      {(n8nData.ambientes || []).map((ambiente, index) => (
+                        <div key={ambiente?.uniqueId || index} className="mb-6 border rounded-lg p-4">
                           <div className="flex items-center justify-between mb-4">
                             <div>
-                              <h3 className="font-semibold text-lg">{ambiente.descricao}</h3>
+                              <h3 className="font-semibold text-lg">{ambiente?.descricao || 'Ambiente sem descrição'}</h3>
                               <p className="text-sm text-gray-600">
-                                {ambiente.itens.length} item(s) no ambiente
+                                {ambiente?.itens?.length || 0} item(s) no ambiente
                               </p>
                             </div>
                             <div className="text-right">
                               <div className="font-bold text-green-600 text-lg">
-                                R$ {ambiente.valorAmbiente.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                R$ {formatCurrency(ambiente?.valorAmbiente)}
                               </div>
                             </div>
                           </div>
                           
-                          {ambiente.itens && ambiente.itens.length > 0 && (
+                          {ambiente?.itens && ambiente.itens.length > 0 && (
                             <div className="bg-gray-50 rounded-lg p-4">
                               <h4 className="font-medium mb-3">Itens do Ambiente</h4>
                               <Table>
@@ -992,11 +1012,11 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                                 <TableBody>
                                   {ambiente.itens.map((item, itemIndex) => (
                                     <TableRow key={itemIndex}>
-                                      <TableCell className="font-medium">{item.descricao}</TableCell>
-                                      <TableCell>{item.quantidade}</TableCell>
-                                      <TableCell>R$ {item.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
+                                      <TableCell className="font-medium">{item?.descricao || 'Item sem descrição'}</TableCell>
+                                      <TableCell>{item?.quantidade || 0}</TableCell>
+                                      <TableCell>R$ {formatCurrency(item?.preco)}</TableCell>
                                       <TableCell className="font-semibold text-green-600">
-                                        R$ {(item.quantidade * item.preco).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        R$ {formatCurrency((item?.quantidade || 0) * (item?.preco || 0))}
                                       </TableCell>
                                     </TableRow>
                                   ))}
@@ -1021,7 +1041,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                             <div className="flex items-center gap-2">
                               <div className="text-right">
                                 <div className="font-bold text-green-600 text-lg">
-                                  R$ {orcamento.valor_orcamento?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                  R$ {formatCurrency(orcamento.valor_orcamento)}
                                 </div>
                                 <div className="text-sm text-gray-500">
                                   {orcamento.ambientes?.length || 0} ambiente(s)
@@ -1067,7 +1087,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                                     </div>
                                     <div className="text-right">
                                       <div className="font-semibold text-green-600">
-                                        R$ {ambiente.total_orcamento?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        R$ {formatCurrency(ambiente.total_orcamento)}
                                       </div>
                                     </div>
                                   </div>
@@ -1089,9 +1109,9 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                       <span className="font-medium">TOTAL DOS AMBIENTES</span>
                       <span className="text-green-600 font-bold text-lg">
                         {n8nData ? (
-                          `R$ ${n8nData.resumoFinanceiro.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                          `R$ ${formatCurrency(n8nData.resumoFinanceiro?.total)}`
                         ) : (
-                          `R$ ${orcamentos.reduce((total, orc) => total + (orc.valor_orcamento || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                          `R$ ${formatCurrency(orcamentos.reduce((total, orc) => total + (orc.valor_orcamento || 0), 0))}`
                         )}
                       </span>
                     </div>
@@ -1101,7 +1121,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
             </section>
 
             {/* Other sections with similar structure */}
-            {navigationItems.slice(2).map((item) => (
+            {navigationItems.slice(3).map((item) => (
               <section key={item.id} id={item.id}>
                 <Card>
                   <CardHeader className="bg-gray-50">
