@@ -24,6 +24,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { ImportPromobXMLDialog } from '@/components/Dialogs/ImportPromobXMLDialog';
 import { orcamentoService } from '@/services/orcamentoService';
+import { ImportXMLCompleteDialog } from '@/components/Dialogs/ImportXMLCompleteDialog';
+import { JSONViewer } from '@/components/Common/JSONViewer';
+import { DadosConvertidos } from '@/utils/xmlParser';
 
 interface ProjectDetailsProps {
   projectId?: string;
@@ -72,6 +75,8 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
   const [xmlData, setXmlData] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showXMLImportDialog, setShowXMLImportDialog] = useState(false);
+  const [dadosConvertidos, setDadosConvertidos] = useState<DadosConvertidos | null>(null);
   const [orcamentos, setOrcamentos] = useState<any[]>([]);
   const [n8nData, setN8nData] = useState<N8nResponse | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -171,6 +176,11 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
           console.error('Erro ao buscar dados XML:', xmlError);
         } else if (xmlDataResult) {
           setXmlData(xmlDataResult);
+          // Se há dados convertidos salvos, carregá-los
+          if (xmlDataResult.dados_convertidos) {
+            setDadosConvertidos(xmlDataResult.dados_convertidos);
+            console.log('[ProjectDetails] Dados convertidos carregados:', xmlDataResult.dados_convertidos);
+          }
         }
 
         // Buscar orçamentos do Promob
@@ -518,6 +528,57 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
     return numericValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
   };
 
+  const handleImportXMLComplete = async (dados: DadosConvertidos) => {
+    if (!id) return;
+    
+    console.log('[ProjectDetails] Importando dados convertidos:', dados);
+    
+    try {
+      // Salvar dados convertidos no banco
+      const { error } = await supabase
+        .from('project_xml_data')
+        .upsert({
+          project_id: id,
+          dados_convertidos: dados,
+          raw_xml: dados.rawXML,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      // Atualizar estado local
+      setDadosConvertidos(dados);
+      
+      // Preencher dados do projeto se não estiverem preenchidos
+      if (dados.cliente.nome && !editedProject?.client_name) {
+        const updatedProject = {
+          ...editedProject,
+          client_name: dados.cliente.nome,
+          name: dados.projeto.numero || editedProject?.name,
+          delivery_deadline: dados.projeto.prazoEntrega || editedProject?.delivery_deadline,
+          description: dados.projeto.observacoes || editedProject?.description
+        };
+        setEditedProject(updatedProject);
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Dados XML importados e salvos com sucesso!",
+      });
+      
+    } catch (error) {
+      console.error('[ProjectDetails] Erro ao salvar dados XML:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar dados importados.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#ECF0F5] flex items-center justify-center">
@@ -764,82 +825,48 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                     </div>
                   </div>
 
-                  {/* Resumo Financeiro */}
-                  {n8nData && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-blue-50 rounded-lg">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">IPI</label>
-                        <div className="p-3 bg-white rounded-md font-semibold text-blue-600">
-                          R$ {formatCurrency(n8nData.resumoFinanceiro?.ipi)}
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Descontos</label>
-                        <div className="p-3 bg-white rounded-md font-semibold text-red-600">
-                          R$ {formatCurrency(n8nData.resumoFinanceiro?.descontos)}
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Total do Projeto</label>
-                        <div className="p-3 bg-white rounded-md font-semibold text-green-600">
-                          R$ {formatCurrency(n8nData.resumoFinanceiro?.total)}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Observações</label>
-                    {isEditing ? (
-                      <Textarea
-                        value={editedProject?.description || ''}
-                        onChange={(e) => handleInputChange('description', e.target.value)}
-                        rows={3}
-                      />
-                    ) : (
-                      <div className="p-3 bg-gray-50 rounded-md">{project.description || 'Nenhuma observação'}</div>
-                    )}
-                  </div>
-                  
-                  {/* Import Promob XML Section */}
+                  {/* Import XML Button */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Importar Arquivo do Projeto (Promob)
+                      Importar Dados do Projeto
                     </label>
                     
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".xml"
-                      onChange={handleFileInputChange}
-                      className="hidden"
-                    />
-                    
-                    <div 
-                      onClick={handleDropZoneClick}
-                      className={`border-2 border-dashed ${uploading ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'} rounded-lg p-8 text-center transition-colors cursor-pointer`}
-                    >
-                      {uploading ? (
-                        <>
-                          <Upload className="h-12 w-12 text-blue-400 mx-auto mb-4 animate-spin" />
-                          <p className="text-blue-600 font-medium">Processando arquivo XML...</p>
-                          <p className="text-sm text-blue-500 mt-1">Enviando para processamento no n8n</p>
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                          <p className="text-gray-600 font-medium">Importar Arquivo XML do Promob</p>
-                          <p className="text-sm text-gray-500 mt-1">Clique para selecionar arquivo XML exportado do Promob</p>
-                        </>
+                    <div className="flex items-center gap-3">
+                      <Button 
+                        onClick={() => setShowXMLImportDialog(true)}
+                        variant="outline"
+                        className="flex items-center gap-2"
+                      >
+                        <FileText className="h-4 w-4" />
+                        Importar XML Completo
+                      </Button>
+                      
+                      {dadosConvertidos && (
+                        <div className="flex items-center gap-2 text-green-600">
+                          <CheckCircle2 className="h-4 w-4" />
+                          <span className="text-sm">
+                            Dados importados em {new Date(dadosConvertidos.processedAt).toLocaleString('pt-BR')}
+                          </span>
+                        </div>
                       )}
                     </div>
+                    
+                    {dadosConvertidos && (
+                      <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                        <p className="text-sm text-green-800">
+                          <strong>Cliente:</strong> {dadosConvertidos.cliente.nome || 'N/A'} • 
+                          <strong> Ambientes:</strong> {dadosConvertidos.ambientes.length} • 
+                          <strong> Valor:</strong> R$ {dadosConvertidos.resumoFinanceiro.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
             </section>
 
             {/* XML Import Data Section */}
-            {n8nData && (
+            {dadosConvertidos && (
               <section id="dados-xml">
                 <Card>
                   <CardHeader className="bg-blue-50">
@@ -849,114 +876,89 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-6 space-y-6">
+                    {/* Resumo dos Dados */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-blue-600">{dadosConvertidos.ambientes.length}</div>
+                        <div className="text-sm text-gray-600">Ambiente(s)</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-green-600">
+                          {dadosConvertidos.ambientes.reduce((total, amb) => total + amb.itens.length, 0)}
+                        </div>
+                        <div className="text-sm text-gray-600">Item(s)</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-purple-600">
+                          R$ {(dadosConvertidos.resumoFinanceiro?.valorTotal ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </div>
+                        <div className="text-sm text-gray-600">Valor Total</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-orange-600">
+                          R$ {(dadosConvertidos.resumoFinanceiro?.ipi ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </div>
+                        <div className="text-sm text-gray-600">IPI</div>
+                      </div>
+                    </div>
+
                     {/* Dados do Cliente */}
-                    <div>
-                      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                        <User className="h-5 w-5" />
-                        Dados do Cliente
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Número do Cliente</label>
-                          <div className="p-3 bg-white rounded-md border">
-                            {n8nData.dadosCliente?.numeroCliente || 'Não informado'}
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
-                          <div className="p-3 bg-white rounded-md border">
-                            {n8nData.dadosCliente?.descricao || 'Não informado'}
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Data</label>
-                          <div className="p-3 bg-white rounded-md border">
-                            {n8nData.dadosCliente?.data || 'Não informado'}
-                          </div>
-                        </div>
-                        {n8nData.dadosCliente?.logo && (
+                    {dadosConvertidos.cliente.nome && (
+                      <div>
+                        <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                          <User className="h-5 w-5" />
+                          Dados do Cliente
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Logo</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
                             <div className="p-3 bg-white rounded-md border">
-                              <img src={n8nData.dadosCliente.logo} alt="Logo do Cliente" className="max-h-16" />
+                              {dadosConvertidos.cliente.nome || 'Não informado'}
                             </div>
                           </div>
-                        )}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                            <div className="p-3 bg-white rounded-md border">
+                              {dadosConvertidos.cliente.email || 'Não informado'}
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
+                            <div className="p-3 bg-white rounded-md border">
+                              {dadosConvertidos.cliente.telefone || 'Não informado'}
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Número do Cliente</label>
+                            <div className="p-3 bg-white rounded-md border">
+                              {dadosConvertidos.cliente.numeroCliente || 'Não informado'}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    )}
 
-                    {/* Resumo Financeiro */}
+                    {/* JSON Viewer para todos os dados */}
                     <div>
                       <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                        <Receipt className="h-5 w-5" />
-                        Resumo Financeiro
+                        <FileText className="h-5 w-5" />
+                        dadosConvertidos - Visualização Completa
                       </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg">
-                        <div className="text-center">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">IPI</label>
-                          <div className="p-4 bg-white rounded-lg shadow-sm">
-                            <div className="text-2xl font-bold text-blue-600">
-                              R$ {formatCurrency(n8nData.resumoFinanceiro?.ipi)}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-center">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Descontos</label>
-                          <div className="p-4 bg-white rounded-lg shadow-sm">
-                            <div className="text-2xl font-bold text-red-600">
-                              R$ {formatCurrency(n8nData.resumoFinanceiro?.descontos)}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-center">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Total</label>
-                          <div className="p-4 bg-white rounded-lg shadow-sm">
-                            <div className="text-2xl font-bold text-green-600">
-                              R$ {formatCurrency(n8nData.resumoFinanceiro?.total)}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Preview dos Ambientes */}
-                    <div>
-                      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                        <Edit className="h-5 w-5" />
-                        Resumo dos Ambientes ({n8nData.ambientes?.length || 0})
-                      </h3>
-                      <div className="space-y-3">
-                        {(n8nData.ambientes || []).slice(0, 3).map((ambiente, index) => (
-                          <div key={ambiente?.uniqueId || index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
-                            <div>
-                              <div className="font-medium">{ambiente?.descricao || 'Ambiente sem descrição'}</div>
-                              <div className="text-sm text-gray-600">
-                                {ambiente?.itens?.length || 0} item(s)
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="font-bold text-green-600">
-                                R$ {formatCurrency(ambiente?.valorAmbiente)}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                        {(n8nData.ambientes?.length || 0) > 3 && (
-                          <div className="text-center p-3 text-gray-500 text-sm">
-                            + {(n8nData.ambientes?.length || 0) - 3} ambiente(s) adicional(is)
-                          </div>
-                        )}
-                      </div>
+                      <JSONViewer 
+                        data={dadosConvertidos} 
+                        title="Dados Estruturados Completos"
+                        downloadFilename={`projeto-${project?.name?.replace(/\s+/g, '-')}-dados.json`}
+                      />
                     </div>
 
                     {/* Ações */}
                     <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
                       <div className="flex items-center gap-2 text-blue-700">
                         <CheckCircle2 className="h-5 w-5" />
-                        <span className="font-medium">Dados importados com sucesso!</span>
+                        <span className="font-medium">Dados importados e processados localmente!</span>
                       </div>
                       <div className="text-sm text-blue-600">
-                        Importado em {new Date().toLocaleString('pt-BR')}
+                        Processado em {new Date(dadosConvertidos.processedAt).toLocaleString('pt-BR')}
                       </div>
                     </div>
                   </CardContent>
@@ -979,44 +981,46 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                   </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                  {n8nData && (n8nData.ambientes?.length || 0) > 0 ? (
+                  {dadosConvertidos && dadosConvertidos.ambientes.length > 0 ? (
                     <div className="p-6">
-                      {(n8nData.ambientes || []).map((ambiente, index) => (
-                        <div key={ambiente?.uniqueId || index} className="mb-6 border rounded-lg p-4">
+                      {dadosConvertidos.ambientes.map((ambiente, index) => (
+                        <div key={ambiente.id} className="mb-6 border rounded-lg p-4">
                           <div className="flex items-center justify-between mb-4">
                             <div>
-                              <h3 className="font-semibold text-lg">{ambiente?.descricao || 'Ambiente sem descrição'}</h3>
+                              <h3 className="font-semibold text-lg">{ambiente.descricao}</h3>
                               <p className="text-sm text-gray-600">
-                                {ambiente?.itens?.length || 0} item(s) no ambiente
+                                {ambiente.itens.length} item(s) no ambiente
                               </p>
                             </div>
                             <div className="text-right">
                               <div className="font-bold text-green-600 text-lg">
-                                R$ {formatCurrency(ambiente?.valorAmbiente)}
+                                R$ {ambiente.valorAmbiente.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                               </div>
                             </div>
                           </div>
                           
-                          {ambiente?.itens && ambiente.itens.length > 0 && (
+                          {ambiente.itens.length > 0 && (
                             <div className="bg-gray-50 rounded-lg p-4">
                               <h4 className="font-medium mb-3">Itens do Ambiente</h4>
                               <Table>
                                 <TableHeader>
                                   <TableRow>
+                                    <TableHead>Código</TableHead>
                                     <TableHead>Descrição</TableHead>
                                     <TableHead>Quantidade</TableHead>
-                                    <TableHead>Preço</TableHead>
+                                    <TableHead>Preço Unitário</TableHead>
                                     <TableHead>Total</TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                   {ambiente.itens.map((item, itemIndex) => (
                                     <TableRow key={itemIndex}>
-                                      <TableCell className="font-medium">{item?.descricao || 'Item sem descrição'}</TableCell>
-                                      <TableCell>{item?.quantidade || 0}</TableCell>
-                                      <TableCell>R$ {formatCurrency(item?.preco)}</TableCell>
+                                      <TableCell className="font-medium">{item.codigo}</TableCell>
+                                      <TableCell>{item.descricao}</TableCell>
+                                      <TableCell>{item.quantidade} {item.unidade}</TableCell>
+                                      <TableCell>R$ {item.precoUnitario.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
                                       <TableCell className="font-semibold text-green-600">
-                                        R$ {formatCurrency((item?.quantidade || 0) * (item?.preco || 0))}
+                                        R$ {item.precoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                       </TableCell>
                                     </TableRow>
                                   ))}
@@ -1100,7 +1104,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                     </div>
                   ) : (
                     <div className="text-center py-8 text-gray-500">
-                      Nenhum ambiente encontrado. Importe um arquivo XML do Promob para visualizar os dados.
+                      Nenhum ambiente encontrado. Use o botão "Importar XML Completo" para carregar dados do projeto.
                     </div>
                   )}
                   
@@ -1108,10 +1112,10 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                     <div className="flex justify-between items-center">
                       <span className="font-medium">TOTAL DOS AMBIENTES</span>
                       <span className="text-green-600 font-bold text-lg">
-                        {n8nData ? (
-                          `R$ ${formatCurrency(n8nData.resumoFinanceiro?.total)}`
+                        {dadosConvertidos ? (
+                          `R$ ${dadosConvertidos.resumoFinanceiro.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
                         ) : (
-                          `R$ ${formatCurrency(orcamentos.reduce((total, orc) => total + (orc.valor_orcamento || 0), 0))}`
+                          `R$ ${orcamentos.reduce((total, orc) => total + (orc.valor_orcamento || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
                         )}
                       </span>
                     </div>
@@ -1225,12 +1229,18 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
         </div>
       </div>
 
-      {/* Import Dialog */}
+      {/* Import Dialogs */}
       <ImportPromobXMLDialog
         open={showImportDialog}
         onOpenChange={setShowImportDialog}
         projectId={id!}
         onImportSuccess={handleImportSuccess}
+      />
+
+      <ImportXMLCompleteDialog
+        open={showXMLImportDialog}
+        onOpenChange={setShowXMLImportDialog}
+        onImport={handleImportXMLComplete}
       />
 
       {/* Bottom spacing to avoid fixed bar overlap */}
