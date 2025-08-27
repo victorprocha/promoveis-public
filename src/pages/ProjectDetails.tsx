@@ -350,86 +350,210 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
   };
 
   const sendFileToN8N = async (file: File): Promise<N8nResponse> => {
-    console.log('[N8N] Enviando arquivo para n8n webhook...');
+    console.log('[N8N] === INÍCIO DO DEBUG DETALHADO ===');
+    console.log('[N8N] Arquivo selecionado:', {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      lastModified: new Date(file.lastModified).toISOString()
+    });
     
     try {
-      // Validar se é um arquivo XML
+      // Validações iniciais
       if (!file.name.toLowerCase().endsWith('.xml')) {
         throw new Error('Arquivo deve ser do tipo XML');
       }
 
-      // Validar tamanho do arquivo (máximo 10MB)
       if (file.size > 10 * 1024 * 1024) {
         throw new Error('Arquivo muito grande. Máximo permitido: 10MB');
       }
 
+      console.log('[N8N] Validações iniciais OK');
+      console.log('[N8N] URL do webhook:', 'https://victorprocha.app.n8n.cloud/webhook/leitorxml');
+
+      // Preparar FormData
       const formData = new FormData();
       formData.append('file', file);
       formData.append('filename', file.name);
+      formData.append('timestamp', new Date().toISOString());
 
-      console.log('[N8N] Enviando FormData com arquivo:', {
-        fileName: file.name,
-        fileSize: file.size,
-        fileType: file.type
+      console.log('[N8N] FormData preparado:', {
+        entries: Array.from(formData.entries()).map(([key, value]) => ({
+          key,
+          value: value instanceof File ? `File: ${value.name} (${value.size} bytes)` : value
+        }))
       });
 
+      // Configurações da requisição
+      const requestConfig: RequestInit = {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Accept': 'application/json, */*',
+          'X-Requested-With': 'XMLHttpRequest',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With'
+        },
+        mode: 'cors',
+        credentials: 'omit',
+        cache: 'no-cache'
+      };
+
+      console.log('[N8N] Configuração da requisição:', {
+        method: requestConfig.method,
+        mode: requestConfig.mode,
+        credentials: requestConfig.credentials,
+        headers: requestConfig.headers
+      });
+
+      // Implementar timeout personalizado
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
+      const timeoutId = setTimeout(() => {
+        console.log('[N8N] TIMEOUT: Abortando requisição após 30 segundos');
+        controller.abort();
+      }, 30000);
 
       try {
+        console.log('[N8N] Enviando requisição...');
+        const startTime = Date.now();
+        
         const response = await fetch('https://victorprocha.app.n8n.cloud/webhook/leitorxml', {
-          method: 'POST',
-          body: formData,
-          headers: {
-            'Accept': 'application/json',
-          },
+          ...requestConfig,
           signal: controller.signal,
         });
 
         clearTimeout(timeoutId);
+        const endTime = Date.now();
+        const duration = endTime - startTime;
 
-        console.log('[N8N] Response status:', response.status);
-        console.log('[N8N] Response headers:', Object.fromEntries(response.headers.entries()));
-        
+        console.log('[N8N] Resposta recebida:', {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok,
+          duration: `${duration}ms`,
+          type: response.type,
+          redirected: response.redirected,
+          url: response.url
+        });
+
+        console.log('[N8N] Headers da resposta:', Object.fromEntries(response.headers.entries()));
+
+        // Verificar se há erros de CORS específicos
+        if (response.type === 'opaque' || response.type === 'opaqueredirect') {
+          console.error('[N8N] POSSÍVEL ERRO DE CORS: Resposta opaca detectada');
+          throw new Error('Erro de CORS: Resposta opaca - verifique configurações do servidor');
+        }
+
         if (!response.ok) {
           const errorText = await response.text();
           console.error('[N8N] Erro na resposta:', {
             status: response.status,
             statusText: response.statusText,
-            body: errorText
+            body: errorText,
+            headers: Object.fromEntries(response.headers.entries())
           });
           
-          if (response.status === 500) {
-            throw new Error(`Erro interno do servidor n8n. Verifique se o webhook está configurado corretamente.`);
-          } else if (response.status === 404) {
-            throw new Error(`Webhook não encontrado. Verifique a URL: https://victorprocha.app.n8n.cloud/webhook/leitorxml`);
-          } else if (response.status === 413) {
-            throw new Error(`Arquivo muito grande para o servidor processar.`);
-          } else {
-            throw new Error(`Erro HTTP ${response.status}: ${response.statusText}`);
+          // Tratamento específico por código de erro
+          switch (response.status) {
+            case 500:
+              console.error('[N8N] ERRO 500: Erro interno do servidor');
+              throw new Error(`Erro 500: Erro interno do servidor n8n. Resposta: ${errorText}`);
+            case 404:
+              console.error('[N8N] ERRO 404: Webhook não encontrado');
+              throw new Error(`Erro 404: Webhook não encontrado. Verifique a URL`);
+            case 413:
+              console.error('[N8N] ERRO 413: Arquivo muito grande');
+              throw new Error(`Erro 413: Arquivo muito grande para o servidor processar`);
+            case 0:
+              console.error('[N8N] ERRO 0: Possível problema de CORS');
+              throw new Error(`Erro de rede: Possível problema de CORS ou conexão`);
+            default:
+              throw new Error(`Erro HTTP ${response.status}: ${response.statusText}. Resposta: ${errorText}`);
           }
         }
 
-        const responseData: N8nResponse = await response.json();
-        console.log('[N8N] Dados recebidos do n8n:', responseData);
+        // Tentar ler a resposta
+        let responseText;
+        try {
+          responseText = await response.text();
+          console.log('[N8N] Texto da resposta recebido:', responseText.substring(0, 500) + '...');
+        } catch (readError) {
+          console.error('[N8N] Erro ao ler resposta como texto:', readError);
+          throw new Error('Erro ao ler resposta do servidor');
+        }
+
+        // Tentar fazer parse do JSON
+        let responseData: N8nResponse;
+        try {
+          responseData = JSON.parse(responseText);
+          console.log('[N8N] JSON parseado com sucesso:', {
+            hasDadosCliente: !!responseData.dadosCliente,
+            hasResumoFinanceiro: !!responseData.resumoFinanceiro,
+            hasAmbientes: !!responseData.ambientes,
+            ambientesCount: responseData.ambientes?.length || 0
+          });
+        } catch (parseError) {
+          console.error('[N8N] Erro ao fazer parse do JSON:', parseError);
+          console.error('[N8N] Resposta que causou erro:', responseText);
+          throw new Error('Resposta do servidor não é um JSON válido');
+        }
         
         // Validar estrutura da resposta
         if (!responseData.dadosCliente || !responseData.resumoFinanceiro || !responseData.ambientes) {
+          console.error('[N8N] Estrutura de resposta inválida:', {
+            dadosCliente: !!responseData.dadosCliente,
+            resumoFinanceiro: !!responseData.resumoFinanceiro,
+            ambientes: !!responseData.ambientes
+          });
           throw new Error('Resposta do n8n com estrutura inválida');
         }
         
+        console.log('[N8N] === SUCESSO: Dados válidos recebidos ===');
         return responseData;
+
       } catch (fetchError) {
         clearTimeout(timeoutId);
         
+        console.error('[N8N] Erro durante fetch:', fetchError);
+        
         if (fetchError instanceof Error && fetchError.name === 'AbortError') {
           throw new Error('Timeout: O servidor demorou muito para responder (mais de 30 segundos)');
+        }
+
+        // Verificar se é erro de CORS
+        if (fetchError instanceof TypeError && fetchError.message.includes('Failed to fetch')) {
+          console.error('[N8N] POSSÍVEL ERRO DE CORS: Failed to fetch');
+          
+          // Tentar método alternativo sem CORS
+          try {
+            console.log('[N8N] Tentando método alternativo (no-cors)...');
+            
+            const alternativeResponse = await fetch('https://victorprocha.app.n8n.cloud/webhook/leitorxml', {
+              method: 'POST',
+              body: formData,
+              mode: 'no-cors',
+              cache: 'no-cache'
+            });
+            
+            console.log('[N8N] Resposta no-cors:', {
+              status: alternativeResponse.status,
+              type: alternativeResponse.type
+            });
+            
+            throw new Error('Erro de CORS detectado. O servidor precisa configurar os headers CORS adequados.');
+          } catch (corsError) {
+            console.error('[N8N] Erro no método alternativo:', corsError);
+            throw new Error('Erro de CORS: Não foi possível conectar com o servidor n8n. Verifique as configurações CORS do servidor.');
+          }
         }
         
         throw fetchError;
       }
     } catch (error) {
-      console.error('[N8N] Erro ao conectar com n8n:', error);
+      console.error('[N8N] === ERRO FINAL ===');
+      console.error('[N8N] Erro completo:', error);
+      console.error('[N8N] Stack trace:', error instanceof Error ? error.stack : 'N/A');
       throw error;
     }
   };
@@ -469,52 +593,74 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
   };
 
   const handleFileUpload = async (file: File) => {
-    console.log('[ProjectDetails] Iniciando processamento do arquivo:', file.name);
+    console.log('[ProjectDetails] === INÍCIO DO UPLOAD ===');
+    console.log('[ProjectDetails] Arquivo recebido:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    });
     
     setUploading(true);
     
     try {
-      // Validação inicial do arquivo
+      // Validação inicial no frontend
       if (!file.name.toLowerCase().endsWith('.xml')) {
-        toast({
-          title: "Erro",
-          description: "Por favor, selecione um arquivo XML válido.",
-          variant: "destructive"
-        });
-        return;
+        throw new Error('Por favor, selecione um arquivo XML válido.');
       }
 
-      console.log('[ProjectDetails] Enviando arquivo para n8n...');
+      console.log('[ProjectDetails] Validação inicial OK, enviando para n8n...');
       
       // Enviar arquivo para o n8n e receber dados processados
       const n8nResponse = await sendFileToN8N(file);
+      
+      console.log('[ProjectDetails] Resposta do n8n recebida com sucesso');
       
       // Preencher campos automaticamente com os dados retornados
       fillProjectDataFromN8N(n8nResponse);
       
       // Upload do arquivo para o storage (opcional, mantendo funcionalidade existente)
       try {
+        console.log('[ProjectDetails] Fazendo upload para storage...');
         const fileName = `${user?.id}/${Date.now()}_${file.name}`;
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('project-files')
           .upload(fileName, file);
 
         if (uploadError) {
-          console.warn('[ProjectDetails] Erro no upload do storage, mas dados já foram processados:', uploadError);
+          console.warn('[ProjectDetails] Aviso: Erro no upload do storage, mas dados já foram processados:', uploadError);
         } else {
           console.log('[ProjectDetails] Arquivo salvo no storage:', fileName);
         }
       } catch (storageError) {
-        console.warn('[ProjectDetails] Erro no storage, mas processamento do n8n foi bem-sucedido:', storageError);
+        console.warn('[ProjectDetails] Aviso: Erro no storage, mas processamento do n8n foi bem-sucedido:', storageError);
       }
 
+      console.log('[ProjectDetails] === UPLOAD CONCLUÍDO COM SUCESSO ===');
+
     } catch (error) {
-      console.error('[ProjectDetails] Erro ao processar arquivo:', error);
+      console.error('[ProjectDetails] === ERRO NO UPLOAD ===');
+      console.error('[ProjectDetails] Erro completo:', error);
       
       let errorMessage = "Erro ao processar arquivo XML.";
       
       if (error instanceof Error) {
         errorMessage = error.message;
+        
+        // Log detalhado do erro para debugging
+        console.error('[ProjectDetails] Detalhes do erro:', {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        });
+        
+        // Adicionar contexto específico baseado no tipo de erro
+        if (error.message.includes('CORS')) {
+          errorMessage = `Erro de CORS: ${error.message}\n\nPara resolver: Verifique se o servidor n8n está configurado com os headers CORS adequados.`;
+        } else if (error.message.includes('Timeout')) {
+          errorMessage = `Timeout: ${error.message}\n\nO servidor está demorando para responder. Tente novamente em alguns minutos.`;
+        } else if (error.message.includes('500')) {
+          errorMessage = `Erro interno do servidor: ${error.message}\n\nVerifique os logs do n8n para mais detalhes.`;
+        }
       }
       
       toast({
@@ -524,6 +670,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
       });
     } finally {
       setUploading(false);
+      console.log('[ProjectDetails] Upload finalizado (sucesso ou erro)');
     }
   };
 
