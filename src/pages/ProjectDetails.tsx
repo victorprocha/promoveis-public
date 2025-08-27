@@ -354,8 +354,21 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
     console.log('[N8N] Enviando arquivo para n8n webhook...');
     
     try {
+      // Validar se é um arquivo XML
+      if (!file.name.toLowerCase().endsWith('.xml')) {
+        throw new Error('Arquivo deve ser do tipo XML');
+      }
+
+      // Validar tamanho do arquivo (máximo 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error('Arquivo muito grande. Máximo permitido: 10MB');
+      }
+
       const formData = new FormData();
       formData.append('file', file);
+      
+      // Adicionar headers específicos para o n8n
+      formData.append('filename', file.name);
 
       console.log('[N8N] Enviando FormData com arquivo:', {
         fileName: file.name,
@@ -363,23 +376,61 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
         fileType: file.type
       });
 
-      const response = await fetch('https://victorprocha.app.n8n.cloud/webhook-test/leitorxml', {
-        method: 'POST',
-        body: formData,
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
 
-      console.log('[N8N] Response status:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[N8N] Erro na resposta:', errorText);
-        throw new Error(`Erro HTTP ${response.status}: ${response.statusText}`);
+      try {
+        const response = await fetch('https://victorprocha.app.n8n.cloud/webhook/leitorxml', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'Accept': 'application/json',
+          },
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        console.log('[N8N] Response status:', response.status);
+        console.log('[N8N] Response headers:', Object.fromEntries(response.headers.entries()));
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('[N8N] Erro na resposta:', {
+            status: response.status,
+            statusText: response.statusText,
+            body: errorText
+          });
+          
+          if (response.status === 500) {
+            throw new Error(`Erro interno do servidor n8n. Verifique se o webhook está configurado corretamente.`);
+          } else if (response.status === 404) {
+            throw new Error(`Webhook não encontrado. Verifique a URL: https://victorprocha.app.n8n.cloud/webhook/leitorxml`);
+          } else if (response.status === 413) {
+            throw new Error(`Arquivo muito grande para o servidor processar.`);
+          } else {
+            throw new Error(`Erro HTTP ${response.status}: ${response.statusText}`);
+          }
+        }
+
+        const responseData: N8nResponse = await response.json();
+        console.log('[N8N] Dados recebidos do n8n:', responseData);
+        
+        // Validar estrutura da resposta
+        if (!responseData.dadosCliente || !responseData.resumoFinanceiro || !responseData.ambientes) {
+          throw new Error('Resposta do n8n com estrutura inválida');
+        }
+        
+        return responseData;
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        
+        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+          throw new Error('Timeout: O servidor demorou muito para responder (mais de 30 segundos)');
+        }
+        
+        throw fetchError;
       }
-
-      const responseData: N8nResponse = await response.json();
-      console.log('[N8N] Dados recebidos do n8n:', responseData);
-      
-      return responseData;
     } catch (error) {
       console.error('[N8N] Erro ao conectar com n8n:', error);
       throw error;
@@ -391,8 +442,13 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
     
     // Converter data do formato DD/MM/YYYY para YYYY-MM-DD
     const convertDate = (dateStr: string) => {
-      const [day, month, year] = dateStr.split('/');
-      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      try {
+        const [day, month, year] = dateStr.split('/');
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      } catch (error) {
+        console.warn('[ProjectDetails] Erro ao converter data:', dateStr);
+        return '';
+      }
     };
 
     const updatedProject = {
@@ -416,19 +472,22 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
   };
 
   const handleFileUpload = async (file: File) => {
-    if (!file.name.toLowerCase().endsWith('.xml')) {
-      toast({
-        title: "Erro",
-        description: "Por favor, selecione um arquivo XML válido.",
-        variant: "destructive"
-      });
-      return;
-    }
-
+    console.log('[ProjectDetails] Iniciando processamento do arquivo:', file.name);
+    
     setUploading(true);
     
     try {
-      console.log('[ProjectDetails] Iniciando upload do arquivo XML...');
+      // Validação inicial do arquivo
+      if (!file.name.toLowerCase().endsWith('.xml')) {
+        toast({
+          title: "Erro",
+          description: "Por favor, selecione um arquivo XML válido.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('[ProjectDetails] Enviando arquivo para n8n...');
       
       // Enviar arquivo para o n8n e receber dados processados
       const n8nResponse = await sendFileToN8N(file);
@@ -436,28 +495,34 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
       // Preencher campos automaticamente com os dados retornados
       fillProjectDataFromN8N(n8nResponse);
       
-      // Upload do arquivo para o storage (mantendo funcionalidade existente)
-      const fileName = `${user?.id}/${Date.now()}_${file.name}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('project-files')
-        .upload(fileName, file);
-
-      if (uploadError) {
-        console.warn('[ProjectDetails] Erro no upload do storage, mas dados já foram processados:', uploadError);
-      } else {
-        // Obter URL pública do arquivo
-        const { data: { publicUrl } } = supabase.storage
+      // Upload do arquivo para o storage (opcional, mantendo funcionalidade existente)
+      try {
+        const fileName = `${user?.id}/${Date.now()}_${file.name}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
           .from('project-files')
-          .getPublicUrl(fileName);
+          .upload(fileName, file);
 
-        console.log('[ProjectDetails] Arquivo salvo no storage:', publicUrl);
+        if (uploadError) {
+          console.warn('[ProjectDetails] Erro no upload do storage, mas dados já foram processados:', uploadError);
+        } else {
+          console.log('[ProjectDetails] Arquivo salvo no storage:', fileName);
+        }
+      } catch (storageError) {
+        console.warn('[ProjectDetails] Erro no storage, mas processamento do n8n foi bem-sucedido:', storageError);
       }
 
     } catch (error) {
       console.error('[ProjectDetails] Erro ao processar arquivo:', error);
+      
+      let errorMessage = "Erro ao processar arquivo XML.";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Erro",
-        description: error instanceof Error ? error.message : "Erro ao processar arquivo XML.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
