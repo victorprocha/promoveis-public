@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, X, CheckCircle2, Eye } from "lucide-react";
+import { Upload, X, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Table,
@@ -66,25 +66,39 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
       const formData = new FormData();
       formData.append('data', file);
 
+      console.log('[N8N] Enviando FormData com arquivo:', {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type
+      });
+
       const response = await fetch(N8N_WEBHOOK_URL, {
         method: 'POST',
         body: formData,
       });
 
       console.log('[N8N] Response status:', response.status);
+      console.log('[N8N] Response headers:', response.headers);
       
-      if (response.ok) {
-        const responseData = await response.json();
-        console.log('[N8N] Dados recebidos do n8n:', responseData);
-        
-        return {
-          success: true,
-          data: responseData
-        };
-      } else {
-        console.error('[N8N] Erro ao enviar arquivo para n8n:', response.statusText);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[N8N] Erro na resposta:', errorText);
         throw new Error(`Erro HTTP ${response.status}: ${response.statusText}`);
       }
+
+      const responseData = await response.json();
+      console.log('[N8N] Dados recebidos do n8n:', responseData);
+      
+      // Validar se a resposta tem a estrutura esperada
+      if (!responseData || typeof responseData !== 'object') {
+        console.error('[N8N] Resposta inválida do n8n:', responseData);
+        throw new Error('Resposta inválida do servidor');
+      }
+
+      return {
+        success: true,
+        data: responseData
+      };
     } catch (error) {
       console.error('[N8N] Erro ao conectar com n8n:', error);
       throw error;
@@ -95,7 +109,7 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
     const file = event.target.files?.[0];
     if (file && file.name.toLowerCase().endsWith('.xml')) {
       setSelectedFile(file);
-      setImportedData(null);
+      setImportedData(null); // Reset previous data
       console.log('[ImportPromobXMLDialog] Arquivo selecionado:', file.name);
     } else {
       toast({
@@ -123,7 +137,10 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
     try {
       const result = await sendFileToN8N(selectedFile);
       
+      console.log('[ImportPromobXMLDialog] Resultado do processamento:', result);
+      
       if (result.success && result.data) {
+        console.log('[ImportPromobXMLDialog] Definindo dados importados:', result.data);
         setImportedData(result.data);
         
         toast({
@@ -131,11 +148,18 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
           description: "Arquivo XML processado com sucesso!",
         });
 
-        onImportSuccess();
+        // Não fechar o dialog automaticamente, deixar o usuário ver os dados
+        // onImportSuccess();
+      } else {
+        throw new Error('Dados não foram retornados corretamente pelo n8n');
       }
       
     } catch (error) {
       console.error('[ImportPromobXMLDialog] Erro ao processar XML:', error);
+      
+      // Reset states on error
+      setImportedData(null);
+      
       toast({
         title: "Erro",
         description: error instanceof Error ? error.message : "Erro ao processar o arquivo XML.",
@@ -147,14 +171,40 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
   };
 
   const handleCancel = () => {
+    console.log('[ImportPromobXMLDialog] Cancelando e resetando estados...');
     setSelectedFile(null);
     setImportedData(null);
+    setLoading(false);
     onOpenChange(false);
   };
 
-  const formatCurrency = (value: string) => {
-    return `R$ ${parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+  const handleClose = () => {
+    console.log('[ImportPromobXMLDialog] Fechando dialog...');
+    setSelectedFile(null);
+    setImportedData(null);
+    setLoading(false);
+    onOpenChange(false);
+    onImportSuccess();
   };
+
+  const formatCurrency = (value: string) => {
+    try {
+      const numValue = parseFloat(value);
+      if (isNaN(numValue)) return `R$ 0,00`;
+      return `R$ ${numValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+    } catch (error) {
+      console.error('Erro ao formatar moeda:', error);
+      return `R$ 0,00`;
+    }
+  };
+
+  console.log('[ImportPromobXMLDialog] Estado atual:', {
+    open,
+    loading,
+    hasSelectedFile: !!selectedFile,
+    hasImportedData: !!importedData,
+    importedDataKeys: importedData ? Object.keys(importedData) : []
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -164,7 +214,13 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
         </DialogHeader>
         
         <div className="space-y-4">
-          {!importedData ? (
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-8 space-y-4">
+              <Upload className="h-12 w-12 animate-spin text-primary" />
+              <p className="text-lg font-medium">Processando arquivo XML...</p>
+              <p className="text-sm text-muted-foreground">Aguarde enquanto enviamos o arquivo para processamento</p>
+            </div>
+          ) : !importedData ? (
             <>
               <div className="bg-blue-50 p-3 rounded-md">
                 <p className="text-sm text-blue-800">
@@ -206,20 +262,11 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
                 
                 <Button 
                   onClick={handleImport}
-                  disabled={!selectedFile || loading}
+                  disabled={!selectedFile}
                   className="bg-primary hover:bg-primary/90"
                 >
-                  {loading ? (
-                    <>
-                      <Upload className="h-4 w-4 mr-2 animate-spin" />
-                      Processando...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Importar Arquivo
-                    </>
-                  )}
+                  <Upload className="h-4 w-4 mr-2" />
+                  Importar Arquivo
                 </Button>
               </div>
             </>
@@ -238,94 +285,105 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
               </div>
 
               {/* Dados do Cliente */}
-              <div className="bg-white border rounded-lg p-4">
-                <h3 className="font-semibold text-lg mb-3 text-gray-800">Dados do Cliente</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Nome</label>
-                    <div className="bg-gray-50 p-2 rounded border mt-1">
-                      {importedData.cliente.nome}
+              {importedData.cliente && (
+                <div className="bg-white border rounded-lg p-4">
+                  <h3 className="font-semibold text-lg mb-3 text-gray-800">Dados do Cliente</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Nome</label>
+                      <div className="bg-gray-50 p-2 rounded border mt-1">
+                        {importedData.cliente.nome || 'N/A'}
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Email</label>
-                    <div className="bg-gray-50 p-2 rounded border mt-1">
-                      {importedData.cliente.email}
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Email</label>
+                      <div className="bg-gray-50 p-2 rounded border mt-1">
+                        {importedData.cliente.email || 'N/A'}
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Situação</label>
-                    <div className="bg-gray-50 p-2 rounded border mt-1">
-                      {importedData.cliente.situacao}
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Situação</label>
+                      <div className="bg-gray-50 p-2 rounded border mt-1">
+                        {importedData.cliente.situacao || 'N/A'}
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Etapa</label>
-                    <div className="bg-gray-50 p-2 rounded border mt-1">
-                      {importedData.cliente.etapa}
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Etapa</label>
+                      <div className="bg-gray-50 p-2 rounded border mt-1">
+                        {importedData.cliente.etapa || 'N/A'}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Orçamento */}
-              <div className="bg-white border rounded-lg p-4">
-                <h3 className="font-semibold text-lg mb-3 text-gray-800">Orçamento</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-blue-50 p-3 rounded border">
-                    <label className="text-sm font-medium text-gray-600">Valor do Pedido</label>
-                    <div className="text-xl font-bold text-blue-600 mt-1">
-                      {formatCurrency(importedData.orcamento.pedido)}
+              {importedData.orcamento && (
+                <div className="bg-white border rounded-lg p-4">
+                  <h3 className="font-semibold text-lg mb-3 text-gray-800">Orçamento</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-blue-50 p-3 rounded border">
+                      <label className="text-sm font-medium text-gray-600">Valor do Pedido</label>
+                      <div className="text-xl font-bold text-blue-600 mt-1">
+                        {formatCurrency(importedData.orcamento.pedido)}
+                      </div>
                     </div>
-                  </div>
-                  <div className="bg-green-50 p-3 rounded border">
-                    <label className="text-sm font-medium text-gray-600">Total</label>
-                    <div className="text-xl font-bold text-green-600 mt-1">
-                      {formatCurrency(importedData.orcamento.total)}
+                    <div className="bg-green-50 p-3 rounded border">
+                      <label className="text-sm font-medium text-gray-600">Total</label>
+                      <div className="text-xl font-bold text-green-600 mt-1">
+                        {formatCurrency(importedData.orcamento.total)}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Ambientes */}
-              <div className="bg-white border rounded-lg p-4">
-                <h3 className="font-semibold text-lg mb-3 text-gray-800">Ambientes</h3>
-                <div className="space-y-4">
-                  {importedData.ambientes.map((ambiente, ambienteIndex) => (
-                    <div key={ambienteIndex} className="border rounded p-3">
-                      <h4 className="font-medium text-gray-800 mb-3">{ambiente.descricao}</h4>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Código</TableHead>
-                            <TableHead>Descrição</TableHead>
-                            <TableHead>Quantidade</TableHead>
-                            <TableHead>Preço Unitário</TableHead>
-                            <TableHead>Preço Total</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {ambiente.itens.map((item, itemIndex) => (
-                            <TableRow key={itemIndex}>
-                              <TableCell className="font-medium">{item.codigo}</TableCell>
-                              <TableCell>{item.descricao}</TableCell>
-                              <TableCell>{item.quantidade}</TableCell>
-                              <TableCell>{formatCurrency(item.preco_unitario)}</TableCell>
-                              <TableCell className="font-semibold text-green-600">
-                                {formatCurrency(item.preco_total)}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  ))}
+              {importedData.ambientes && importedData.ambientes.length > 0 && (
+                <div className="bg-white border rounded-lg p-4">
+                  <h3 className="font-semibold text-lg mb-3 text-gray-800">Ambientes</h3>
+                  <div className="space-y-4">
+                    {importedData.ambientes.map((ambiente, ambienteIndex) => (
+                      <div key={ambienteIndex} className="border rounded p-3">
+                        <h4 className="font-medium text-gray-800 mb-3">{ambiente.descricao}</h4>
+                        {ambiente.itens && ambiente.itens.length > 0 && (
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Código</TableHead>
+                                <TableHead>Descrição</TableHead>
+                                <TableHead>Quantidade</TableHead>
+                                <TableHead>Preço Unitário</TableHead>
+                                <TableHead>Preço Total</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {ambiente.itens.map((item, itemIndex) => (
+                                <TableRow key={itemIndex}>
+                                  <TableCell className="font-medium">{item.codigo || 'N/A'}</TableCell>
+                                  <TableCell>{item.descricao || 'N/A'}</TableCell>
+                                  <TableCell>{item.quantidade || '0'}</TableCell>
+                                  <TableCell>{formatCurrency(item.preco_unitario || '0')}</TableCell>
+                                  <TableCell className="font-semibold text-green-600">
+                                    {formatCurrency(item.preco_total || '0')}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div className="flex justify-end pt-4">
-                <Button onClick={handleCancel}>
-                  Fechar
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={handleCancel}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleClose}>
+                  Concluir Importação
                 </Button>
               </div>
             </>
