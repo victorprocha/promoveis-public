@@ -24,6 +24,68 @@ const mapDatabaseToProject = (dbProject: any): Project => ({
 });
 
 export const projectService = {
+  async getProject(projectId: string): Promise<any> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      // Buscar projeto com dados do especificador e dados XML
+      const { data: project, error } = await supabase
+        .from('projects')
+        .select(`
+          *,
+          specifiers!projects_specifier_id_fkey (
+            id,
+            nome
+          ),
+          project_xml_data (
+            *
+          )
+        `)
+        .eq('id', projectId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (!project) {
+        throw new Error('Projeto não encontrado');
+      }
+
+      // Mapear projeto para o formato esperado pelo useProject hook
+      const mappedProject = {
+        id: project.id,
+        name: project.name,
+        description: project.description,
+        status: 'Normal' as 'Normal' | 'Pendente' | 'Atrasado' | 'Concluído',
+        environment: project.etapa_atual || 'Não definido',
+        startDate: project.created_at,
+        endDate: project.delivery_deadline,
+        environments: [], // Pode ser expandido futuramente
+        n8nData: project.project_xml_data?.[0] ? {
+          cliente: project.project_xml_data[0].ambiente_data?.cliente,
+          resumoFinanceiro: project.project_xml_data[0].ambiente_data?.resumoFinanceiro,
+          ambientes: project.project_xml_data[0].ambiente_data?.ambientes
+        } : null
+      };
+
+      // Adicionar nome do especificador se existir
+      if (project.specifiers) {
+        mappedProject.specifierName = project.specifiers.nome;
+      }
+
+      return mappedProject;
+    } catch (error) {
+      console.error('Erro ao buscar projeto:', error);
+      throw error;
+    }
+  },
+
   async getKanbanProjects(): Promise<KanbanColumn[]> {
     try {
       // Buscar projetos com dados do especificador
