@@ -6,12 +6,44 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Upload, X, CheckCircle2, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 interface ImportPromobXMLDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projectId: string;
   onImportSuccess: () => void;
+}
+
+interface ImportedData {
+  cliente: {
+    nome: string;
+    email: string;
+    situacao: string;
+    etapa: string;
+    criado_em: string;
+  };
+  orcamento: {
+    pedido: string;
+    total: string;
+  };
+  ambientes: Array<{
+    descricao: string;
+    itens: Array<{
+      codigo: string;
+      descricao: string;
+      quantidade: string;
+      preco_unitario: string;
+      preco_total: string;
+    }>;
+  }>;
 }
 
 export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
@@ -22,21 +54,17 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
-  const [importResult, setImportResult] = useState<any>(null);
+  const [importedData, setImportedData] = useState<ImportedData | null>(null);
   const { toast } = useToast();
 
-  const N8N_WEBHOOK_URL = 'https://victorprocha.app.n8n.cloud/webhook-test/leitorxml';
+  const N8N_WEBHOOK_URL = 'https://victorprocha.app.n8n.cloud/webhook/leitorxml';
 
-  const sendFileToN8N = async (file: File, xmlContent: string) => {
+  const sendFileToN8N = async (file: File) => {
     console.log('[N8N] Enviando arquivo para n8n webhook:', N8N_WEBHOOK_URL);
     
     try {
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('fileName', file.name);
-      formData.append('fileSize', file.size.toString());
-      formData.append('projectId', projectId);
-      formData.append('xmlContent', xmlContent);
+      formData.append('data', file);
 
       const response = await fetch(N8N_WEBHOOK_URL, {
         method: 'POST',
@@ -46,12 +74,11 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
       console.log('[N8N] Response status:', response.status);
       
       if (response.ok) {
-        const responseData = await response.text();
-        console.log('[N8N] Arquivo enviado com sucesso para n8n:', responseData);
+        const responseData = await response.json();
+        console.log('[N8N] Dados recebidos do n8n:', responseData);
         
         return {
           success: true,
-          message: 'Arquivo enviado com sucesso para processamento no n8n.',
           data: responseData
         };
       } else {
@@ -68,7 +95,7 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
     const file = event.target.files?.[0];
     if (file && file.name.toLowerCase().endsWith('.xml')) {
       setSelectedFile(file);
-      setImportResult(null);
+      setImportedData(null);
       console.log('[ImportPromobXMLDialog] Arquivo selecionado:', file.name);
     } else {
       toast({
@@ -94,82 +121,54 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
     console.log('[ImportPromobXMLDialog] Iniciando processo de importação via n8n...');
     
     try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const xmlContent = e.target?.result as string;
-          console.log('[ImportPromobXMLDialog] Conteúdo do arquivo lido, enviando para n8n...');
-          
-          const result = await sendFileToN8N(selectedFile, xmlContent);
-          
-          setImportResult({
-            success: true,
-            fileName: selectedFile.name,
-            fileSize: selectedFile.size,
-            message: result.message
-          });
-          
-          toast({
-            title: "Sucesso",
-            description: "Arquivo XML enviado com sucesso para processamento no n8n.",
-          });
-
-          onImportSuccess();
-          
-        } catch (error) {
-          console.error('[ImportPromobXMLDialog] Erro ao processar XML:', error);
-          toast({
-            title: "Erro",
-            description: error instanceof Error ? error.message : "Erro ao enviar o arquivo para o n8n.",
-            variant: "destructive",
-          });
-        } finally {
-          setLoading(false);
-        }
-      };
+      const result = await sendFileToN8N(selectedFile);
       
-      reader.onerror = (error) => {
-        console.error('[ImportPromobXMLDialog] Erro ao ler arquivo:', error);
+      if (result.success && result.data) {
+        setImportedData(result.data);
+        
         toast({
-          title: "Erro",
-          description: "Erro ao ler o arquivo XML.",
-          variant: "destructive",
+          title: "Sucesso",
+          description: "Arquivo XML processado com sucesso!",
         });
-        setLoading(false);
-      };
+
+        onImportSuccess();
+      }
       
-      reader.readAsText(selectedFile);
     } catch (error) {
-      console.error('[ImportPromobXMLDialog] Erro geral:', error);
+      console.error('[ImportPromobXMLDialog] Erro ao processar XML:', error);
       toast({
         title: "Erro",
-        description: "Erro ao processar o arquivo XML.",
+        description: error instanceof Error ? error.message : "Erro ao processar o arquivo XML.",
         variant: "destructive",
       });
+    } finally {
       setLoading(false);
     }
   };
 
   const handleCancel = () => {
     setSelectedFile(null);
-    setImportResult(null);
+    setImportedData(null);
     onOpenChange(false);
+  };
+
+  const formatCurrency = (value: string) => {
+    return `R$ ${parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Importar Arquivo XML do Promob</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
-          {!importResult ? (
+          {!importedData ? (
             <>
               <div className="bg-blue-50 p-3 rounded-md">
                 <p className="text-sm text-blue-800">
-                  Selecione o arquivo XML exportado do Promob para enviar para processamento no n8n.
-                  O arquivo será processado automaticamente e os dados serão importados para o sistema.
+                  Selecione o arquivo XML exportado do Promob para processar automaticamente no n8n.
                 </p>
               </div>
 
@@ -213,12 +212,12 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
                   {loading ? (
                     <>
                       <Upload className="h-4 w-4 mr-2 animate-spin" />
-                      Enviando...
+                      Processando...
                     </>
                   ) : (
                     <>
                       <Upload className="h-4 w-4 mr-2" />
-                      Enviar para n8n
+                      Importar Arquivo
                     </>
                   )}
                 </Button>
@@ -230,29 +229,97 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
                 <div className="flex items-center gap-3">
                   <CheckCircle2 className="h-8 w-8 text-green-600" />
                   <div>
-                    <p className="font-medium text-green-800">Arquivo enviado com sucesso!</p>
+                    <p className="font-medium text-green-800">Arquivo processado com sucesso!</p>
                     <p className="text-sm text-green-600 mt-1">
-                      O arquivo está sendo processado pelo n8n
+                      Dados importados e organizados
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <h4 className="font-semibold text-gray-800">Detalhes do envio:</h4>
-                <div className="grid grid-cols-1 gap-4 text-sm">
-                  <div className="bg-gray-50 p-3 rounded">
-                    <div className="font-medium text-gray-700">Nome do arquivo</div>
-                    <div className="text-lg font-bold text-blue-600">
-                      {importResult.fileName}
+              {/* Dados do Cliente */}
+              <div className="bg-white border rounded-lg p-4">
+                <h3 className="font-semibold text-lg mb-3 text-gray-800">Dados do Cliente</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Nome</label>
+                    <div className="bg-gray-50 p-2 rounded border mt-1">
+                      {importedData.cliente.nome}
                     </div>
                   </div>
-                  <div className="bg-gray-50 p-3 rounded">
-                    <div className="font-medium text-gray-700">Tamanho</div>
-                    <div className="text-lg font-bold text-green-600">
-                      {(importResult.fileSize / 1024).toFixed(2)} KB
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Email</label>
+                    <div className="bg-gray-50 p-2 rounded border mt-1">
+                      {importedData.cliente.email}
                     </div>
                   </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Situação</label>
+                    <div className="bg-gray-50 p-2 rounded border mt-1">
+                      {importedData.cliente.situacao}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Etapa</label>
+                    <div className="bg-gray-50 p-2 rounded border mt-1">
+                      {importedData.cliente.etapa}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Orçamento */}
+              <div className="bg-white border rounded-lg p-4">
+                <h3 className="font-semibold text-lg mb-3 text-gray-800">Orçamento</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-blue-50 p-3 rounded border">
+                    <label className="text-sm font-medium text-gray-600">Valor do Pedido</label>
+                    <div className="text-xl font-bold text-blue-600 mt-1">
+                      {formatCurrency(importedData.orcamento.pedido)}
+                    </div>
+                  </div>
+                  <div className="bg-green-50 p-3 rounded border">
+                    <label className="text-sm font-medium text-gray-600">Total</label>
+                    <div className="text-xl font-bold text-green-600 mt-1">
+                      {formatCurrency(importedData.orcamento.total)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Ambientes */}
+              <div className="bg-white border rounded-lg p-4">
+                <h3 className="font-semibold text-lg mb-3 text-gray-800">Ambientes</h3>
+                <div className="space-y-4">
+                  {importedData.ambientes.map((ambiente, ambienteIndex) => (
+                    <div key={ambienteIndex} className="border rounded p-3">
+                      <h4 className="font-medium text-gray-800 mb-3">{ambiente.descricao}</h4>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Código</TableHead>
+                            <TableHead>Descrição</TableHead>
+                            <TableHead>Quantidade</TableHead>
+                            <TableHead>Preço Unitário</TableHead>
+                            <TableHead>Preço Total</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {ambiente.itens.map((item, itemIndex) => (
+                            <TableRow key={itemIndex}>
+                              <TableCell className="font-medium">{item.codigo}</TableCell>
+                              <TableCell>{item.descricao}</TableCell>
+                              <TableCell>{item.quantidade}</TableCell>
+                              <TableCell>{formatCurrency(item.preco_unitario)}</TableCell>
+                              <TableCell className="font-semibold text-green-600">
+                                {formatCurrency(item.preco_total)}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ))}
                 </div>
               </div>
 
