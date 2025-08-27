@@ -17,8 +17,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { projectService } from '@/services/projectService';
-import { useProject } from '@/hooks/useProject';
-import { Project } from '@/types/project';
+import { useProject, Project } from '@/hooks/useProject';
 import { ProjectEnvironment } from '@/types/projectEnvironment';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -40,10 +39,10 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
   const [editFormData, setEditFormData] = useState({
     name: '',
     description: '',
-    status: '',
+    status: 'Normal' as 'Normal' | 'Pendente' | 'Atrasado' | 'Concluído',
     environment: '',
-    startDate: null,
-    endDate: null,
+    startDate: null as Date | null,
+    endDate: null as Date | null,
   });
 
   const formatDate = (date: Date | null): string => {
@@ -57,7 +56,6 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
     try {
       await projectService.deleteProject(project.id);
       setShowDeleteDialog(false);
-      // Voltar para a lista de projetos
       if (onBack) {
         onBack();
       }
@@ -119,14 +117,11 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
   if (loading === 'loading') {
     return (
       <div className="flex-1 flex flex-col h-full bg-[#ECF0F5]">
-        {/* Breadcrumb */}
         <div className="bg-white border-b border-gray-200 px-6 py-3">
           <div className="text-sm text-gray-500">
             Projetos &gt; Detalhes do Projeto
           </div>
         </div>
-
-        {/* Loading Content */}
         <div className="flex-1 p-6">
           <div className="space-y-6">
             <Card>
@@ -248,11 +243,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
 
           {/* Dados Importados do XML Section */}
           {project?.n8nData && (
-            <Card>
-              <CardContent className="p-6">
-                <ImportedXmlData data={project.n8nData} />
-              </CardContent>
-            </Card>
+            <ImportedXmlData data={project.n8nData} />
           )}
 
           {/* Environments Section */}
@@ -336,15 +327,18 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
               </div>
               <div>
                 <Label htmlFor="status">Status</Label>
-                <Select value={editFormData.status}>
+                <Select 
+                  value={editFormData.status} 
+                  onValueChange={(value) => setEditFormData({ ...editFormData, status: value as 'Normal' | 'Pendente' | 'Atrasado' | 'Concluído' })}
+                >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Selecione um status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Novo">Novo</SelectItem>
-                    <SelectItem value="Em Andamento">Em Andamento</SelectItem>
+                    <SelectItem value="Normal">Normal</SelectItem>
+                    <SelectItem value="Pendente">Pendente</SelectItem>
+                    <SelectItem value="Atrasado">Atrasado</SelectItem>
                     <SelectItem value="Concluído">Concluído</SelectItem>
-                    <SelectItem value="Cancelado">Cancelado</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
