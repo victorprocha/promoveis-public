@@ -363,7 +363,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
         fileType: file.type
       });
 
-      const response = await fetch('https://victorprocha.app.n8n.cloud/webhook/leitorxml', {
+      const response = await fetch('https://victorprocha.app.n8n.cloud/webhook-test/leitorxml', {
         method: 'POST',
         body: formData,
       });
