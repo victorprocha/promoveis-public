@@ -26,20 +26,33 @@ export const useProject = (projectId: string) => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchProject = async () => {
-    if (!projectId) return;
+    if (!projectId) {
+      console.log('⚠️ ProjectId não fornecido');
+      return;
+    }
     
     try {
+      console.log('🚀 Iniciando busca do projeto:', projectId);
       setLoading('loading');
+      setError(null);
+      
       const projectData = await projectService.getProject(projectId);
+      console.log('📦 Dados do projeto recebidos:', projectData);
+      
       setProject(projectData);
       setLoading('loaded');
+      console.log('✅ Estado atualizado para loaded');
     } catch (err) {
-      setError('Failed to load project');
+      console.error('💥 Erro no useProject:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load project';
+      setError(errorMessage);
       setLoading('error');
+      console.log('❌ Estado atualizado para error:', errorMessage);
     }
   };
 
   useEffect(() => {
+    console.log('🔄 useEffect executado com projectId:', projectId);
     fetchProject();
   }, [projectId]);
 

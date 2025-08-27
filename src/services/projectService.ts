@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Project, CreateProjectData, UpdateProjectData, KanbanColumn } from '@/types/project';
 import { ApiResponse } from '@/types/common';
@@ -27,11 +26,16 @@ const mapDatabaseToProject = (dbProject: any): Project => ({
 export const projectService = {
   async getProject(projectId: string): Promise<any> {
     try {
+      console.log('🔍 Buscando projeto com ID:', projectId);
+      
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
+        console.error('❌ Usuário não autenticado');
         throw new Error('Usuário não autenticado');
       }
+
+      console.log('✅ Usuário autenticado:', user.email);
 
       // Buscar projeto com dados do especificador e dados XML
       const { data: project, error } = await supabase
@@ -51,12 +55,17 @@ export const projectService = {
         .single();
 
       if (error) {
+        console.error('❌ Erro do Supabase:', error);
         throw new Error(error.message);
       }
 
       if (!project) {
+        console.error('❌ Projeto não encontrado');
         throw new Error('Projeto não encontrado');
       }
+
+      console.log('✅ Projeto encontrado:', project.name);
+      console.log('📊 Dados XML:', project.project_xml_data);
 
       // Mapear projeto para o formato esperado pelo useProject hook
       const mappedProject: any = {
@@ -74,19 +83,22 @@ export const projectService = {
       // Processar dados XML se existirem
       if (project.project_xml_data && project.project_xml_data.length > 0) {
         const xmlData = project.project_xml_data[0];
+        console.log('🔄 Processando dados XML:', xmlData);
         
-        // Parse do JSON se necessário
+        // Parse do JSON se necessário - com verificações de null
         let ambienteData;
-        if (xmlData && typeof xmlData === 'object' && 'ambiente_data' in xmlData) {
+        if (xmlData && typeof xmlData === 'object' && xmlData !== null && 'ambiente_data' in xmlData) {
           if (typeof xmlData.ambiente_data === 'string') {
             try {
               ambienteData = JSON.parse(xmlData.ambiente_data);
+              console.log('✅ Parse do ambiente_data realizado com sucesso');
             } catch (e) {
-              console.error('Erro ao fazer parse do ambiente_data:', e);
+              console.error('❌ Erro ao fazer parse do ambiente_data:', e);
               ambienteData = null;
             }
-          } else {
+          } else if (xmlData.ambiente_data && typeof xmlData.ambiente_data === 'object') {
             ambienteData = xmlData.ambiente_data;
+            console.log('✅ Ambiente_data já é um objeto');
           }
 
           if (ambienteData) {
@@ -95,18 +107,25 @@ export const projectService = {
               resumoFinanceiro: ambienteData.resumoFinanceiro,
               ambientes: ambienteData.ambientes
             };
+            console.log('✅ n8nData configurado:', mappedProject.n8nData);
           }
+        } else {
+          console.log('⚠️ XML data não contém ambiente_data válido');
         }
+      } else {
+        console.log('ℹ️ Nenhum dado XML encontrado para este projeto');
       }
 
       // Adicionar nome do especificador se existir
       if (project.specifiers) {
         mappedProject.specifierName = project.specifiers.nome;
+        console.log('✅ Nome do especificador adicionado:', project.specifiers.nome);
       }
 
+      console.log('🎉 Projeto mapeado com sucesso:', mappedProject.name);
       return mappedProject;
     } catch (error) {
-      console.error('Erro ao buscar projeto:', error);
+      console.error('💥 Erro ao buscar projeto:', error);
       throw error;
     }
   },
