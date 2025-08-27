@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, Edit, Upload, Plus, Receipt, Calendar, Users, Paperclip, TrendingUp, Save, X, CalendarIcon, FileText, CheckCircle2, Trash2 } from 'lucide-react';
@@ -200,6 +199,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
 
   const navigationItems = [
     { id: 'dados-projeto', label: 'Dados do Projeto', icon: Edit },
+    { id: 'dados-xml', label: 'Dados Importados', icon: FileText },
     { id: 'ambientes', label: 'Ambientes', icon: Edit },
     { id: 'itens-avulsos', label: 'Itens Avulsos', icon: Receipt },
     { id: 'orcamentos', label: 'Orçamentos', icon: Receipt },
@@ -817,6 +817,132 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                 </CardContent>
               </Card>
             </section>
+
+            {/* XML Import Data Section */}
+            {n8nData && (
+              <section id="dados-xml">
+                <Card>
+                  <CardHeader className="bg-blue-50">
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-blue-600" />
+                      Dados Importados do XML
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6 space-y-6">
+                    {/* Dados do Cliente */}
+                    <div>
+                      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                        <User className="h-5 w-5" />
+                        Dados do Cliente
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Número do Cliente</label>
+                          <div className="p-3 bg-white rounded-md border">
+                            {n8nData.dadosCliente.numeroCliente}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+                          <div className="p-3 bg-white rounded-md border">
+                            {n8nData.dadosCliente.descricao}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Data</label>
+                          <div className="p-3 bg-white rounded-md border">
+                            {n8nData.dadosCliente.data}
+                          </div>
+                        </div>
+                        {n8nData.dadosCliente.logo && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Logo</label>
+                            <div className="p-3 bg-white rounded-md border">
+                              <img src={n8nData.dadosCliente.logo} alt="Logo do Cliente" className="max-h-16" />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Resumo Financeiro */}
+                    <div>
+                      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                        <Receipt className="h-5 w-5" />
+                        Resumo Financeiro
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg">
+                        <div className="text-center">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">IPI</label>
+                          <div className="p-4 bg-white rounded-lg shadow-sm">
+                            <div className="text-2xl font-bold text-blue-600">
+                              R$ {n8nData.resumoFinanceiro.ipi.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Descontos</label>
+                          <div className="p-4 bg-white rounded-lg shadow-sm">
+                            <div className="text-2xl font-bold text-red-600">
+                              R$ {n8nData.resumoFinanceiro.descontos.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Total</label>
+                          <div className="p-4 bg-white rounded-lg shadow-sm">
+                            <div className="text-2xl font-bold text-green-600">
+                              R$ {n8nData.resumoFinanceiro.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Preview dos Ambientes */}
+                    <div>
+                      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                        <Edit className="h-5 w-5" />
+                        Resumo dos Ambientes ({n8nData.ambientes.length})
+                      </h3>
+                      <div className="space-y-3">
+                        {n8nData.ambientes.slice(0, 3).map((ambiente, index) => (
+                          <div key={ambiente.uniqueId || index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
+                            <div>
+                              <div className="font-medium">{ambiente.descricao}</div>
+                              <div className="text-sm text-gray-600">
+                                {ambiente.itens.length} item(s)
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-bold text-green-600">
+                                R$ {ambiente.valorAmbiente.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        {n8nData.ambientes.length > 3 && (
+                          <div className="text-center p-3 text-gray-500 text-sm">
+                            + {n8nData.ambientes.length - 3} ambiente(s) adicional(is)
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Ações */}
+                    <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center gap-2 text-blue-700">
+                        <CheckCircle2 className="h-5 w-5" />
+                        <span className="font-medium">Dados importados com sucesso!</span>
+                      </div>
+                      <div className="text-sm text-blue-600">
+                        Importado em {new Date().toLocaleString('pt-BR')}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </section>
+            )}
 
             {/* Environments Section */}
             <section id="ambientes">
