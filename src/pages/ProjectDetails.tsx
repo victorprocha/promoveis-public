@@ -564,6 +564,9 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
     // Converter data do formato DD/MM/YYYY para YYYY-MM-DD
     const convertDate = (dateStr: string) => {
       try {
+        if (!dateStr || dateStr.trim() === '') {
+          return '';
+        }
         const [day, month, year] = dateStr.split('/');
         return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
       } catch (error) {
@@ -574,13 +577,15 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
 
     const updatedProject = {
       ...editedProject,
-      name: data.dadosCliente.descricao,
-      client_name: data.dadosCliente.numeroCliente,
+      name: data.dadosCliente.descricao || editedProject?.name || '',
+      client_name: data.dadosCliente.numeroCliente || editedProject?.client_name || '',
       delivery_deadline: convertDate(data.dadosCliente.data),
-      // Adicionar campos do resumo financeiro ao projeto
-      ipi: data.resumoFinanceiro.ipi,
-      descontos: data.resumoFinanceiro.descontos,
-      total_projeto: data.resumoFinanceiro.total
+      // Adicionar campos do resumo financeiro ao projeto com verificação de null
+      ipi: data.resumoFinanceiro.ipi || 0,
+      descontos: Array.isArray(data.resumoFinanceiro.descontos) 
+        ? data.resumoFinanceiro.descontos.reduce((sum, desc) => sum + (desc || 0), 0)
+        : (data.resumoFinanceiro.descontos || 0),
+      total_projeto: data.resumoFinanceiro.total || 0
     };
 
     setEditedProject(updatedProject);
@@ -705,6 +710,17 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
         variant: "destructive"
       });
     }
+  };
+
+  // Helper function to safely format currency
+  const formatCurrency = (value: number | null | undefined): string => {
+    if (value === null || value === undefined || isNaN(value)) {
+      return 'R$ 0,00';
+    }
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
   };
 
   if (loading) {
@@ -1030,19 +1046,23 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                         <div className="bg-white p-4 rounded-lg border border-green-200">
                           <label className="block text-sm font-medium text-gray-700 mb-1">IPI</label>
                           <div className="text-xl font-bold text-blue-600">
-                            R$ {n8nData.resumoFinanceiro.ipi.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            {formatCurrency(n8nData.resumoFinanceiro.ipi)}
                           </div>
                         </div>
                         <div className="bg-white p-4 rounded-lg border border-green-200">
                           <label className="block text-sm font-medium text-gray-700 mb-1">Descontos</label>
                           <div className="text-xl font-bold text-red-600">
-                            R$ {n8nData.resumoFinanceiro.descontos.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            {formatCurrency(
+                              Array.isArray(n8nData.resumoFinanceiro.descontos) 
+                                ? n8nData.resumoFinanceiro.descontos.reduce((sum, desc) => sum + (desc || 0), 0)
+                                : (n8nData.resumoFinanceiro.descontos || 0)
+                            )}
                           </div>
                         </div>
                         <div className="bg-white p-4 rounded-lg border border-green-200">
                           <label className="block text-sm font-medium text-gray-700 mb-1">Total do Projeto</label>
                           <div className="text-xl font-bold text-green-600">
-                            R$ {n8nData.resumoFinanceiro.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            {formatCurrency(n8nData.resumoFinanceiro.total)}
                           </div>
                         </div>
                       </div>
@@ -1135,12 +1155,12 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                             <div>
                               <h3 className="font-semibold text-lg text-green-800">{ambiente.descricao}</h3>
                               <p className="text-sm text-green-600">
-                                {ambiente.itens.length} item(s) no ambiente
+                                {ambiente.itens?.length || 0} item(s) no ambiente
                               </p>
                             </div>
                             <div className="text-right">
                               <div className="font-bold text-green-600 text-xl">
-                                R$ {ambiente.valorAmbiente.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                {formatCurrency(ambiente.valorAmbiente)}
                               </div>
                               <div className="text-xs text-green-500">Valor do ambiente</div>
                             </div>
@@ -1162,10 +1182,10 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                                   {ambiente.itens.map((item, itemIndex) => (
                                     <TableRow key={itemIndex}>
                                       <TableCell className="font-medium">{item.descricao}</TableCell>
-                                      <TableCell>{item.quantidade}</TableCell>
-                                      <TableCell>R$ {item.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
+                                      <TableCell>{item.quantidade || 0}</TableCell>
+                                      <TableCell>{formatCurrency(item.preco)}</TableCell>
                                       <TableCell className="font-semibold text-green-600">
-                                        R$ {(item.quantidade * item.preco).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        {formatCurrency((item.quantidade || 0) * (item.preco || 0))}
                                       </TableCell>
                                     </TableRow>
                                   ))}
@@ -1190,7 +1210,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                             <div className="flex items-center gap-2">
                               <div className="text-right">
                                 <div className="font-bold text-green-600 text-lg">
-                                  R$ {orcamento.valor_orcamento?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                  {formatCurrency(orcamento.valor_orcamento)}
                                 </div>
                                 <div className="text-sm text-gray-500">
                                   {orcamento.ambientes?.length || 0} ambiente(s)
@@ -1236,7 +1256,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                                     </div>
                                     <div className="text-right">
                                       <div className="font-semibold text-green-600">
-                                        R$ {ambiente.total_orcamento?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        {formatCurrency(ambiente.total_orcamento)}
                                       </div>
                                     </div>
                                   </div>
@@ -1262,9 +1282,9 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                       <span className="font-medium">TOTAL DOS AMBIENTES</span>
                       <span className="text-green-600 font-bold text-lg">
                         {n8nData ? (
-                          `R$ ${n8nData.resumoFinanceiro.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                          formatCurrency(n8nData.resumoFinanceiro.total)
                         ) : (
-                          `R$ ${orcamentos.reduce((total, orc) => total + (orc.valor_orcamento || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                          formatCurrency(orcamentos.reduce((total, orc) => total + (orc.valor_orcamento || 0), 0))
                         )}
                       </span>
                     </div>
