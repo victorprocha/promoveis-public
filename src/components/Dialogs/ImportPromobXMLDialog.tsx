@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -57,7 +56,7 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
   const [importedData, setImportedData] = useState<ImportedData | null>(null);
   const { toast } = useToast();
 
-  const N8N_WEBHOOK_URL = 'https://victorprocha.app.n8n.cloud/webhook/leitorxml';
+  const N8N_WEBHOOK_URL = 'https://victorprocha.app.n8n.cloud/webhook-test/leitorxml';
 
   const sendFileToN8N = async (file: File) => {
     console.log('[N8N] Enviando arquivo para n8n webhook:', N8N_WEBHOOK_URL);
