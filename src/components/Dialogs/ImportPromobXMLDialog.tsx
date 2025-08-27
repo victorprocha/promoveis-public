@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -63,7 +64,7 @@ export const ImportPromobXMLDialog: React.FC<ImportPromobXMLDialogProps> = ({
     
     try {
       const formData = new FormData();
-      formData.append('data', file);
+      formData.append('file', file);
 
       console.log('[N8N] Enviando FormData com arquivo:', {
         fileName: file.name,
