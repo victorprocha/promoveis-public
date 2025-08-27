@@ -30,6 +30,31 @@ interface ProjectDetailsProps {
   onBack?: () => void;
 }
 
+// Interface para os dados retornados pelo n8n
+interface N8nResponse {
+  dadosCliente: {
+    numeroCliente: string;
+    descricao: string;
+    data: string;
+    logo: string;
+  };
+  resumoFinanceiro: {
+    ipi: number;
+    descontos: number;
+    total: number;
+  };
+  ambientes: Array<{
+    descricao: string;
+    uniqueId: string;
+    valorAmbiente: number;
+    itens: Array<{
+      descricao: string;
+      quantidade: number;
+      preco: number;
+    }>;
+  }>;
+}
+
 const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) => {
   const params = useParams();
   const navigate = useNavigate();
@@ -48,6 +73,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
   const [uploading, setUploading] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [orcamentos, setOrcamentos] = useState<any[]>([]);
+  const [n8nData, setN8nData] = useState<N8nResponse | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const id = projectId || params.id;
@@ -323,63 +349,69 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
     }));
   };
 
-  const parseXMLContent = (xmlContent: string) => {
+  const sendFileToN8N = async (file: File): Promise<N8nResponse> => {
+    console.log('[N8N] Enviando arquivo para n8n webhook...');
+    
     try {
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
+      const formData = new FormData();
+      formData.append('file', file);
+
+      console.log('[N8N] Enviando FormData com arquivo:', {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type
+      });
+
+      const response = await fetch('https://victorprocha.app.n8n.cloud/webhook-test/leitorxml', {
+        method: 'POST',
+        body: formData,
+      });
+
+      console.log('[N8N] Response status:', response.status);
       
-      // Verificar se houve erro no parsing
-      if (xmlDoc.documentElement.nodeName === 'parsererror') {
-        throw new Error('Erro ao fazer parse do XML');
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[N8N] Erro na resposta:', errorText);
+        throw new Error(`Erro HTTP ${response.status}: ${response.statusText}`);
       }
 
-      // Extrair dados do ambiente
-      const ambienteData = {
-        tipo: xmlDoc.querySelector('tipo')?.textContent || '',
-        nome: xmlDoc.querySelector('nome')?.textContent || '',
-        valor: xmlDoc.querySelector('valor')?.textContent || 'R$ 0,00',
-        data_importacao: new Date().toLocaleString('pt-BR')
-      };
-
-      // Extrair fornecedores
-      const fornecedoresElements = xmlDoc.querySelectorAll('fornecedor');
-      const fornecedoresData = Array.from(fornecedoresElements).map(f => ({
-        nome: f.querySelector('nome')?.textContent || '',
-        servico: f.querySelector('servico')?.textContent || ''
-      }));
-
-      // Extrair características
-      const caracteristicasElements = xmlDoc.querySelectorAll('caracteristica');
-      const caracteristicasData = Array.from(caracteristicasElements).map(c => ({
-        nome: c.querySelector('nome')?.textContent || '',
-        valor: c.querySelector('valor')?.textContent || ''
-      }));
-
-      // Extrair observações
-      const observacoesData = {
-        descricao: xmlDoc.querySelector('observacoes')?.textContent || xmlDoc.querySelector('observacao')?.textContent || ''
-      };
-
-      // Extrair itens
-      const itensElements = xmlDoc.querySelectorAll('item');
-      const itensData = Array.from(itensElements).map(i => ({
-        codigo: i.querySelector('codigo')?.textContent || '',
-        descricao: i.querySelector('descricao')?.textContent || '',
-        quantidade: i.querySelector('quantidade')?.textContent || '0',
-        valor: i.querySelector('valor')?.textContent || 'R$ 0,00'
-      }));
-
-      return {
-        ambiente_data: ambienteData,
-        fornecedores_data: fornecedoresData,
-        caracteristicas_data: caracteristicasData,
-        observacoes_data: observacoesData,
-        itens_data: itensData
-      };
+      const responseData: N8nResponse = await response.json();
+      console.log('[N8N] Dados recebidos do n8n:', responseData);
+      
+      return responseData;
     } catch (error) {
-      console.error('Erro ao fazer parse do XML:', error);
-      throw new Error('Arquivo XML inválido ou corrompido');
+      console.error('[N8N] Erro ao conectar com n8n:', error);
+      throw error;
     }
+  };
+
+  const fillProjectDataFromN8N = (data: N8nResponse) => {
+    console.log('[ProjectDetails] Preenchendo campos com dados do n8n:', data);
+    
+    // Converter data do formato DD/MM/YYYY para YYYY-MM-DD
+    const convertDate = (dateStr: string) => {
+      const [day, month, year] = dateStr.split('/');
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    };
+
+    const updatedProject = {
+      ...editedProject,
+      name: data.dadosCliente.descricao,
+      client_name: data.dadosCliente.numeroCliente,
+      delivery_deadline: convertDate(data.dadosCliente.data),
+      // Adicionar campos do resumo financeiro ao projeto
+      ipi: data.resumoFinanceiro.ipi,
+      descontos: data.resumoFinanceiro.descontos,
+      total_projeto: data.resumoFinanceiro.total
+    };
+
+    setEditedProject(updatedProject);
+    setN8nData(data);
+    
+    toast({
+      title: "Sucesso",
+      description: "Dados do projeto preenchidos automaticamente!",
+    });
   };
 
   const handleFileUpload = async (file: File) => {
@@ -395,52 +427,33 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
     setUploading(true);
     
     try {
-      // Ler conteúdo do arquivo
-      const fileContent = await file.text();
+      console.log('[ProjectDetails] Iniciando upload do arquivo XML...');
       
-      // Fazer parse do XML
-      const parsedData = parseXMLContent(fileContent);
+      // Enviar arquivo para o n8n e receber dados processados
+      const n8nResponse = await sendFileToN8N(file);
       
-      // Upload do arquivo para o storage
+      // Preencher campos automaticamente com os dados retornados
+      fillProjectDataFromN8N(n8nResponse);
+      
+      // Upload do arquivo para o storage (mantendo funcionalidade existente)
       const fileName = `${user?.id}/${Date.now()}_${file.name}`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('project-files')
         .upload(fileName, file);
 
       if (uploadError) {
-        throw uploadError;
+        console.warn('[ProjectDetails] Erro no upload do storage, mas dados já foram processados:', uploadError);
+      } else {
+        // Obter URL pública do arquivo
+        const { data: { publicUrl } } = supabase.storage
+          .from('project-files')
+          .getPublicUrl(fileName);
+
+        console.log('[ProjectDetails] Arquivo salvo no storage:', publicUrl);
       }
-
-      // Obter URL pública do arquivo
-      const { data: { publicUrl } } = supabase.storage
-        .from('project-files')
-        .getPublicUrl(fileName);
-
-      // Salvar dados parseados no banco
-      const xmlRecord = {
-        project_id: project.id,
-        file_name: file.name,
-        file_url: publicUrl,
-        ...parsedData
-      };
-
-      const { data, error } = await supabase
-        .from('project_xml_data')
-        .upsert(xmlRecord, { onConflict: 'project_id' });
-
-      if (error) {
-        throw error;
-      }
-
-      setXmlData(xmlRecord);
-      
-      toast({
-        title: "Sucesso",
-        description: "Arquivo XML importado e processado com sucesso!",
-      });
 
     } catch (error) {
-      console.error('Erro ao processar arquivo:', error);
+      console.error('[ProjectDetails] Erro ao processar arquivo:', error);
       toast({
         title: "Erro",
         description: error instanceof Error ? error.message : "Erro ao processar arquivo XML.",
@@ -729,6 +742,31 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                       )}
                     </div>
                   </div>
+
+                  {/* Resumo Financeiro */}
+                  {n8nData && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-blue-50 rounded-lg">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">IPI</label>
+                        <div className="p-3 bg-white rounded-md font-semibold text-blue-600">
+                          R$ {n8nData.resumoFinanceiro.ipi.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Descontos</label>
+                        <div className="p-3 bg-white rounded-md font-semibold text-red-600">
+                          R$ {n8nData.resumoFinanceiro.descontos.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Total do Projeto</label>
+                        <div className="p-3 bg-white rounded-md font-semibold text-green-600">
+                          R$ {n8nData.resumoFinanceiro.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Observações</label>
                     {isEditing ? (
@@ -748,13 +786,31 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                       Importar Arquivo do Projeto (Promob)
                     </label>
                     
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".xml"
+                      onChange={handleFileInputChange}
+                      className="hidden"
+                    />
+                    
                     <div 
-                      onClick={() => setShowImportDialog(true)}
-                      className="border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 rounded-lg p-8 text-center transition-colors cursor-pointer"
+                      onClick={handleDropZoneClick}
+                      className={`border-2 border-dashed ${uploading ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'} rounded-lg p-8 text-center transition-colors cursor-pointer`}
                     >
-                      <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600 font-medium">Importar Arquivo XML do Promob</p>
-                      <p className="text-sm text-gray-500 mt-1">Clique para selecionar arquivo XML exportado do Promob</p>
+                      {uploading ? (
+                        <>
+                          <Upload className="h-12 w-12 text-blue-400 mx-auto mb-4 animate-spin" />
+                          <p className="text-blue-600 font-medium">Processando arquivo XML...</p>
+                          <p className="text-sm text-blue-500 mt-1">Enviando para processamento no n8n</p>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                          <p className="text-gray-600 font-medium">Importar Arquivo XML do Promob</p>
+                          <p className="text-sm text-gray-500 mt-1">Clique para selecionar arquivo XML exportado do Promob</p>
+                        </>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -776,7 +832,55 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                   </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                  {orcamentos.length > 0 ? (
+                  {n8nData && n8nData.ambientes.length > 0 ? (
+                    <div className="p-6">
+                      {n8nData.ambientes.map((ambiente, index) => (
+                        <div key={ambiente.uniqueId || index} className="mb-6 border rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-4">
+                            <div>
+                              <h3 className="font-semibold text-lg">{ambiente.descricao}</h3>
+                              <p className="text-sm text-gray-600">
+                                {ambiente.itens.length} item(s) no ambiente
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-bold text-green-600 text-lg">
+                                R$ {ambiente.valorAmbiente.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {ambiente.itens && ambiente.itens.length > 0 && (
+                            <div className="bg-gray-50 rounded-lg p-4">
+                              <h4 className="font-medium mb-3">Itens do Ambiente</h4>
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Descrição</TableHead>
+                                    <TableHead>Quantidade</TableHead>
+                                    <TableHead>Preço</TableHead>
+                                    <TableHead>Total</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {ambiente.itens.map((item, itemIndex) => (
+                                    <TableRow key={itemIndex}>
+                                      <TableCell className="font-medium">{item.descricao}</TableCell>
+                                      <TableCell>{item.quantidade}</TableCell>
+                                      <TableCell>R$ {item.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
+                                      <TableCell className="font-semibold text-green-600">
+                                        R$ {(item.quantidade * item.preco).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : orcamentos.length > 0 ? (
                     <div className="p-6">
                       {orcamentos.map((orcamento) => (
                         <div key={orcamento.id} className="mb-6 border rounded-lg p-4">
@@ -847,109 +951,21 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                         </div>
                       ))}
                     </div>
-                  ) : (xmlData && xmlData.ambiente_data ? (
-                    <div className="p-6">
-                      {/* Ambiente Information */}
-                      <div className="bg-blue-50 rounded-lg p-4 mb-6">
-                        <div className="flex items-center gap-2 mb-2">
-                          <FileText className="h-5 w-5 text-blue-600" />
-                          <h3 className="font-semibold text-blue-900">Ambiente {xmlData.ambiente_data.tipo}</h3>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-                          <div>
-                            <label className="text-sm font-medium text-gray-600">Nome do Ambiente</label>
-                            <div className="bg-white p-2 rounded border mt-1">
-                              {xmlData.ambiente_data.nome || 'Não informado'}
-                            </div>
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium text-gray-600">Valor do Ambiente</label>
-                            <div className="bg-white p-2 rounded border mt-1 font-semibold text-green-600">
-                              {xmlData.ambiente_data.valor}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Fornecedores */}
-                      {xmlData.fornecedores_data && xmlData.fornecedores_data.length > 0 && (
-                        <div className="mb-6">
-                          <h4 className="font-semibold text-gray-800 mb-3">Fornecedores</h4>
-                          <div className="grid gap-2">
-                            {xmlData.fornecedores_data.map((fornecedor: any, index: number) => (
-                              <div key={index} className="bg-gray-50 p-3 rounded border">
-                                <div className="font-medium">{fornecedor.nome}</div>
-                                <div className="text-sm text-gray-600">{fornecedor.servico}</div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Características */}
-                      {xmlData.caracteristicas_data && xmlData.caracteristicas_data.length > 0 && (
-                        <div className="mb-6">
-                          <h4 className="font-semibold text-gray-800 mb-3">Características</h4>
-                          <div className="grid gap-2">
-                            {xmlData.caracteristicas_data.map((caracteristica: any, index: number) => (
-                              <div key={index} className="bg-gray-50 p-3 rounded border flex justify-between">
-                                <span className="font-medium">{caracteristica.nome}</span>
-                                <span className="text-gray-600">{caracteristica.valor}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Observações */}
-                      {xmlData.observacoes_data && xmlData.observacoes_data.descricao && (
-                        <div className="mb-6">
-                          <h4 className="font-semibold text-gray-800 mb-3">Observações</h4>
-                          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3">
-                            <p className="text-gray-700">{xmlData.observacoes_data.descricao}</p>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Itens */}
-                      {xmlData.itens_data && xmlData.itens_data.length > 0 && (
-                        <div>
-                          <h4 className="font-semibold text-gray-800 mb-3">Itens</h4>
-                          <div className="overflow-x-auto">
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead>Código</TableHead>
-                                  <TableHead>Descrição</TableHead>
-                                  <TableHead>Quantidade</TableHead>
-                                  <TableHead>Valor</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {xmlData.itens_data.map((item: any, index: number) => (
-                                  <TableRow key={index}>
-                                    <TableCell className="font-medium">{item.codigo}</TableCell>
-                                    <TableCell>{item.descricao}</TableCell>
-                                    <TableCell>{item.quantidade}</TableCell>
-                                    <TableCell className="font-semibold text-green-600">{item.valor}</TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </div>
-                        </div>
-                      )}
-                    </div>
                   ) : (
                     <div className="text-center py-8 text-gray-500">
                       Nenhum ambiente encontrado. Importe um arquivo XML do Promob para visualizar os dados.
                     </div>
-                  ))}
+                  )}
+                  
                   <div className="p-4 bg-green-50 border-t">
                     <div className="flex justify-between items-center">
                       <span className="font-medium">TOTAL DOS AMBIENTES</span>
                       <span className="text-green-600 font-bold text-lg">
-                        R$ {orcamentos.reduce((total, orc) => total + (orc.valor_orcamento || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        {n8nData ? (
+                          `R$ ${n8nData.resumoFinanceiro.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                        ) : (
+                          `R$ ${orcamentos.reduce((total, orc) => total + (orc.valor_orcamento || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                        )}
                       </span>
                     </div>
                   </div>
