@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Project, CreateProjectData, UpdateProjectData, KanbanColumn } from '@/types/project';
 import { ApiResponse } from '@/types/common';
@@ -68,12 +67,34 @@ export const projectService = {
         startDate: project.created_at,
         endDate: project.delivery_deadline,
         environments: [], // Pode ser expandido futuramente
-        n8nData: project.project_xml_data?.[0] ? {
-          cliente: project.project_xml_data[0].ambiente_data?.cliente,
-          resumoFinanceiro: project.project_xml_data[0].ambiente_data?.resumoFinanceiro,
-          ambientes: project.project_xml_data[0].ambiente_data?.ambientes
-        } : null
+        n8nData: null
       };
+
+      // Processar dados XML se existirem
+      if (project.project_xml_data && project.project_xml_data.length > 0) {
+        const xmlData = project.project_xml_data[0];
+        
+        // Parse do JSON se necessário
+        let ambienteData;
+        if (typeof xmlData.ambiente_data === 'string') {
+          try {
+            ambienteData = JSON.parse(xmlData.ambiente_data);
+          } catch (e) {
+            console.error('Erro ao fazer parse do ambiente_data:', e);
+            ambienteData = null;
+          }
+        } else {
+          ambienteData = xmlData.ambiente_data;
+        }
+
+        if (ambienteData) {
+          mappedProject.n8nData = {
+            cliente: ambienteData.cliente,
+            resumoFinanceiro: ambienteData.resumoFinanceiro,
+            ambientes: ambienteData.ambientes
+          };
+        }
+      }
 
       // Adicionar nome do especificador se existir
       if (project.specifiers) {
