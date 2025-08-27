@@ -1,1583 +1,366 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Edit, Upload, Plus, Receipt, Calendar, Users, Paperclip, TrendingUp, Save, X, CalendarIcon, FileText, CheckCircle2, Trash2, Database } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Edit, Plus, Trash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { toast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { ImportPromobXMLDialog } from '@/components/Dialogs/ImportPromobXMLDialog';
-import { orcamentoService } from '@/services/orcamentoService';
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { projectService } from '@/services/projectService';
+import { useProject } from '@/hooks/useProject';
+import { Project } from '@/types/project';
+import { ProjectEnvironment } from '@/types/projectEnvironment';
+import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { FormEvent } from 'react';
+import ImportedXmlData from '@/components/ImportedXmlData';
 
 interface ProjectDetailsProps {
   projectId?: string;
   onBack?: () => void;
 }
 
-// Interface para os dados retornados pelo n8n
-interface N8nResponse {
-  dadosCliente: {
-    numeroCliente: string;
-    descricao: string;
-    data: string;
-    logo: string;
-  };
-  resumoFinanceiro: {
-    ipi: number;
-    descontos: number;
-    total: number;
-  };
-  ambientes: Array<{
-    descricao: string;
-    uniqueId: string;
-    valorAmbiente: number;
-    itens: Array<{
-      descricao: string;
-      quantidade: number;
-      preco: number;
-    }>;
-  }>;
-}
-
 const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) => {
-  const params = useParams();
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const [activeSection, setActiveSection] = useState('dados-projeto');
-  const [project, setProject] = useState<any>(null);
-  const [client, setClient] = useState<any>(null);
-  const [specifier, setSpecifier] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedProject, setEditedProject] = useState<any>(null);
-  const [specifiers, setSpecifiers] = useState<any[]>([]);
-  const [collaborators, setCollaborators] = useState<any[]>([]);
-  const [clients, setClients] = useState<any[]>([]);
-  const [xmlData, setXmlData] = useState<any>(null);
-  const [uploading, setUploading] = useState(false);
-  const [showImportDialog, setShowImportDialog] = useState(false);
-  const [orcamentos, setOrcamentos] = useState<any[]>([]);
-  const [n8nData, setN8nData] = useState<N8nResponse | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const id = projectId || params.id;
+  const { project, loading, error, refetch } = useProject(projectId || '');
+  const { toast } = useToast();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    description: '',
+    status: '',
+    environment: '',
+    startDate: null,
+    endDate: null,
+  });
 
-  useEffect(() => {
-    const fetchProjectData = async () => {
-      if (!id) return;
-      
-      try {
-        // Buscar dados do projeto com especificador
-        const { data: projectData, error: projectError } = await supabase
-          .from('projects')
-          .select(`
-            *,
-            specifiers!projects_specifier_id_fkey (
-              id,
-              nome,
-              email,
-              especialidade
-            )
-          `)
-          .eq('id', id)
-          .single();
+  const formatDate = (date: Date | null): string => {
+    if (!date) return '—';
+    return format(date, 'dd/MM/yyyy', { locale: ptBR });
+  };
 
-        if (projectError) {
-          console.error('Erro ao buscar projeto:', projectError);
-        } else {
-          setProject(projectData);
-          setEditedProject(projectData);
-          
-          if (projectData?.specifiers) {
-            setSpecifier(projectData.specifiers);
-          }
-          
-          // Buscar dados do cliente usando client_name
-          if (projectData?.client_name) {
-            const { data: clientData, error: clientError } = await supabase
-              .from('clients')
-              .select('*')
-              .eq('name', projectData.client_name)
-              .single();
+  const handleDelete = async () => {
+    if (!project) return;
 
-            if (clientError) {
-              console.error('Erro ao buscar cliente:', clientError);
-            } else {
-              setClient(clientData);
-            }
-          }
-        }
-
-        // Buscar especificadores para dropdown
-        const { data: specifiersData, error: specifiersError } = await supabase
-          .from('specifiers')
-          .select('*')
-          .order('nome');
-
-        if (specifiersError) {
-          console.error('Erro ao buscar especificadores:', specifiersError);
-        } else {
-          setSpecifiers(specifiersData || []);
-        }
-
-        // Buscar colaboradores para dropdown
-        const { data: collaboratorsData, error: collaboratorsError } = await supabase
-          .from('collaborators')
-          .select('*')
-          .order('name');
-
-        if (collaboratorsError) {
-          console.error('Erro ao buscar colaboradores:', collaboratorsError);
-        } else {
-          setCollaborators(collaboratorsData || []);
-        }
-
-        // Buscar clientes para dropdown
-        const { data: clientsData, error: clientsError } = await supabase
-          .from('clients')
-          .select('*')
-          .order('name');
-
-        if (clientsError) {
-          console.error('Erro ao buscar clientes:', clientsError);
-        } else {
-          setClients(clientsData || []);
-        }
-
-        // Buscar dados XML do projeto se existir
-        const { data: xmlDataResult, error: xmlError } = await supabase
-          .from('project_xml_data')
-          .select('*')
-          .eq('project_id', id)
-          .maybeSingle();
-
-        if (xmlError && xmlError.code !== 'PGRST116') {
-          console.error('Erro ao buscar dados XML:', xmlError);
-        } else if (xmlDataResult) {
-          setXmlData(xmlDataResult);
-        }
-
-        // Buscar orçamentos do Promob
-        await fetchOrcamentos();
-
-      } catch (error) {
-        console.error('Erro ao buscar dados:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProjectData();
-  }, [id]);
-
-  const fetchOrcamentos = async () => {
-    if (!id) return;
-    
     try {
-      const orcamentosData = await orcamentoService.getOrcamentosByProject(id);
-      setOrcamentos(orcamentosData || []);
-    } catch (error) {
-      console.error('Erro ao buscar orçamentos:', error);
-    }
-  };
-
-  const navigationItems = [
-    { id: 'dados-projeto', label: 'Dados do Projeto', icon: Edit },
-    { id: 'dados-xml', label: 'Dados Importados do XML', icon: Database },
-    { id: 'ambientes', label: 'Ambientes', icon: Edit },
-    { id: 'itens-avulsos', label: 'Itens Avulsos', icon: Receipt },
-    { id: 'orcamentos', label: 'Orçamentos', icon: Receipt },
-    { id: 'contratos', label: 'Contratos', icon: Receipt },
-    { id: 'pedidos-compra', label: 'Pedidos de Compra', icon: Receipt },
-    { id: 'assistencias', label: 'Assistências Técnicas', icon: Users },
-    { id: 'agendas', label: 'Agendas do Projeto', icon: Calendar },
-    { id: 'envolvidos', label: 'Envolvidos', icon: Users },
-    { id: 'anexos', label: 'Anexos', icon: Paperclip },
-    { id: 'concorrentes', label: 'Concorrentes', icon: TrendingUp }
-  ];
-
-  const handleBack = () => {
-    if (onBack) {
-      onBack();
-    } else {
-      navigate(-1);
-    }
-  };
-
-  const scrollToSection = (sectionId: string) => {
-    setActiveSection(sectionId);
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const sections = navigationItems.map(item => item.id);
-      const scrollPosition = window.scrollY + 200;
-
-      for (const sectionId of sections) {
-        const element = document.getElementById(sectionId);
-        if (element) {
-          const { offsetTop, offsetHeight } = element;
-          if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
-            setActiveSection(sectionId);
-            break;
-          }
-        }
+      await projectService.deleteProject(project.id);
+      setShowDeleteDialog(false);
+      // Voltar para a lista de projetos
+      if (onBack) {
+        onBack();
       }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    } catch (error) {
+      console.error('Erro ao excluir projeto:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir projeto",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleEdit = () => {
-    setIsEditing(true);
+    if (project) {
+      setEditFormData({
+        name: project.name,
+        description: project.description || '',
+        status: project.status,
+        environment: project.environment || '',
+        startDate: project.startDate ? new Date(project.startDate) : null,
+        endDate: project.endDate ? new Date(project.endDate) : null,
+      });
+      setShowEditDialog(true);
+    }
   };
 
-  const handleCancelEdit = () => {
-    setIsEditing(false);
-    setEditedProject(project);
-  };
+  const handleSaveEdit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!project) return;
 
-  const handleSaveEdit = async () => {
     try {
-      // Preparar dados para atualização
-      const updateData: any = {
-        name: editedProject.name,
-        description: editedProject.description,
-        delivery_deadline: editedProject.delivery_deadline
+      const updatedProjectData = {
+        name: editFormData.name,
+        description: editFormData.description,
+        status: editFormData.status,
+        environment: editFormData.environment,
+        startDate: editFormData.startDate,
+        endDate: editFormData.endDate,
       };
-
-      // Se o especificador foi alterado
-      if (editedProject.specifier_id !== project.specifier_id) {
-        updateData.specifier_id = editedProject.specifier_id;
-      }
-
-      // Se o cliente foi alterado, atualizar client_name
-      if (editedProject.client_name !== project.client_name) {
-        updateData.client_name = editedProject.client_name;
-        
-        // Buscar dados do novo cliente
-        const selectedClient = clients.find(c => c.name === editedProject.client_name);
-        if (selectedClient) {
-          updateData.client_email = selectedClient.email;
-          updateData.client_phone = selectedClient.phone;
-          setClient(selectedClient);
-        }
-      }
-
-      const { error } = await supabase
-        .from('projects')
-        .update(updateData)
-        .eq('id', project.id);
-
-      if (error) {
-        throw error;
-      }
-
-      // Atualizar especificador se foi alterado
-      if (editedProject.specifier_id !== project.specifier_id) {
-        const selectedSpecifier = specifiers.find(s => s.id === editedProject.specifier_id);
-        setSpecifier(selectedSpecifier);
-      }
-
-      setProject(editedProject);
-      setIsEditing(false);
+      
+      await projectService.updateProject(project.id, updatedProjectData);
+      setShowEditDialog(false);
+      refetch();
       toast({
         title: "Sucesso",
-        description: "Projeto atualizado com sucesso!"
+        description: "Projeto atualizado com sucesso!",
       });
     } catch (error) {
       console.error('Erro ao atualizar projeto:', error);
       toast({
         title: "Erro",
-        description: "Erro ao atualizar projeto. Tente novamente.",
-        variant: "destructive"
+        description: "Erro ao atualizar projeto",
+        variant: "destructive",
       });
     }
   };
 
-  const handleDelete = async () => {
-    try {
-      const { error } = await supabase
-        .from('projects')
-        .delete()
-        .eq('id', project.id);
-
-      if (error) {
-        throw error;
-      }
-
-      toast({
-        title: "Sucesso",
-        description: "Projeto excluído com sucesso!"
-      });
-      
-      handleBack();
-    } catch (error) {
-      console.error('Erro ao excluir projeto:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao excluir projeto. Tente novamente.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleInputChange = (field: string, value: string) => {
-    setEditedProject((prev: any) => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const sendFileToN8N = async (file: File): Promise<N8nResponse> => {
-    console.log('[N8N] === INÍCIO DO DEBUG DETALHADO ===');
-    console.log('[N8N] Arquivo selecionado:', {
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      lastModified: new Date(file.lastModified).toISOString()
-    });
-    
-    try {
-      // Validações iniciais
-      if (!file.name.toLowerCase().endsWith('.xml')) {
-        throw new Error('Arquivo deve ser do tipo XML');
-      }
-
-      if (file.size > 10 * 1024 * 1024) {
-        throw new Error('Arquivo muito grande. Máximo permitido: 10MB');
-      }
-
-      console.log('[N8N] Validações iniciais OK');
-      console.log('[N8N] URL do webhook:', 'https://victorprocha.app.n8n.cloud/webhook/leitorxml');
-
-      // Preparar FormData
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('filename', file.name);
-      formData.append('timestamp', new Date().toISOString());
-
-      console.log('[N8N] FormData preparado:', {
-        entries: Array.from(formData.entries()).map(([key, value]) => ({
-          key,
-          value: value instanceof File ? `File: ${value.name} (${value.size} bytes)` : value
-        }))
-      });
-
-      // Configurações da requisição
-      const requestConfig: RequestInit = {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Accept': 'application/json, */*',
-          'X-Requested-With': 'XMLHttpRequest',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With'
-        },
-        mode: 'cors',
-        credentials: 'omit',
-        cache: 'no-cache'
-      };
-
-      console.log('[N8N] Configuração da requisição:', {
-        method: requestConfig.method,
-        mode: requestConfig.mode,
-        credentials: requestConfig.credentials,
-        headers: requestConfig.headers
-      });
-
-      // Implementar timeout personalizado
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        console.log('[N8N] TIMEOUT: Abortando requisição após 30 segundos');
-        controller.abort();
-      }, 30000);
-
-      try {
-        console.log('[N8N] Enviando requisição...');
-        const startTime = Date.now();
-        
-        const response = await fetch('https://victorprocha.app.n8n.cloud/webhook/leitorxml', {
-          ...requestConfig,
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-        const endTime = Date.now();
-        const duration = endTime - startTime;
-
-        console.log('[N8N] Resposta recebida:', {
-          status: response.status,
-          statusText: response.statusText,
-          ok: response.ok,
-          duration: `${duration}ms`,
-          type: response.type,
-          redirected: response.redirected,
-          url: response.url
-        });
-
-        console.log('[N8N] Headers da resposta:', Object.fromEntries(response.headers.entries()));
-
-        // Verificar se há erros de CORS específicos
-        if (response.type === 'opaque' || response.type === 'opaqueredirect') {
-          console.error('[N8N] POSSÍVEL ERRO DE CORS: Resposta opaca detectada');
-          throw new Error('Erro de CORS: Resposta opaca - verifique configurações do servidor');
-        }
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('[N8N] Erro na resposta:', {
-            status: response.status,
-            statusText: response.statusText,
-            body: errorText,
-            headers: Object.fromEntries(response.headers.entries())
-          });
-          
-          // Tratamento específico por código de erro
-          switch (response.status) {
-            case 500:
-              console.error('[N8N] ERRO 500: Erro interno do servidor');
-              throw new Error(`Erro 500: Erro interno do servidor n8n. Resposta: ${errorText}`);
-            case 404:
-              console.error('[N8N] ERRO 404: Webhook não encontrado');
-              throw new Error(`Erro 404: Webhook não encontrado. Verifique a URL`);
-            case 413:
-              console.error('[N8N] ERRO 413: Arquivo muito grande');
-              throw new Error(`Erro 413: Arquivo muito grande para o servidor processar`);
-            case 0:
-              console.error('[N8N] ERRO 0: Possível problema de CORS');
-              throw new Error(`Erro de rede: Possível problema de CORS ou conexão`);
-            default:
-              throw new Error(`Erro HTTP ${response.status}: ${response.statusText}. Resposta: ${errorText}`);
-          }
-        }
-
-        // Tentar ler a resposta
-        let responseText;
-        try {
-          responseText = await response.text();
-          console.log('[N8N] Texto da resposta recebido:', responseText.substring(0, 500) + '...');
-        } catch (readError) {
-          console.error('[N8N] Erro ao ler resposta como texto:', readError);
-          throw new Error('Erro ao ler resposta do servidor');
-        }
-
-        // Tentar fazer parse do JSON
-        let responseData: N8nResponse;
-        try {
-          responseData = JSON.parse(responseText);
-          console.log('[N8N] JSON parseado com sucesso:', {
-            hasDadosCliente: !!responseData.dadosCliente,
-            hasResumoFinanceiro: !!responseData.resumoFinanceiro,
-            hasAmbientes: !!responseData.ambientes,
-            ambientesCount: responseData.ambientes?.length || 0
-          });
-        } catch (parseError) {
-          console.error('[N8N] Erro ao fazer parse do JSON:', parseError);
-          console.error('[N8N] Resposta que causou erro:', responseText);
-          throw new Error('Resposta do servidor não é um JSON válido');
-        }
-        
-        // Validar estrutura da resposta
-        if (!responseData.dadosCliente || !responseData.resumoFinanceiro || !responseData.ambientes) {
-          console.error('[N8N] Estrutura de resposta inválida:', {
-            dadosCliente: !!responseData.dadosCliente,
-            resumoFinanceiro: !!responseData.resumoFinanceiro,
-            ambientes: !!responseData.ambientes
-          });
-          throw new Error('Resposta do n8n com estrutura inválida');
-        }
-        
-        console.log('[N8N] === SUCESSO: Dados válidos recebidos ===');
-        return responseData;
-
-      } catch (fetchError) {
-        clearTimeout(timeoutId);
-        
-        console.error('[N8N] Erro durante fetch:', fetchError);
-        
-        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-          throw new Error('Timeout: O servidor demorou muito para responder (mais de 30 segundos)');
-        }
-
-        // Verificar se é erro de CORS
-        if (fetchError instanceof TypeError && fetchError.message.includes('Failed to fetch')) {
-          console.error('[N8N] POSSÍVEL ERRO DE CORS: Failed to fetch');
-          
-          // Tentar método alternativo sem CORS
-          try {
-            console.log('[N8N] Tentando método alternativo (no-cors)...');
-            
-            const alternativeResponse = await fetch('https://victorprocha.app.n8n.cloud/webhook/leitorxml', {
-              method: 'POST',
-              body: formData,
-              mode: 'no-cors',
-              cache: 'no-cache'
-            });
-            
-            console.log('[N8N] Resposta no-cors:', {
-              status: alternativeResponse.status,
-              type: alternativeResponse.type
-            });
-            
-            throw new Error('Erro de CORS detectado. O servidor precisa configurar os headers CORS adequados.');
-          } catch (corsError) {
-            console.error('[N8N] Erro no método alternativo:', corsError);
-            throw new Error('Erro de CORS: Não foi possível conectar com o servidor n8n. Verifique as configurações CORS do servidor.');
-          }
-        }
-        
-        throw fetchError;
-      }
-    } catch (error) {
-      console.error('[N8N] === ERRO FINAL ===');
-      console.error('[N8N] Erro completo:', error);
-      console.error('[N8N] Stack trace:', error instanceof Error ? error.stack : 'N/A');
-      throw error;
-    }
-  };
-
-  const fillProjectDataFromN8N = (data: N8nResponse) => {
-    console.log('[ProjectDetails] Preenchendo campos com dados do n8n:', data);
-    
-    // Converter data do formato DD/MM/YYYY para YYYY-MM-DD
-    const convertDate = (dateStr: string) => {
-      try {
-        if (!dateStr || dateStr.trim() === '') {
-          return '';
-        }
-        const [day, month, year] = dateStr.split('/');
-        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-      } catch (error) {
-        console.warn('[ProjectDetails] Erro ao converter data:', dateStr);
-        return '';
-      }
-    };
-
-    const updatedProject = {
-      ...editedProject,
-      name: data.dadosCliente.descricao || editedProject?.name || '',
-      client_name: data.dadosCliente.numeroCliente || editedProject?.client_name || '',
-      delivery_deadline: convertDate(data.dadosCliente.data),
-      // Adicionar campos do resumo financeiro ao projeto com verificação de null
-      ipi: data.resumoFinanceiro.ipi || 0,
-      descontos: Array.isArray(data.resumoFinanceiro.descontos) 
-        ? data.resumoFinanceiro.descontos.reduce((sum, desc) => sum + (desc || 0), 0)
-        : (data.resumoFinanceiro.descontos || 0),
-      total_projeto: data.resumoFinanceiro.total || 0
-    };
-
-    setEditedProject(updatedProject);
-    setN8nData(data);
-    
-    toast({
-      title: "Sucesso",
-      description: "Dados do projeto preenchidos automaticamente!",
-    });
-  };
-
-  const handleFileUpload = async (file: File) => {
-    console.log('[ProjectDetails] === INÍCIO DO UPLOAD ===');
-    console.log('[ProjectDetails] Arquivo recebido:', {
-      name: file.name,
-      size: file.size,
-      type: file.type
-    });
-    
-    setUploading(true);
-    
-    try {
-      // Validação inicial no frontend
-      if (!file.name.toLowerCase().endsWith('.xml')) {
-        throw new Error('Por favor, selecione um arquivo XML válido.');
-      }
-
-      console.log('[ProjectDetails] Validação inicial OK, enviando para n8n...');
-      
-      // Enviar arquivo para o n8n e receber dados processados
-      const n8nResponse = await sendFileToN8N(file);
-      
-      console.log('[ProjectDetails] Resposta do n8n recebida com sucesso');
-      
-      // Preencher campos automaticamente com os dados retornados
-      fillProjectDataFromN8N(n8nResponse);
-      
-      // Upload do arquivo para o storage (opcional, mantendo funcionalidade existente)
-      try {
-        console.log('[ProjectDetails] Fazendo upload para storage...');
-        const fileName = `${user?.id}/${Date.now()}_${file.name}`;
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('project-files')
-          .upload(fileName, file);
-
-        if (uploadError) {
-          console.warn('[ProjectDetails] Aviso: Erro no upload do storage, mas dados já foram processados:', uploadError);
-        } else {
-          console.log('[ProjectDetails] Arquivo salvo no storage:', fileName);
-        }
-      } catch (storageError) {
-        console.warn('[ProjectDetails] Aviso: Erro no storage, mas processamento do n8n foi bem-sucedido:', storageError);
-      }
-
-      console.log('[ProjectDetails] === UPLOAD CONCLUÍDO COM SUCESSO ===');
-
-    } catch (error) {
-      console.error('[ProjectDetails] === ERRO NO UPLOAD ===');
-      console.error('[ProjectDetails] Erro completo:', error);
-      
-      let errorMessage = "Erro ao processar arquivo XML.";
-      
-      if (error instanceof Error) {
-        errorMessage = error.message;
-        
-        // Log detalhado do erro para debugging
-        console.error('[ProjectDetails] Detalhes do erro:', {
-          name: error.name,
-          message: error.message,
-          stack: error.stack
-        });
-        
-        // Adicionar contexto específico baseado no tipo de erro
-        if (error.message.includes('CORS')) {
-          errorMessage = `Erro de CORS: ${error.message}\n\nPara resolver: Verifique se o servidor n8n está configurado com os headers CORS adequados.`;
-        } else if (error.message.includes('Timeout')) {
-          errorMessage = `Timeout: ${error.message}\n\nO servidor está demorando para responder. Tente novamente em alguns minutos.`;
-        } else if (error.message.includes('500')) {
-          errorMessage = `Erro interno do servidor: ${error.message}\n\nVerifique os logs do n8n para mais detalhes.`;
-        }
-      }
-      
-      toast({
-        title: "Erro",
-        description: errorMessage,
-        variant: "destructive"
-      });
-    } finally {
-      setUploading(false);
-      console.log('[ProjectDetails] Upload finalizado (sucesso ou erro)');
-    }
-  };
-
-  const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      handleFileUpload(file);
-    }
-  };
-
-  const handleDropZoneClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleImportSuccess = () => {
-    setShowImportDialog(false);
-    fetchOrcamentos();
-  };
-
-  const handleDeleteOrcamento = async (orcamentoId: string) => {
-    try {
-      await orcamentoService.deleteOrcamento(orcamentoId);
-      toast({
-        title: "Sucesso",
-        description: "Orçamento excluído com sucesso!"
-      });
-      fetchOrcamentos();
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao excluir orçamento.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Helper function to safely format currency
-  const formatCurrency = (value: number | null | undefined): string => {
-    if (value === null || value === undefined || isNaN(value)) {
-      return 'R$ 0,00';
-    }
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
-
-  if (loading) {
+  if (loading === 'loading') {
     return (
-      <div className="min-h-screen bg-[#ECF0F5] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Carregando projeto...</p>
+      <div className="flex-1 flex flex-col h-full bg-[#ECF0F5]">
+        {/* Breadcrumb */}
+        <div className="bg-white border-b border-gray-200 px-6 py-3">
+          <div className="text-sm text-gray-500">
+            Projetos &gt; Detalhes do Projeto
+          </div>
+        </div>
+
+        {/* Loading Content */}
+        <div className="flex-1 p-6">
+          <div className="space-y-6">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 space-y-2">
+                    <CardTitle>Carregando...</CardTitle>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (!project) {
+  if (error || !project) {
     return (
-      <div className="min-h-screen bg-[#ECF0F5] flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600">Projeto não encontrado</p>
+      <div className="flex-1 flex flex-col h-full bg-[#ECF0F5]">
+        <div className="bg-white border-b border-gray-200 px-6 py-3">
+          <div className="text-sm text-gray-500">
+            Projetos &gt; Detalhes do Projeto
+          </div>
+        </div>
+        
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">Projeto não encontrado</h2>
+            <p className="text-gray-600 mb-4">O projeto solicitado não foi encontrado.</p>
+            <Button onClick={onBack} variant="outline">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar
+            </Button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#ECF0F5]">
+    <div className="flex-1 flex flex-col h-full bg-[#ECF0F5]">
       {/* Breadcrumb */}
       <div className="bg-white border-b border-gray-200 px-6 py-3">
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <span>Cadastro de Projetos</span>
-          <span>/</span>
-          <span className="text-gray-900 font-medium">
-            Detalhes do Projeto
-          </span>
+        <div className="text-sm text-gray-500">
+          Projetos &gt; Detalhes do Projeto
         </div>
       </div>
 
-      <div className="flex">
-        {/* Main Content - Left Column */}
-        <div className="flex-1 p-6 pr-3">
-          <div className="space-y-6">
-            {/* Client Card */}
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                      <User className="h-8 w-8 text-blue-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-900">{project.client_name}</h3>
-                      <p className="text-gray-600">{client?.phone || project.client_phone || 'Telefone não informado'}</p>
-                      <p className="text-gray-600">{client?.email || project.client_email || 'Email não informado'}</p>
-                    </div>
+      {/* Main Content */}
+      <div className="flex-1 p-6 overflow-y-auto">
+        <div className="space-y-6">
+          {/* Project Header */}
+          <Card className="overflow-hidden">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <h1 className="text-2xl font-bold text-[#2A3F54]">{project.name}</h1>
+                  <p className="text-sm text-gray-500">{project.description || 'Sem descrição'}</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Badge variant="secondary">
+                      {project.status}
+                    </Badge>
+                    {project.environment && (
+                      <Badge variant="outline">
+                        {project.environment}
+                      </Badge>
+                    )}
                   </div>
-                  <Button variant="outline" size="icon" className="rounded-full">
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button 
+                    size="icon" 
+                    variant="outline" 
+                    className="text-[#007BFF] border-[#007BFF]"
+                    onClick={handleEdit}
+                  >
                     <Edit className="h-4 w-4" />
                   </Button>
+                  <Button 
+                    size="icon" 
+                    variant="outline" 
+                    className="text-red-600 border-red-600"
+                    onClick={() => setShowDeleteDialog(true)}
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Project Data Section */}
-            <section id="dados-projeto">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Edit className="h-5 w-5" />
-                    Dados do Projeto
-                    {n8nData && (
-                      <div className="ml-auto">
-                        <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
-                          <CheckCircle2 className="h-4 w-4" />
-                          Dados importados do XML
-                        </div>
-                      </div>
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {isEditing && (
-                    <div className="flex items-center justify-end gap-2 mb-4">
-                      <Button variant="outline" size="sm" onClick={handleCancelEdit}>
-                        <X className="h-4 w-4 mr-1" />
-                        Cancelar
-                      </Button>
-                      <Button size="sm" onClick={handleSaveEdit}>
-                        <Save className="h-4 w-4 mr-1" />
-                        Salvar
-                      </Button>
-                    </div>
-                  )}
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Nome do Projeto</label>
-                      {isEditing ? (
-                        <Input
-                          value={editedProject?.name || ''}
-                          onChange={(e) => handleInputChange('name', e.target.value)}
-                          className={n8nData ? 'border-green-300 bg-green-50' : ''}
-                        />
-                      ) : (
-                        <div className={`p-3 rounded-md ${n8nData ? 'bg-green-50 border border-green-200' : 'bg-gray-50'}`}>
-                          {project.name}
-                          {n8nData && (
-                            <div className="text-xs text-green-600 mt-1">
-                              Importado: {n8nData.dadosCliente.descricao}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Número do Cliente</label>
-                      {isEditing ? (
-                        <Input
-                          value={editedProject?.client_name || ''}
-                          onChange={(e) => handleInputChange('client_name', e.target.value)}
-                          className={n8nData ? 'border-green-300 bg-green-50' : ''}
-                        />
-                      ) : (
-                        <div className={`p-3 rounded-md ${n8nData ? 'bg-green-50 border border-green-200' : 'bg-gray-50'}`}>
-                          {project.client_name}
-                          {n8nData && (
-                            <div className="text-xs text-green-600 mt-1">
-                              Importado: {n8nData.dadosCliente.numeroCliente}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Data do Projeto</label>
-                      <div className={`p-3 rounded-md ${n8nData ? 'bg-green-50 border border-green-200' : 'bg-gray-50'}`}>
-                        {n8nData ? (
-                          <div>
-                            <div className="font-medium">{n8nData.dadosCliente.data}</div>
-                            <div className="text-xs text-green-600 mt-1">
-                              Importado do XML
-                            </div>
-                          </div>
-                        ) : (
-                          project.delivery_deadline ? new Date(project.delivery_deadline).toLocaleDateString('pt-BR') : 'Não definido'
-                        )}
-                      </div>
-                    </div>
-                    {n8nData?.dadosCliente.logo && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Logo/Imagem</label>
-                        <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-green-600" />
-                            <span className="text-sm">{n8nData.dadosCliente.logo}</span>
-                          </div>
-                          <div className="text-xs text-green-600 mt-1">
-                            Importado do XML
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
-                      {isEditing ? (
-                        <Select value={editedProject?.client_name || ''} onValueChange={(value) => handleInputChange('client_name', value)}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione um cliente" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {clients.map((client) => (
-                              <SelectItem key={client.id} value={client.name}>
-                                {client.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <div className="p-3 bg-gray-50 rounded-md">{project.client_name}</div>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Consultor Responsável</label>
-                      {isEditing ? (
-                        <Select value={editedProject?.consultor_responsavel || user?.name || 'none'} onValueChange={(value) => handleInputChange('consultor_responsavel', value)}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione um consultor" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">Nenhum consultor</SelectItem>
-                            {collaborators.map((collaborator) => (
-                              <SelectItem key={collaborator.id} value={collaborator.name}>
-                                {collaborator.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <div className="p-3 bg-gray-50 rounded-md">{editedProject?.consultor_responsavel || user?.name || 'Usuário'}</div>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Consultor Executor</label>
-                      {isEditing ? (
-                        <Select value={editedProject?.consultor_executor || user?.name || 'none'} onValueChange={(value) => handleInputChange('consultor_executor', value)}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione um consultor" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">Nenhum consultor</SelectItem>
-                            {collaborators.map((collaborator) => (
-                              <SelectItem key={collaborator.id} value={collaborator.name}>
-                                {collaborator.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <div className="p-3 bg-gray-50 rounded-md">{editedProject?.consultor_executor || user?.name || 'Usuário'}</div>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Projetista</label>
-                      {isEditing ? (
-                        <Select value={editedProject?.projetista || user?.name || 'none'} onValueChange={(value) => handleInputChange('projetista', value)}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione um projetista" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">Nenhum projetista</SelectItem>
-                            {collaborators.map((collaborator) => (
-                              <SelectItem key={collaborator.id} value={collaborator.name}>
-                                {collaborator.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <div className="p-3 bg-gray-50 rounded-md">{editedProject?.projetista || user?.name || 'Usuário'}</div>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Especificador</label>
-                      {isEditing ? (
-                        <Select value={editedProject?.specifier_id || 'none'} onValueChange={(value) => handleInputChange('specifier_id', value === 'none' ? null : value)}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione um especificador" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">Nenhum especificador</SelectItem>
-                            {specifiers.map((spec) => (
-                              <SelectItem key={spec.id} value={spec.id}>
-                                {spec.nome}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <div className="p-3 bg-gray-50 rounded-md">{specifier?.nome || 'Não informado'}</div>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Prazo de Entrega</label>
-                      {isEditing ? (
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full justify-start text-left font-normal",
-                                !editedProject?.delivery_deadline && "text-muted-foreground"
-                              )}
-                            >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {editedProject?.delivery_deadline ? 
-                                format(new Date(editedProject.delivery_deadline), "dd/MM/yyyy") : 
-                                "Selecione uma data"
-                              }
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <CalendarComponent
-                              mode="single"
-                              selected={editedProject?.delivery_deadline ? new Date(editedProject.delivery_deadline) : undefined}
-                              onSelect={(date) => handleInputChange('delivery_deadline', date ? date.toISOString().split('T')[0] : '')}
-                              initialFocus
-                              className="pointer-events-auto"
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      ) : (
-                        <div className="p-3 bg-gray-50 rounded-md">
-                          {project.delivery_deadline ? new Date(project.delivery_deadline).toLocaleDateString('pt-BR') : 'Não definido'}
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Endereço de Entrega</label>
-                      {isEditing ? (
-                        <Input
-                          value={editedProject?.endereco_entrega || client?.address || ''}
-                          onChange={(e) => handleInputChange('endereco_entrega', e.target.value)}
-                          placeholder="Digite o endereço de entrega"
-                        />
-                      ) : (
-                        <div className="p-3 bg-gray-50 rounded-md">
-                          {editedProject?.endereco_entrega || client?.address ? 
-                            `${editedProject?.endereco_entrega || client?.address}, ${client?.city || ''} - ${client?.state || ''}` : 
-                            'Endereço não informado'
-                          }
-                        </div>
-                      )}
-                    </div>
-                  </div>
+          {/* Project Data */}
+          <Card>
+            <CardHeader className="bg-gray-50 border-b">
+              <CardTitle className="text-lg text-[#2A3F54]">Informações do Projeto</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Data de Início</Label>
+                  <p className="text-gray-900">{formatDate(project.startDate ? new Date(project.startDate) : null)}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Data de Término</Label>
+                  <p className="text-gray-900">{formatDate(project.endDate ? new Date(project.endDate) : null)}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Status</Label>
+                  <p className="text-gray-900">{project.status || 'Não definido'}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Ambiente</Label>
+                  <p className="text-gray-900">{project.environment || 'Não definido'}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-                  {/* Resumo Financeiro com dados do n8n */}
-                  {n8nData && (
-                    <div className="border-2 border-green-200 rounded-lg p-4 bg-green-50">
-                      <div className="flex items-center gap-2 mb-4">
-                        <CheckCircle2 className="h-5 w-5 text-green-600" />
-                        <h3 className="font-semibold text-green-800">Resumo Financeiro Importado</h3>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="bg-white p-4 rounded-lg border border-green-200">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">IPI</label>
-                          <div className="text-xl font-bold text-blue-600">
-                            {formatCurrency(n8nData.resumoFinanceiro.ipi)}
-                          </div>
-                        </div>
-                        <div className="bg-white p-4 rounded-lg border border-green-200">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Descontos</label>
-                          <div className="text-xl font-bold text-red-600">
-                            {formatCurrency(
-                              Array.isArray(n8nData.resumoFinanceiro.descontos) 
-                                ? n8nData.resumoFinanceiro.descontos.reduce((sum, desc) => sum + (desc || 0), 0)
-                                : (n8nData.resumoFinanceiro.descontos || 0)
-                            )}
-                          </div>
-                        </div>
-                        <div className="bg-white p-4 rounded-lg border border-green-200">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Total do Projeto</label>
-                          <div className="text-xl font-bold text-green-600">
-                            {formatCurrency(n8nData.resumoFinanceiro.total)}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Observações</label>
-                    {isEditing ? (
-                      <Textarea
-                        value={editedProject?.description || ''}
-                        onChange={(e) => handleInputChange('description', e.target.value)}
-                        rows={3}
-                      />
-                    ) : (
-                      <div className="p-3 bg-gray-50 rounded-md">{project.description || 'Nenhuma observação'}</div>
-                    )}
-                  </div>
-                  
-                  {/* Import Promob XML Section */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Importar Arquivo do Projeto (Promob)
-                    </label>
-                    
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".xml"
-                      onChange={handleFileInputChange}
-                      className="hidden"
-                    />
-                    
-                    <div 
-                      onClick={handleDropZoneClick}
-                      className={`border-2 border-dashed ${uploading ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'} rounded-lg p-8 text-center transition-colors cursor-pointer`}
-                    >
-                      {uploading ? (
-                        <>
-                          <Upload className="h-12 w-12 text-blue-400 mx-auto mb-4 animate-spin" />
-                          <p className="text-blue-600 font-medium">Processando arquivo XML...</p>
-                          <p className="text-sm text-blue-500 mt-1">Enviando para processamento no n8n</p>
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                          <p className="text-gray-600 font-medium">Importar Arquivo XML do Promob</p>
-                          <p className="text-sm text-gray-500 mt-1">Clique para selecionar arquivo XML exportado do Promob</p>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </section>
-
-            {/* XML Data Section - New Section */}
-            {n8nData && (
-              <section id="dados-xml">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Database className="h-5 w-5 text-green-600" />
-                      Dados Importados do XML
-                      <div className="ml-auto">
-                        <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
-                          <CheckCircle2 className="h-4 w-4" />
-                          Arquivo processado com sucesso
-                        </div>
-                      </div>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-6">
-                      {/* Client Data from XML */}
-                      <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-                        <h3 className="font-semibold text-blue-800 mb-4 flex items-center gap-2">
-                          <User className="h-5 w-5" />
-                          Dados do Cliente
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="bg-white p-3 rounded border border-blue-200">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Número do Cliente</label>
-                            <div className="font-medium text-blue-800">{n8nData.dadosCliente.numeroCliente}</div>
-                          </div>
-                          <div className="bg-white p-3 rounded border border-blue-200">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Descrição/Nome</label>
-                            <div className="font-medium text-blue-800">{n8nData.dadosCliente.descricao}</div>
-                          </div>
-                          <div className="bg-white p-3 rounded border border-blue-200">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Data</label>
-                            <div className="font-medium text-blue-800">{n8nData.dadosCliente.data}</div>
-                          </div>
-                          {n8nData.dadosCliente.logo && (
-                            <div className="bg-white p-3 rounded border border-blue-200">
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Logo/Imagem</label>
-                              <div className="font-medium text-blue-800 flex items-center gap-2">
-                                <FileText className="h-4 w-4" />
-                                {n8nData.dadosCliente.logo}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Financial Summary from XML */}
-                      <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
-                        <h3 className="font-semibold text-green-800 mb-4 flex items-center gap-2">
-                          <Receipt className="h-5 w-5" />
-                          Resumo Financeiro
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="bg-white p-4 rounded-lg border border-green-200 text-center">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">IPI</label>
-                            <div className="text-2xl font-bold text-blue-600">
-                              {formatCurrency(n8nData.resumoFinanceiro.ipi)}
-                            </div>
-                          </div>
-                          <div className="bg-white p-4 rounded-lg border border-green-200 text-center">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Descontos</label>
-                            <div className="text-2xl font-bold text-red-600">
-                              {formatCurrency(
-                                Array.isArray(n8nData.resumoFinanceiro.descontos) 
-                                  ? n8nData.resumoFinanceiro.descontos.reduce((sum, desc) => sum + (desc || 0), 0)
-                                  : (n8nData.resumoFinanceiro.descontos || 0)
-                              )}
-                            </div>
-                          </div>
-                          <div className="bg-white p-4 rounded-lg border border-green-200 text-center">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Total Geral</label>
-                            <div className="text-2xl font-bold text-green-600">
-                              {formatCurrency(n8nData.resumoFinanceiro.total)}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Environments Summary from XML */}
-                      <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-4">
-                        <h3 className="font-semibold text-purple-800 mb-4 flex items-center gap-2">
-                          <Edit className="h-5 w-5" />
-                          Resumo dos Ambientes ({n8nData.ambientes.length} ambiente{n8nData.ambientes.length !== 1 ? 's' : ''})
-                        </h3>
-                        <div className="space-y-3">
-                          {n8nData.ambientes.map((ambiente, index) => (
-                            <div key={ambiente.uniqueId || index} className="bg-white p-4 rounded-lg border border-purple-200">
-                              <div className="flex items-center justify-between mb-2">
-                                <div>
-                                  <h4 className="font-medium text-purple-800">{ambiente.descricao}</h4>
-                                  <p className="text-sm text-purple-600">
-                                    ID: {ambiente.uniqueId} • {ambiente.itens?.length || 0} item(s)
-                                  </p>
-                                </div>
-                                <div className="text-right">
-                                  <div className="font-bold text-purple-600">
-                                    {formatCurrency(ambiente.valorAmbiente)}
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              {/* Preview of first few items */}
-                              {ambiente.itens && ambiente.itens.length > 0 && (
-                                <div className="mt-3 pt-3 border-t border-purple-200">
-                                  <p className="text-xs text-purple-600 mb-2">
-                                    Primeiros itens ({Math.min(3, ambiente.itens.length)} de {ambiente.itens.length}):
-                                  </p>
-                                  <div className="space-y-1">
-                                    {ambiente.itens.slice(0, 3).map((item, itemIndex) => (
-                                      <div key={itemIndex} className="flex justify-between text-sm">
-                                        <span className="text-gray-700 truncate mr-4">{item.descricao}</span>
-                                        <span className="text-purple-600 font-medium whitespace-nowrap">
-                                          {item.quantidade}x {formatCurrency(item.preco)}
-                                        </span>
-                                      </div>
-                                    ))}
-                                    {ambiente.itens.length > 3 && (
-                                      <p className="text-xs text-purple-500 italic">
-                                        ...e mais {ambiente.itens.length - 3} item(s)
-                                      </p>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                        
-                        {/* Total summary */}
-                        <div className="mt-4 pt-4 border-t-2 border-purple-300">
-                          <div className="flex justify-between items-center bg-white p-4 rounded-lg border-2 border-purple-300">
-                            <span className="font-semibold text-purple-800">VALOR TOTAL DOS AMBIENTES</span>
-                            <span className="text-2xl font-bold text-purple-600">
-                              {formatCurrency(n8nData.ambientes.reduce((total, amb) => total + (amb.valorAmbiente || 0), 0))}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Raw Data Preview (collapsible/expandable) */}
-                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                        <details>
-                          <summary className="cursor-pointer font-medium text-gray-700 hover:text-gray-900">
-                            <span className="inline-flex items-center gap-2">
-                              <Database className="h-4 w-4" />
-                              Ver dados brutos do XML (clique para expandir)
-                            </span>
-                          </summary>
-                          <div className="mt-4 p-4 bg-gray-100 rounded border max-h-96 overflow-auto">
-                            <pre className="text-xs text-gray-600 whitespace-pre-wrap">
-                              {JSON.stringify(n8nData, null, 2)}
-                            </pre>
-                          </div>
-                        </details>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </section>
-            )}
-
-            {/* Environments Section with n8n data */}
-            <section id="ambientes">
-              <Card>
-                <CardHeader className="bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <Edit className="h-5 w-5" />
-                      Ambientes
-                      {n8nData && n8nData.ambientes.length > 0 && (
-                        <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
-                          <CheckCircle2 className="h-4 w-4" />
-                          {n8nData.ambientes.length} ambiente(s) importado(s)
-                        </div>
-                      )}
-                    </CardTitle>
-                    <Button size="icon" className="bg-green-600 hover:bg-green-700 rounded-full">
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                  {n8nData && n8nData.ambientes.length > 0 ? (
-                    <div className="p-6">
-                      <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <div className="flex items-center gap-2 text-green-800">
-                          <CheckCircle2 className="h-4 w-4" />
-                          <span className="font-medium">Dados importados automaticamente do XML</span>
-                        </div>
-                      </div>
-
-                      {n8nData.ambientes.map((ambiente, index) => (
-                        <div key={ambiente.uniqueId || index} className="mb-6 border-2 border-green-200 rounded-lg p-4 bg-green-50">
-                          <div className="flex items-center justify-between mb-4">
-                            <div>
-                              <h3 className="font-semibold text-lg text-green-800">{ambiente.descricao}</h3>
-                              <p className="text-sm text-green-600">
-                                {ambiente.itens?.length || 0} item(s) no ambiente
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <div className="font-bold text-green-600 text-xl">
-                                {formatCurrency(ambiente.valorAmbiente)}
-                              </div>
-                              <div className="text-xs text-green-500">Valor do ambiente</div>
-                            </div>
-                          </div>
-                          
-                          {ambiente.itens && ambiente.itens.length > 0 && (
-                            <div className="bg-white rounded-lg p-4 border border-green-200">
-                              <h4 className="font-medium mb-3 text-green-800">Itens do Ambiente</h4>
-                              <Table>
-                                <TableHeader>
-                                  <TableRow>
-                                    <TableHead>Descrição</TableHead>
-                                    <TableHead>Quantidade</TableHead>
-                                    <TableHead>Preço Unitário</TableHead>
-                                    <TableHead>Total</TableHead>
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {ambiente.itens.map((item, itemIndex) => (
-                                    <TableRow key={itemIndex}>
-                                      <TableCell className="font-medium">{item.descricao}</TableCell>
-                                      <TableCell>{item.quantidade || 0}</TableCell>
-                                      <TableCell>{formatCurrency(item.preco)}</TableCell>
-                                      <TableCell className="font-semibold text-green-600">
-                                        {formatCurrency((item.quantidade || 0) * (item.preco || 0))}
-                                      </TableCell>
-                                    </TableRow>
-                                  ))}
-                                </TableBody>
-                              </Table>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : orcamentos.length > 0 ? (
-                    <div className="p-6">
-                      {orcamentos.map((orcamento) => (
-                        <div key={orcamento.id} className="mb-6 border rounded-lg p-4">
-                          <div className="flex items-center justify-between mb-4">
-                            <div>
-                              <h3 className="font-semibold text-lg">{orcamento.ambiente_principal}</h3>
-                              <p className="text-sm text-gray-600">
-                                Criado em {new Date(orcamento.created_at).toLocaleDateString('pt-BR')}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="text-right">
-                                <div className="font-bold text-green-600 text-lg">
-                                  {formatCurrency(orcamento.valor_orcamento)}
-                                </div>
-                                <div className="text-sm text-gray-500">
-                                  {orcamento.ambientes?.length || 0} ambiente(s)
-                                </div>
-                              </div>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="sm">
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Excluir Orçamento</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Esta ação não pode ser desfeita. Tem certeza que deseja excluir este orçamento?
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction 
-                                      onClick={() => handleDeleteOrcamento(orcamento.id)}
-                                      className="bg-red-600 hover:bg-red-700"
-                                    >
-                                      Excluir
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          </div>
-                          
-                          {orcamento.ambientes && orcamento.ambientes.length > 0 && (
-                            <div className="space-y-3">
-                              {orcamento.ambientes.map((ambiente: any) => (
-                                <div key={ambiente.id} className="bg-gray-50 p-3 rounded">
-                                  <div className="flex justify-between items-start">
-                                    <div>
-                                      <h4 className="font-medium">{ambiente.descricao}</h4>
-                                      <p className="text-sm text-gray-600">
-                                        {ambiente.categorias?.length || 0} categoria(s)
-                                      </p>
-                                    </div>
-                                    <div className="text-right">
-                                      <div className="font-semibold text-green-600">
-                                        {formatCurrency(ambiente.total_orcamento)}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      <div className="mb-4">
-                        <Upload className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-                        <p className="font-medium">Nenhum ambiente encontrado</p>
-                        <p className="text-sm">Importe um arquivo XML do Promob para visualizar os dados automaticamente</p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className={`p-4 border-t ${n8nData ? 'bg-green-50 border-green-200' : 'bg-green-50'}`}>
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">TOTAL DOS AMBIENTES</span>
-                      <span className="text-green-600 font-bold text-lg">
-                        {n8nData ? (
-                          formatCurrency(n8nData.resumoFinanceiro.total)
-                        ) : (
-                          formatCurrency(orcamentos.reduce((total, orc) => total + (orc.valor_orcamento || 0), 0))
-                        )}
-                      </span>
-                    </div>
-                    {n8nData && (
-                      <div className="text-xs text-green-600 text-right mt-1">
-                        Importado do XML
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </section>
-
-            {/* Other sections with similar structure */}
-            {navigationItems.slice(4).map((item) => (
-              <section key={item.id} id={item.id}>
-                <Card>
-                  <CardHeader className="bg-gray-50">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center gap-2">
-                        <item.icon className="h-5 w-5" />
-                        {item.label}
-                      </CardTitle>
-                      <Button size="icon" className="bg-green-600 hover:bg-green-700 rounded-full">
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <div className="text-center py-8 text-gray-500">
-                      Nenhum registro encontrado
-                    </div>
-                  </CardContent>
-                </Card>
-              </section>
-            ))}
-          </div>
-        </div>
-
-        {/* Right Navigation Column */}
-        <div className="w-64 p-6 pl-3">
-          <div className="sticky top-6">
+          {/* Dados Importados do XML Section */}
+          {project?.n8nData && (
             <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Navegação</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <nav className="space-y-1">
-                  {navigationItems.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => scrollToSection(item.id)}
-                      className={`w-full text-left px-4 py-2 text-sm rounded transition-colors ${
-                        activeSection === item.id
-                          ? 'bg-blue-600 text-white'
-                          : 'text-gray-600 hover:bg-gray-100'
-                      }`}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </nav>
+              <CardContent className="p-6">
+                <ImportedXmlData data={project.n8nData} />
               </CardContent>
             </Card>
-          </div>
+          )}
+
+          {/* Environments Section */}
+          <Card>
+            <CardHeader className="bg-gray-50 border-b">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg text-[#2A3F54]">
+                  Ambientes do Projeto
+                </CardTitle>
+                <Button size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6">
+              {project.environments && project.environments.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {project.environments.map((env: ProjectEnvironment) => (
+                    <div key={env.id} className="bg-white rounded-lg shadow-md p-4">
+                      <h3 className="font-semibold text-gray-800">{env.name}</h3>
+                      <p className="text-gray-600">{env.description}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  Nenhum ambiente cadastrado.
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
 
-      {/* Fixed Bottom Action Bar - Adjusted for sidebar */}
-      <div className="fixed bottom-0 left-0 lg:left-64 right-0 bg-white border-t border-gray-200 px-6 py-4 z-10">
-        <div className="flex items-center justify-center max-w-full">
-          <div className="flex items-center justify-between w-full max-w-6xl">
-            <div className="flex items-center gap-4">
-              <Button variant="outline" onClick={handleBack}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                VOLTAR
-              </Button>
-              <div className="flex items-center gap-2 text-sm">
-                <button className="text-blue-600 hover:underline">TROCAR CLIENTE</button>
-                <span className="text-gray-400">|</span>
-                <button className="text-blue-600 hover:underline">HISTÓRICO</button>
-                <span className="text-gray-400">|</span>
-                <button className="text-blue-600 hover:underline">CANCELAR PROJETO</button>
+      {/* Bottom Action Bar */}
+      <div className="bg-white border-t border-gray-200 px-6 py-4 flex items-center justify-between">
+        <Button variant="outline" onClick={onBack}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          VOLTAR
+        </Button>
+      </div>
+
+      {/* Dialogs */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o projeto <strong>{project?.name}</strong>? 
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Editar Projeto</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSaveEdit} className="grid gap-4 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="name">Nome</Label>
+                <Input
+                  id="name"
+                  value={editFormData.name}
+                  onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <Select value={editFormData.status}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione um status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Novo">Novo</SelectItem>
+                    <SelectItem value="Em Andamento">Em Andamento</SelectItem>
+                    <SelectItem value="Concluído">Concluído</SelectItem>
+                    <SelectItem value="Cancelado">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive">
-                    EXCLUIR
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Excluir Projeto</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Esta ação não poderá ser desfeita. Tem certeza que deseja excluir este projeto permanentemente?
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-                      Sim, excluir
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-              <Button 
-                onClick={handleEdit}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                EDITAR
-              </Button>
+            <div>
+              <Label htmlFor="description">Descrição</Label>
+              <Input
+                id="description"
+                value={editFormData.description}
+                onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+              />
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Import Dialog */}
-      <ImportPromobXMLDialog
-        open={showImportDialog}
-        onOpenChange={setShowImportDialog}
-        projectId={id!}
-        onImportSuccess={handleImportSuccess}
-      />
-
-      {/* Bottom spacing to avoid fixed bar overlap */}
-      <div className="h-20"></div>
+            <Button type="submit">Salvar Alterações</Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
