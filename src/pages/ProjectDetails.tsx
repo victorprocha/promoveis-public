@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, Edit, Upload, Plus, Receipt, Calendar, Users, Paperclip, TrendingUp, Save, X, CalendarIcon, FileText, CheckCircle2, Trash2 } from 'lucide-react';
@@ -366,8 +365,6 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
 
       const formData = new FormData();
       formData.append('file', file);
-      
-      // Adicionar headers específicos para o n8n
       formData.append('filename', file.name);
 
       console.log('[N8N] Enviando FormData com arquivo:', {
@@ -657,6 +654,17 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                       )}
                     </div>
                     <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Número do Projeto</label>
+                      {isEditing ? (
+                        <Input
+                          value={editedProject?.client_name || ''}
+                          onChange={(e) => handleInputChange('client_name', e.target.value)}
+                        />
+                      ) : (
+                        <div className="p-3 bg-gray-50 rounded-md">{project.client_name}</div>
+                      )}
+                    </div>
+                    <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
                       {isEditing ? (
                         <Select value={editedProject?.client_name || ''} onValueChange={(value) => handleInputChange('client_name', value)}>
@@ -809,7 +817,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
                     </div>
                   </div>
 
-                  {/* Resumo Financeiro */}
+                  {/* Resumo Financeiro com dados do n8n */}
                   {n8nData && (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-blue-50 rounded-lg">
                       <div>
@@ -883,7 +891,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
               </Card>
             </section>
 
-            {/* Environments Section */}
+            {/* Environments Section with n8n data */}
             <section id="ambientes">
               <Card>
                 <CardHeader className="bg-gray-50">
