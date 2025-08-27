@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Project, CreateProjectData, UpdateProjectData, KanbanColumn } from '@/types/project';
 import { ApiResponse } from '@/types/common';
@@ -76,23 +77,25 @@ export const projectService = {
         
         // Parse do JSON se necessário
         let ambienteData;
-        if (typeof xmlData.ambiente_data === 'string') {
-          try {
-            ambienteData = JSON.parse(xmlData.ambiente_data);
-          } catch (e) {
-            console.error('Erro ao fazer parse do ambiente_data:', e);
-            ambienteData = null;
+        if (xmlData && typeof xmlData === 'object' && 'ambiente_data' in xmlData) {
+          if (typeof xmlData.ambiente_data === 'string') {
+            try {
+              ambienteData = JSON.parse(xmlData.ambiente_data);
+            } catch (e) {
+              console.error('Erro ao fazer parse do ambiente_data:', e);
+              ambienteData = null;
+            }
+          } else {
+            ambienteData = xmlData.ambiente_data;
           }
-        } else {
-          ambienteData = xmlData.ambiente_data;
-        }
 
-        if (ambienteData) {
-          mappedProject.n8nData = {
-            cliente: ambienteData.cliente,
-            resumoFinanceiro: ambienteData.resumoFinanceiro,
-            ambientes: ambienteData.ambientes
-          };
+          if (ambienteData) {
+            mappedProject.n8nData = {
+              cliente: ambienteData.cliente,
+              resumoFinanceiro: ambienteData.resumoFinanceiro,
+              ambientes: ambienteData.ambientes
+            };
+          }
         }
       }
 
