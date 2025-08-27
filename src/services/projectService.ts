@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Project, CreateProjectData, UpdateProjectData, KanbanColumn } from '@/types/project';
 import { ApiResponse } from '@/types/common';
@@ -58,7 +59,7 @@ export const projectService = {
       }
 
       // Mapear projeto para o formato esperado pelo useProject hook
-      const mappedProject = {
+      const mappedProject: any = {
         id: project.id,
         name: project.name,
         description: project.description,
