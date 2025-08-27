@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, Edit, Upload, Plus, Receipt, Calendar, Users, Paperclip, TrendingUp, Save, X, CalendarIcon, FileText, CheckCircle2, Trash2 } from 'lucide-react';
@@ -362,7 +363,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
         fileType: file.type
       });
 
-      const response = await fetch('https://victorprocha.app.n8n.cloud/webhook-test/leitorxml', {
+      const response = await fetch('https://victorprocha.app.n8n.cloud/webhook/leitorxml', {
         method: 'POST',
         body: formData,
       });
