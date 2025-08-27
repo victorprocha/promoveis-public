@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Edit, Upload, Plus, Receipt, Calendar, Users, Paperclip, TrendingUp, Save, X, CalendarIcon, FileText, CheckCircle2, Trash2 } from 'lucide-react';
+import { ArrowLeft, User, Edit, Upload, Plus, Receipt, Calendar, Users, Paperclip, TrendingUp, Save, X, CalendarIcon, FileText, CheckCircle2, Trash2, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -199,6 +199,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
 
   const navigationItems = [
     { id: 'dados-projeto', label: 'Dados do Projeto', icon: Edit },
+    { id: 'dados-xml', label: 'Dados Importados do XML', icon: Database },
     { id: 'ambientes', label: 'Ambientes', icon: Edit },
     { id: 'itens-avulsos', label: 'Itens Avulsos', icon: Receipt },
     { id: 'orcamentos', label: 'Orçamentos', icon: Receipt },
@@ -1119,6 +1120,170 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
               </Card>
             </section>
 
+            {/* XML Data Section - New Section */}
+            {n8nData && (
+              <section id="dados-xml">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Database className="h-5 w-5 text-green-600" />
+                      Dados Importados do XML
+                      <div className="ml-auto">
+                        <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4" />
+                          Arquivo processado com sucesso
+                        </div>
+                      </div>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-6">
+                      {/* Client Data from XML */}
+                      <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                        <h3 className="font-semibold text-blue-800 mb-4 flex items-center gap-2">
+                          <User className="h-5 w-5" />
+                          Dados do Cliente
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="bg-white p-3 rounded border border-blue-200">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Número do Cliente</label>
+                            <div className="font-medium text-blue-800">{n8nData.dadosCliente.numeroCliente}</div>
+                          </div>
+                          <div className="bg-white p-3 rounded border border-blue-200">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Descrição/Nome</label>
+                            <div className="font-medium text-blue-800">{n8nData.dadosCliente.descricao}</div>
+                          </div>
+                          <div className="bg-white p-3 rounded border border-blue-200">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Data</label>
+                            <div className="font-medium text-blue-800">{n8nData.dadosCliente.data}</div>
+                          </div>
+                          {n8nData.dadosCliente.logo && (
+                            <div className="bg-white p-3 rounded border border-blue-200">
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Logo/Imagem</label>
+                              <div className="font-medium text-blue-800 flex items-center gap-2">
+                                <FileText className="h-4 w-4" />
+                                {n8nData.dadosCliente.logo}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Financial Summary from XML */}
+                      <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
+                        <h3 className="font-semibold text-green-800 mb-4 flex items-center gap-2">
+                          <Receipt className="h-5 w-5" />
+                          Resumo Financeiro
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="bg-white p-4 rounded-lg border border-green-200 text-center">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">IPI</label>
+                            <div className="text-2xl font-bold text-blue-600">
+                              {formatCurrency(n8nData.resumoFinanceiro.ipi)}
+                            </div>
+                          </div>
+                          <div className="bg-white p-4 rounded-lg border border-green-200 text-center">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Descontos</label>
+                            <div className="text-2xl font-bold text-red-600">
+                              {formatCurrency(
+                                Array.isArray(n8nData.resumoFinanceiro.descontos) 
+                                  ? n8nData.resumoFinanceiro.descontos.reduce((sum, desc) => sum + (desc || 0), 0)
+                                  : (n8nData.resumoFinanceiro.descontos || 0)
+                              )}
+                            </div>
+                          </div>
+                          <div className="bg-white p-4 rounded-lg border border-green-200 text-center">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Total Geral</label>
+                            <div className="text-2xl font-bold text-green-600">
+                              {formatCurrency(n8nData.resumoFinanceiro.total)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Environments Summary from XML */}
+                      <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-4">
+                        <h3 className="font-semibold text-purple-800 mb-4 flex items-center gap-2">
+                          <Edit className="h-5 w-5" />
+                          Resumo dos Ambientes ({n8nData.ambientes.length} ambiente{n8nData.ambientes.length !== 1 ? 's' : ''})
+                        </h3>
+                        <div className="space-y-3">
+                          {n8nData.ambientes.map((ambiente, index) => (
+                            <div key={ambiente.uniqueId || index} className="bg-white p-4 rounded-lg border border-purple-200">
+                              <div className="flex items-center justify-between mb-2">
+                                <div>
+                                  <h4 className="font-medium text-purple-800">{ambiente.descricao}</h4>
+                                  <p className="text-sm text-purple-600">
+                                    ID: {ambiente.uniqueId} • {ambiente.itens?.length || 0} item(s)
+                                  </p>
+                                </div>
+                                <div className="text-right">
+                                  <div className="font-bold text-purple-600">
+                                    {formatCurrency(ambiente.valorAmbiente)}
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Preview of first few items */}
+                              {ambiente.itens && ambiente.itens.length > 0 && (
+                                <div className="mt-3 pt-3 border-t border-purple-200">
+                                  <p className="text-xs text-purple-600 mb-2">
+                                    Primeiros itens ({Math.min(3, ambiente.itens.length)} de {ambiente.itens.length}):
+                                  </p>
+                                  <div className="space-y-1">
+                                    {ambiente.itens.slice(0, 3).map((item, itemIndex) => (
+                                      <div key={itemIndex} className="flex justify-between text-sm">
+                                        <span className="text-gray-700 truncate mr-4">{item.descricao}</span>
+                                        <span className="text-purple-600 font-medium whitespace-nowrap">
+                                          {item.quantidade}x {formatCurrency(item.preco)}
+                                        </span>
+                                      </div>
+                                    ))}
+                                    {ambiente.itens.length > 3 && (
+                                      <p className="text-xs text-purple-500 italic">
+                                        ...e mais {ambiente.itens.length - 3} item(s)
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {/* Total summary */}
+                        <div className="mt-4 pt-4 border-t-2 border-purple-300">
+                          <div className="flex justify-between items-center bg-white p-4 rounded-lg border-2 border-purple-300">
+                            <span className="font-semibold text-purple-800">VALOR TOTAL DOS AMBIENTES</span>
+                            <span className="text-2xl font-bold text-purple-600">
+                              {formatCurrency(n8nData.ambientes.reduce((total, amb) => total + (amb.valorAmbiente || 0), 0))}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Raw Data Preview (collapsible/expandable) */}
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <details>
+                          <summary className="cursor-pointer font-medium text-gray-700 hover:text-gray-900">
+                            <span className="inline-flex items-center gap-2">
+                              <Database className="h-4 w-4" />
+                              Ver dados brutos do XML (clique para expandir)
+                            </span>
+                          </summary>
+                          <div className="mt-4 p-4 bg-gray-100 rounded border max-h-96 overflow-auto">
+                            <pre className="text-xs text-gray-600 whitespace-pre-wrap">
+                              {JSON.stringify(n8nData, null, 2)}
+                            </pre>
+                          </div>
+                        </details>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </section>
+            )}
+
             {/* Environments Section with n8n data */}
             <section id="ambientes">
               <Card>
@@ -1299,7 +1464,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
             </section>
 
             {/* Other sections with similar structure */}
-            {navigationItems.slice(2).map((item) => (
+            {navigationItems.slice(4).map((item) => (
               <section key={item.id} id={item.id}>
                 <Card>
                   <CardHeader className="bg-gray-50">
