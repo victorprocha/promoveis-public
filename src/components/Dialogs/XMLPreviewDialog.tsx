@@ -1,25 +1,32 @@
-
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Database, User, Package } from "lucide-react";
-import { XMLStructure, PromobSection } from "@/utils/xmlParser";
+import { XMLStructure, PromobSection, analyzeXMLForPreview } from "@/utils/xmlParser";
 
 interface XMLPreviewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  xmlStructure: XMLStructure;
+  xmlContent: string;
   onProceed: () => void;
 }
 
 export const XMLPreviewDialog: React.FC<XMLPreviewDialogProps> = ({
   open,
   onOpenChange,
-  xmlStructure,
+  xmlContent,
   onProceed,
 }) => {
+  // Analyze the XML content when dialog opens
+  const xmlStructure = React.useMemo(() => {
+    if (!xmlContent || !open) return null;
+    return analyzeXMLForPreview(xmlContent);
+  }, [xmlContent, open]);
+
+  if (!xmlStructure) return null;
+
   const getStructureIcon = () => {
     switch (xmlStructure.type) {
       case 'promob':

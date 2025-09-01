@@ -1,4 +1,3 @@
-
 export interface DadosConvertidos {
   cliente: {
     nome: string;
@@ -38,7 +37,25 @@ export interface DadosConvertidos {
   [key: string]: any; // Add index signature for Json compatibility
 }
 
+// Interface for the XML Preview Dialog
 export interface XMLStructure {
+  type: 'promob' | 'traditional' | 'unknown';
+  hasCustomerData: boolean;
+  hasItemsData: boolean;
+  hasBudgetData: boolean;
+  sections: PromobSection[];
+}
+
+export interface PromobSection {
+  name: string;
+  data: Array<{
+    id: string;
+    value: string;
+  }>;
+}
+
+// Internal interface for processing
+interface InternalXMLStructure {
   cliente: {
     nome: string;
     email?: string;
@@ -73,12 +90,12 @@ export interface XMLStructure {
   }>;
 }
 
-export interface PromobSection {
+interface InternalPromobSection {
   descricao: string;
   itens: any[];
 }
 
-const analyzeXMLStructure = (xmlContent: string): XMLStructure => {
+const analyzeXMLStructure = (xmlContent: string): InternalXMLStructure => {
   const parser = new DOMParser();
   const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
 
@@ -98,7 +115,7 @@ const analyzeXMLStructure = (xmlContent: string): XMLStructure => {
   const frete = parseFloat(xmlDoc.querySelector('ResumoFinanceiro frete')?.textContent || '0');
   const montagem = parseFloat(xmlDoc.querySelector('ResumoFinanceiro montagem')?.textContent || '0');
 
-  const promobSections: PromobSection[] = [];
+  const promobSections: InternalPromobSection[] = [];
   const secoes = xmlDoc.querySelectorAll('secao');
   secoes.forEach((secao) => {
     const descricao = secao.querySelector('descricao')?.textContent || '';
@@ -177,6 +194,99 @@ const analyzeXMLStructure = (xmlContent: string): XMLStructure => {
         dimensoes: item.dimensoes,
       })),
     })),
+  };
+};
+
+// New function to analyze XML for preview
+export const analyzeXMLForPreview = (xmlContent: string): XMLStructure => {
+  const parser = new DOMParser();
+  const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
+
+  // Check for different XML structures
+  const hasPromobStructure = xmlDoc.querySelector('CUSTOMERSDATA, ITEMSDATA, BUDGETDATA') !== null;
+  const hasTraditionalStructure = xmlDoc.querySelector('DadosCliente, Projeto, ResumoFinanceiro') !== null;
+
+  let type: 'promob' | 'traditional' | 'unknown' = 'unknown';
+  if (hasPromobStructure) type = 'promob';
+  else if (hasTraditionalStructure) type = 'traditional';
+
+  const hasCustomerData = xmlDoc.querySelector('DadosCliente, CUSTOMERSDATA') !== null;
+  const hasItemsData = xmlDoc.querySelector('ITEMSDATA, produto, item') !== null;
+  const hasBudgetData = xmlDoc.querySelector('BUDGETDATA, ResumoFinanceiro') !== null;
+
+  const sections: PromobSection[] = [];
+
+  if (type === 'promob') {
+    // Extract Promob sections
+    const customerData = xmlDoc.querySelector('CUSTOMERSDATA');
+    if (customerData) {
+      const customers = customerData.querySelectorAll('CUSTOMER');
+      const customerItems = Array.from(customers).map((customer, index) => ({
+        id: customer.getAttribute('id') || `customer-${index}`,
+        value: customer.textContent || `Cliente ${index + 1}`
+      }));
+      
+      if (customerItems.length > 0) {
+        sections.push({
+          name: 'CUSTOMERSDATA',
+          data: customerItems
+        });
+      }
+    }
+
+    const itemsData = xmlDoc.querySelector('ITEMSDATA');
+    if (itemsData) {
+      const items = itemsData.querySelectorAll('ITEM');
+      const itemItems = Array.from(items).map((item, index) => ({
+        id: item.getAttribute('id') || `item-${index}`,
+        value: item.textContent || `Item ${index + 1}`
+      }));
+      
+      if (itemItems.length > 0) {
+        sections.push({
+          name: 'ITEMSDATA',
+          data: itemItems
+        });
+      }
+    }
+
+    const budgetData = xmlDoc.querySelector('BUDGETDATA');
+    if (budgetData) {
+      const budgets = budgetData.querySelectorAll('BUDGET');
+      const budgetItems = Array.from(budgets).map((budget, index) => ({
+        id: budget.getAttribute('id') || `budget-${index}`,
+        value: budget.textContent || `Orçamento ${index + 1}`
+      }));
+      
+      if (budgetItems.length > 0) {
+        sections.push({
+          name: 'BUDGETDATA',
+          data: budgetItems
+        });
+      }
+    }
+  } else if (type === 'traditional') {
+    // Extract traditional XML sections
+    const produtos = xmlDoc.querySelectorAll('produto, item');
+    if (produtos.length > 0) {
+      const productItems = Array.from(produtos).map((produto, index) => ({
+        id: produto.querySelector('codigo')?.textContent || `prod-${index}`,
+        value: produto.querySelector('descricao')?.textContent || `Produto ${index + 1}`
+      }));
+      
+      sections.push({
+        name: 'ITEMSDATA',
+        data: productItems
+      });
+    }
+  }
+
+  return {
+    type,
+    hasCustomerData,
+    hasItemsData,
+    hasBudgetData,
+    sections
   };
 };
 
