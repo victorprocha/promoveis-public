@@ -542,7 +542,7 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
         .from('project_xml_data')
         .upsert({
           project_id: id,
-          observacoes_data: dados,
+          observacoes_data: dados as any, // Cast to any to satisfy Json type
           raw_xml: dados.rawXML,
           file_name: 'xml_importado.xml',
           file_url: '',

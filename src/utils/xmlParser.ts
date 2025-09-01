@@ -1,18 +1,22 @@
-
 export interface DadosConvertidos {
   cliente: {
     nome: string;
-    email: string;
-    telefone: string;
-    numeroCliente: string;
-    situacao: string;
-    etapa: string;
+    email?: string;
+    telefone?: string;
+    numeroCliente?: string;
+  };
+  projeto: {
+    numero?: string;
+    descricao?: string;
+    prazoEntrega?: string;
+    observacoes?: string;
   };
   resumoFinanceiro: {
     valorTotal: number;
     ipi: number;
     descontos: number;
-    subtotal: number;
+    frete?: number;
+    montagem?: number;
   };
   ambientes: Array<{
     id: string;
@@ -25,310 +29,171 @@ export interface DadosConvertidos {
       unidade: string;
       precoUnitario: number;
       precoTotal: number;
-      categoria: string;
+      dimensoes?: string;
     }>;
   }>;
-  projeto: {
-    numero: string;
-    data: string;
-    prazoEntrega: string;
-    observacoes: string;
-  };
   rawXML: string;
   processedAt: string;
+  [key: string]: any; // Add index signature for Json compatibility
 }
 
-// Interfaces para compatibilidade com XMLPreviewDialog
-export interface XMLStructure {
-  type: 'promob' | 'traditional' | 'unknown';
-  hasCustomerData: boolean;
-  hasItemsData: boolean;
-  hasBudgetData: boolean;
-  sections: PromobSection[];
-}
-
-export interface PromobSection {
-  name: string;
-  data: Array<{
-    id: string;
-    value: string;
+interface XMLStructure {
+  cliente: {
+    nome: string;
+    email?: string;
+    telefone?: string;
+    numeroCliente?: string;
+  };
+  projeto: {
+    numero?: string;
+    descricao?: string;
+    prazoEntrega?: string;
+    observacoes?: string;
+  };
+  resumoFinanceiro: {
+    valorTotal: number;
+    ipi: number;
+    descontos: number;
+    frete?: number;
+    montagem?: number;
+  };
+  ambientes: Array<{
+    descricao: string;
+    valorAmbiente: number;
+    itens: Array<{
+      codigo: string;
+      descricao: string;
+      quantidade: number;
+      unidade: string;
+      precoUnitario: number;
+      precoTotal: number;
+      dimensoes?: string;
+    }>;
   }>;
 }
 
-export const analyzeXMLStructure = (xmlContent: string): XMLStructure => {
+interface PromobSection {
+  descricao: string;
+  itens: any[];
+}
+
+const analyzeXMLStructure = (xmlContent: string): XMLStructure => {
   const parser = new DOMParser();
   const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
-  
-  const structure: XMLStructure = {
-    type: 'unknown',
-    hasCustomerData: false,
-    hasItemsData: false,
-    hasBudgetData: false,
-    sections: []
-  };
 
-  // Detectar tipo de estrutura
-  const promobNodes = xmlDoc.querySelectorAll('CUSTOMERSDATA, ITEMSDATA, BUDGETDATA');
-  if (promobNodes.length > 0) {
-    structure.type = 'promob';
-  } else {
-    const traditionalNodes = xmlDoc.querySelectorAll('cliente, produto, item, orcamento');
-    if (traditionalNodes.length > 0) {
-      structure.type = 'traditional';
-    }
-  }
+  const clienteNome = xmlDoc.querySelector('DadosCliente nome')?.textContent || '';
+  const clienteEmail = xmlDoc.querySelector('DadosCliente email')?.textContent || '';
+  const clienteTelefone = xmlDoc.querySelector('DadosCliente telefone')?.textContent || '';
+  const clienteNumeroCliente = xmlDoc.querySelector('DadosCliente numero_cliente')?.textContent || '';
 
-  // Verificar presença de dados
-  structure.hasCustomerData = xmlDoc.querySelector('cliente, Client, CLIENTE, CUSTOMERSDATA') !== null;
-  structure.hasItemsData = xmlDoc.querySelector('produto, item, product, ITEMSDATA') !== null;
-  structure.hasBudgetData = xmlDoc.querySelector('orcamento, budget, BUDGETDATA') !== null;
+  const projetoNumero = xmlDoc.querySelector('Projeto numero')?.textContent || '';
+  const projetoDescricao = xmlDoc.querySelector('Projeto descricao')?.textContent || '';
+  const projetoPrazoEntrega = xmlDoc.querySelector('Projeto prazo_entrega')?.textContent || '';
+  const projetoObservacoes = xmlDoc.querySelector('Projeto observacoes')?.textContent || '';
 
-  // Extrair seções para preview
-  ['CUSTOMERSDATA', 'ITEMSDATA', 'BUDGETDATA'].forEach(sectionName => {
-    const section = xmlDoc.querySelector(sectionName);
-    if (section) {
-      const items = Array.from(section.children).slice(0, 10).map((child, index) => ({
-        id: child.tagName || `item-${index}`,
-        value: child.textContent?.trim() || ''
-      }));
-      
-      structure.sections.push({
-        name: sectionName,
-        data: items
+  const valorTotal = parseFloat(xmlDoc.querySelector('ResumoFinanceiro total')?.textContent || '0');
+  const ipi = parseFloat(xmlDoc.querySelector('ResumoFinanceiro ipi')?.textContent || '0');
+  const descontos = parseFloat(xmlDoc.querySelector('ResumoFinanceiro descontos')?.textContent || '0');
+  const frete = parseFloat(xmlDoc.querySelector('ResumoFinanceiro frete')?.textContent || '0');
+  const montagem = parseFloat(xmlDoc.querySelector('ResumoFinanceiro montagem')?.textContent || '0');
+
+  const promobSections: PromobSection[] = [];
+  const secoes = xmlDoc.querySelectorAll('secao');
+  secoes.forEach((secao) => {
+    const descricao = secao.querySelector('descricao')?.textContent || '';
+    const itens: any[] = [];
+    const produtos = secao.querySelectorAll('produto');
+    produtos.forEach((produto) => {
+      const codigo = produto.querySelector('codigo')?.textContent || '';
+      const descricao = produto.querySelector('descricao')?.textContent || '';
+      const quantidade = parseFloat(produto.querySelector('quantidade')?.textContent || '0');
+      const unidade = produto.querySelector('unidade')?.textContent || '';
+      const precoUnitario = parseFloat(produto.querySelector('preco_unitario')?.textContent || '0');
+      const precoTotal = parseFloat(produto.querySelector('preco_total')?.textContent || '0');
+      const dimensoes = produto.querySelector('dimensoes')?.textContent || '';
+
+      itens.push({
+        codigo,
+        descricao,
+        quantidade,
+        unidade,
+        precoUnitario,
+        precoTotal,
+        dimensoes,
       });
-    }
+    });
+
+    promobSections.push({
+      descricao,
+      itens,
+    });
   });
 
-  return structure;
-};
+  const ambientes = promobSections.map((secao, index) => ({
+    descricao: secao.descricao,
+    valorAmbiente: secao.itens.reduce((total, item) => total + parseFloat(item.precoTotal || 0), 0),
+    itens: secao.itens.map((item) => ({
+      codigo: item.codigo,
+      descricao: item.descricao,
+      quantidade: item.quantidade,
+      unidade: item.unidade,
+      precoUnitario: item.precoUnitario,
+      precoTotal: item.precoTotal,
+      dimensoes: item.dimensoes,
+    })),
+  }));
 
-export const parseXMLToStructuredData = (xmlContent: string): DadosConvertidos => {
-  console.log('[XMLParser] Processando XML para dados estruturados...');
-  
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
-  
-  // Verificar se há erros de parsing
-  const parserError = xmlDoc.querySelector('parsererror');
-  if (parserError) {
-    throw new Error('Erro ao fazer parse do XML: ' + parserError.textContent);
-  }
-
-  const dadosConvertidos: DadosConvertidos = {
+  return {
     cliente: {
-      nome: '',
-      email: '',
-      telefone: '',
-      numeroCliente: '',
-      situacao: '',
-      etapa: ''
+      nome: clienteNome,
+      email: clienteEmail,
+      telefone: clienteTelefone,
+      numeroCliente: clienteNumeroCliente,
+    },
+    projeto: {
+      numero: projetoNumero,
+      descricao: projetoDescricao,
+      prazoEntrega: projetoPrazoEntrega,
+      observacoes: projetoObservacoes,
     },
     resumoFinanceiro: {
-      valorTotal: 0,
-      ipi: 0,
-      descontos: 0,
-      subtotal: 0
-    },
-    ambientes: [],
-    projeto: {
-      numero: '',
-      data: '',
-      prazoEntrega: '',
-      observacoes: ''
-    },
-    rawXML: xmlContent,
-    processedAt: new Date().toISOString()
-  };
-
-  try {
-    // Extrair dados do cliente
-    const clienteNode = xmlDoc.querySelector('cliente, Client, CLIENTE') ||
-                       xmlDoc.querySelector('[nome], [name], [cliente]');
-    
-    if (clienteNode) {
-      dadosConvertidos.cliente.nome = getTextContent(clienteNode, 'nome, name, cliente, razaoSocial') || '';
-      dadosConvertidos.cliente.email = getTextContent(clienteNode, 'email, e-mail, EMAIL') || '';
-      dadosConvertidos.cliente.telefone = getTextContent(clienteNode, 'telefone, phone, fone, tel') || '';
-      dadosConvertidos.cliente.numeroCliente = getTextContent(clienteNode, 'codigo, id, numero, codigoCliente') || '';
-      dadosConvertidos.cliente.situacao = getTextContent(clienteNode, 'situacao, status, estado') || '';
-      dadosConvertidos.cliente.etapa = getTextContent(clienteNode, 'etapa, fase, stage') || '';
-    }
-
-    // Extrair dados do projeto
-    const projetoNode = xmlDoc.querySelector('projeto, pedido, orcamento, Project') || xmlDoc.documentElement;
-    if (projetoNode) {
-      dadosConvertidos.projeto.numero = getTextContent(projetoNode, 'numero, numeroPedido, id, codigo') || '';
-      dadosConvertidos.projeto.data = getTextContent(projetoNode, 'data, date, dataCriacao, created') || '';
-      dadosConvertidos.projeto.prazoEntrega = getTextContent(projetoNode, 'prazoEntrega, dataEntrega, deadline') || '';
-      dadosConvertidos.projeto.observacoes = getTextContent(projetoNode, 'observacoes, obs, comentarios, notes') || '';
-    }
-
-    // Extrair resumo financeiro
-    let valorTotal = 0;
-    let ipi = 0;
-    let descontos = 0;
-
-    // Buscar valores financeiros em vários locais possíveis
-    const totalNodes = xmlDoc.querySelectorAll('total, valorTotal, TOTAL, grandTotal, valor');
-    totalNodes.forEach(node => {
-      const value = parseFloat(node.textContent || '0');
-      if (!isNaN(value) && value > valorTotal) {
-        valorTotal = value;
-      }
-    });
-
-    const ipiNodes = xmlDoc.querySelectorAll('ipi, IPI, impostos');
-    ipiNodes.forEach(node => {
-      const value = parseFloat(node.textContent || '0');
-      if (!isNaN(value)) {
-        ipi += value;
-      }
-    });
-
-    const descontoNodes = xmlDoc.querySelectorAll('desconto, descontos, discount');
-    descontoNodes.forEach(node => {
-      const value = parseFloat(node.textContent || '0');
-      if (!isNaN(value)) {
-        descontos += value;
-      }
-    });
-
-    dadosConvertidos.resumoFinanceiro = {
       valorTotal,
       ipi,
       descontos,
-      subtotal: valorTotal - descontos
-    };
-
-    // Extrair ambientes
-    const ambientesNodes = xmlDoc.querySelectorAll('ambiente, room, espaco, local, Environment') ||
-                          xmlDoc.querySelectorAll('item[tipo="ambiente"], [categoria="ambiente"]');
-
-    ambientesNodes.forEach((ambienteNode, index) => {
-      const ambiente = {
-        id: getTextContent(ambienteNode, 'id, codigo') || `ambiente-${index + 1}`,
-        descricao: getTextContent(ambienteNode, 'descricao, nome, name, description') || `Ambiente ${index + 1}`,
-        valorAmbiente: 0,
-        itens: [] as any[]
-      };
-
-      // Buscar itens do ambiente
-      const itensNodes = ambienteNode.querySelectorAll('item, produto, product, Item');
-      itensNodes.forEach((itemNode, itemIndex) => {
-        const quantidade = parseFloat(getTextContent(itemNode, 'quantidade, qty, quantity') || '1');
-        const precoUnitario = parseFloat(getTextContent(itemNode, 'precoUnitario, preco, price, valor') || '0');
-        const precoTotal = quantidade * precoUnitario;
-
-        const item = {
-          codigo: getTextContent(itemNode, 'codigo, code, id, sku') || `ITEM-${itemIndex + 1}`,
-          descricao: getTextContent(itemNode, 'descricao, nome, name, description') || `Item ${itemIndex + 1}`,
-          quantidade,
-          unidade: getTextContent(itemNode, 'unidade, unit, medida') || 'UN',
-          precoUnitario,
-          precoTotal,
-          categoria: getTextContent(itemNode, 'categoria, category, tipo, group') || 'Diversos'
-        };
-
-        ambiente.itens.push(item);
-        ambiente.valorAmbiente += precoTotal;
-      });
-
-      dadosConvertidos.ambientes.push(ambiente);
-    });
-
-    // Se não encontrou ambientes estruturados, tentar extrair produtos diretamente
-    if (dadosConvertidos.ambientes.length === 0) {
-      const produtosNodes = xmlDoc.querySelectorAll('produto, item, product, Item');
-      
-      if (produtosNodes.length > 0) {
-        const ambienteGenerico = {
-          id: 'ambiente-geral',
-          descricao: 'Produtos Gerais',
-          valorAmbiente: 0,
-          itens: [] as any[]
-        };
-
-        produtosNodes.forEach((produtoNode, index) => {
-          const quantidade = parseFloat(getTextContent(produtoNode, 'quantidade, qty, quantity') || '1');
-          const precoUnitario = parseFloat(getTextContent(produtoNode, 'precoUnitario, preco, price, valor') || '0');
-          const precoTotal = quantidade * precoUnitario;
-
-          const produto = {
-            codigo: getTextContent(produtoNode, 'codigo, code, id, sku') || `PROD-${index + 1}`,
-            descricao: getTextContent(produtoNode, 'descricao, nome, name, description') || `Produto ${index + 1}`,
-            quantidade,
-            unidade: getTextContent(produtoNode, 'unidade, unit, medida') || 'UN',
-            precoUnitario,
-            precoTotal,
-            categoria: getTextContent(produtoNode, 'categoria, category, tipo, group') || 'Diversos'
-          };
-
-          ambienteGenerico.itens.push(produto);
-          ambienteGenerico.valorAmbiente += precoTotal;
-        });
-
-        dadosConvertidos.ambientes.push(ambienteGenerico);
-      }
-    }
-
-    // Calcular total dos ambientes se não foi encontrado no XML
-    if (dadosConvertidos.resumoFinanceiro.valorTotal === 0) {
-      dadosConvertidos.resumoFinanceiro.valorTotal = dadosConvertidos.ambientes.reduce(
-        (total, ambiente) => total + ambiente.valorAmbiente, 0
-      );
-      dadosConvertidos.resumoFinanceiro.subtotal = dadosConvertidos.resumoFinanceiro.valorTotal - dadosConvertidos.resumoFinanceiro.descontos;
-    }
-
-    console.log('[XMLParser] Dados convertidos com sucesso:', dadosConvertidos);
-    return dadosConvertidos;
-
-  } catch (error) {
-    console.error('[XMLParser] Erro ao processar XML:', error);
-    throw new Error('Erro ao processar XML: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
-  }
+      frete,
+      montagem,
+    },
+    ambientes: ambientes.map((ambiente, index) => ({
+      descricao: ambiente.descricao,
+      valorAmbiente: ambiente.valorAmbiente,
+      itens: ambiente.itens.map((item) => ({
+        codigo: item.codigo,
+        descricao: item.descricao,
+        quantidade: item.quantidade,
+        unidade: item.unidade,
+        precoUnitario: item.precoUnitario,
+        precoTotal: item.precoTotal,
+        dimensoes: item.dimensoes,
+      })),
+    })),
+  };
 };
 
-// Função auxiliar para buscar texto em múltiplos seletores
-const getTextContent = (parent: Element, selectors: string): string => {
-  const selectorList = selectors.split(',').map(s => s.trim());
-  
-  for (const selector of selectorList) {
-    const element = parent.querySelector(selector);
-    if (element && element.textContent?.trim()) {
-      return element.textContent.trim();
-    }
-    
-    // Tentar como atributo também
-    const attribute = parent.getAttribute(selector);
-    if (attribute?.trim()) {
-      return attribute.trim();
-    }
-  }
-  
-  return '';
-};
+export const parseXMLToStructuredData = (xmlContent: string): DadosConvertidos => {
+  const structuredData = analyzeXMLStructure(xmlContent);
 
-// Manter função existente para compatibilidade
-export const parseXMLToProducts = (xmlContent: string) => {
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
-  
-  const products = [];
-  const items = xmlDoc.querySelectorAll('item, produto, product');
-  
-  items.forEach((item, index) => {
-    const product = {
-      id: `temp-${index}`,
-      codigo: item.querySelector('codigo, code, id')?.textContent || `PROD-${index + 1}`,
-      descricao: item.querySelector('descricao, description, name')?.textContent || `Produto ${index + 1}`,
-      quantidade: parseFloat(item.querySelector('quantidade, qty, quantity')?.textContent || '1'),
-      unidade: item.querySelector('unidade, unit')?.textContent || 'CH',
-      altura_metros: parseFloat(item.querySelector('altura, height')?.textContent || '0'),
-      largura_metros: parseFloat(item.querySelector('largura, width')?.textContent || '0'),
-      preco_unitario: parseFloat(item.querySelector('precoUnitario, unitPrice, price')?.textContent || '0'),
-    };
-    products.push(product);
-  });
+  // Generate unique IDs for environments
+  const ambientesComId = structuredData.ambientes.map(ambiente => ({
+    ...ambiente,
+    id: Math.random().toString(36).substring(2, 15),
+  }));
 
-  return products;
+  return {
+    cliente: structuredData.cliente,
+    projeto: structuredData.projeto,
+    resumoFinanceiro: structuredData.resumoFinanceiro,
+    ambientes: ambientesComId,
+    rawXML: xmlContent,
+    processedAt: new Date().toISOString(),
+  };
 };
