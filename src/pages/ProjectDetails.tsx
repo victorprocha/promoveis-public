@@ -176,10 +176,13 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
           console.error('Erro ao buscar dados XML:', xmlError);
         } else if (xmlDataResult) {
           setXmlData(xmlDataResult);
-          // Se há dados convertidos salvos, carregá-los
-          if (xmlDataResult.dados_convertidos) {
-            setDadosConvertidos(xmlDataResult.dados_convertidos);
-            console.log('[ProjectDetails] Dados convertidos carregados:', xmlDataResult.dados_convertidos);
+          // Se há dados convertidos salvos em observacoes_data, carregá-los
+          if (xmlDataResult.observacoes_data && typeof xmlDataResult.observacoes_data === 'object') {
+            const dadosCarregados = xmlDataResult.observacoes_data as any;
+            if (dadosCarregados.cliente || dadosCarregados.ambientes) {
+              setDadosConvertidos(dadosCarregados);
+              console.log('[ProjectDetails] Dados convertidos carregados:', dadosCarregados);
+            }
           }
         }
 
@@ -534,13 +537,15 @@ const ProjectDetails: React.FC<ProjectDetailsProps> = ({ projectId, onBack }) =>
     console.log('[ProjectDetails] Importando dados convertidos:', dados);
     
     try {
-      // Salvar dados convertidos no banco
+      // Salvar dados convertidos no campo observacoes_data
       const { error } = await supabase
         .from('project_xml_data')
         .upsert({
           project_id: id,
-          dados_convertidos: dados,
+          observacoes_data: dados,
           raw_xml: dados.rawXML,
+          file_name: 'xml_importado.xml',
+          file_url: '',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         });

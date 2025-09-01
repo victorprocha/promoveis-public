@@ -38,6 +38,70 @@ export interface DadosConvertidos {
   processedAt: string;
 }
 
+// Interfaces para compatibilidade com XMLPreviewDialog
+export interface XMLStructure {
+  type: 'promob' | 'traditional' | 'unknown';
+  hasCustomerData: boolean;
+  hasItemsData: boolean;
+  hasBudgetData: boolean;
+  sections: PromobSection[];
+}
+
+export interface PromobSection {
+  name: string;
+  data: Array<{
+    id: string;
+    value: string;
+  }>;
+}
+
+export const analyzeXMLStructure = (xmlContent: string): XMLStructure => {
+  const parser = new DOMParser();
+  const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
+  
+  const structure: XMLStructure = {
+    type: 'unknown',
+    hasCustomerData: false,
+    hasItemsData: false,
+    hasBudgetData: false,
+    sections: []
+  };
+
+  // Detectar tipo de estrutura
+  const promobNodes = xmlDoc.querySelectorAll('CUSTOMERSDATA, ITEMSDATA, BUDGETDATA');
+  if (promobNodes.length > 0) {
+    structure.type = 'promob';
+  } else {
+    const traditionalNodes = xmlDoc.querySelectorAll('cliente, produto, item, orcamento');
+    if (traditionalNodes.length > 0) {
+      structure.type = 'traditional';
+    }
+  }
+
+  // Verificar presença de dados
+  structure.hasCustomerData = xmlDoc.querySelector('cliente, Client, CLIENTE, CUSTOMERSDATA') !== null;
+  structure.hasItemsData = xmlDoc.querySelector('produto, item, product, ITEMSDATA') !== null;
+  structure.hasBudgetData = xmlDoc.querySelector('orcamento, budget, BUDGETDATA') !== null;
+
+  // Extrair seções para preview
+  ['CUSTOMERSDATA', 'ITEMSDATA', 'BUDGETDATA'].forEach(sectionName => {
+    const section = xmlDoc.querySelector(sectionName);
+    if (section) {
+      const items = Array.from(section.children).slice(0, 10).map((child, index) => ({
+        id: child.tagName || `item-${index}`,
+        value: child.textContent?.trim() || ''
+      }));
+      
+      structure.sections.push({
+        name: sectionName,
+        data: items
+      });
+    }
+  });
+
+  return structure;
+};
+
 export const parseXMLToStructuredData = (xmlContent: string): DadosConvertidos => {
   console.log('[XMLParser] Processando XML para dados estruturados...');
   
