@@ -1,3 +1,4 @@
+
 export interface DadosConvertidos {
   cliente: {
     nome: string;
@@ -37,7 +38,7 @@ export interface DadosConvertidos {
   [key: string]: any; // Add index signature for Json compatibility
 }
 
-interface XMLStructure {
+export interface XMLStructure {
   cliente: {
     nome: string;
     email?: string;
@@ -72,7 +73,7 @@ interface XMLStructure {
   }>;
 }
 
-interface PromobSection {
+export interface PromobSection {
   descricao: string;
   itens: any[];
 }
