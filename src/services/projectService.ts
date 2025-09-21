@@ -144,17 +144,26 @@ export const projectService = {
         throw new Error('Usuário não autenticado');
       }
 
+      // Validar campos obrigatórios
+      if (!data.title || !data.title.trim()) {
+        throw new Error('Nome do projeto é obrigatório');
+      }
+
+      if (!data.clientName || !data.clientName.trim()) {
+        throw new Error('Nome do cliente é obrigatório');
+      }
+
       console.log('Criando projeto com dados:', data);
 
       const { data: project, error } = await supabase
         .from('projects')
         .insert({
           user_id: user.id,
-          name: data.title,
-          client_name: data.clientName,
+          name: data.title.trim(),
+          client_name: data.clientName.trim(),
           client_email: '',
           client_phone: '',
-          description: data.description || null,
+          description: data.description?.trim() || null,
           priority: data.priority || 'Normal',
           budget: null,
           deadline: null,
